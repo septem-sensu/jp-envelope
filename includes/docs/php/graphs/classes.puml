@@ -1,0 +1,213 @@
+@startuml
+
+class App {
+  +currentUserId
+  +currentUserRoleId
+  +currentView
+  +__construct()
+}
+
+class AppError {
+  +message
+  +severity
+  +source
+  +message()
+  +severity()
+  +source()
+  +setMessage()
+}
+
+class BaseObject {
+  +id
+  +class
+  +dataJsonFile
+  +fields
+  +__construct()
+  +initObject()
+  +get()
+  +id()
+  +className()
+  +fields()
+  +getFieldsOfClass()
+  +newId()
+  +createBlueprint()
+  +isJson()
+  +fillObject()
+  +view()
+  +viewJson()
+  +viewNewObject()
+  +serializeObject()
+  +rawObject()
+  +saveObject()
+  +serializeObjectForSave()
+  +deleteObject()
+  +insertObject()
+  +getObject()
+  +existsObject()
+  +getRawObjectsFromClass()
+  +getObjectsFromClass()
+  +config()
+  +getCryptKeys()
+  +enCrypteOnly()
+  +deCrypte()
+  +enCrypte()
+  +loadFileDeCrypted()
+  +saveFileEnCrypted()
+}
+
+class Config {
+  +version
+  +appName
+  +appAlias
+  +cookieName
+  +defaultRoleId
+  +defaultUserId
+  +jsPath
+  +cssPath
+  +appBrandImagePath
+  +passwordRules
+  +version()
+  +appAlias()
+  +cookieName()
+  +defaultRoleId()
+  +defaultRole()
+  +defaultUserId()
+  +jsPath()
+  +cssPath()
+  +appBrandImagePath()
+  +passwordRules()
+}
+
+class Controller {
+  +objectId
+  +objectClass
+  +viewObject
+  +user
+  +role
+  +presentation
+  +arrRawObjects
+  +arrRawObjectKeys
+  +arrErrors
+  +__construct()
+  +init()
+  +execute()
+  +addRawObject()
+  +rawObjects()
+  +errors()
+  +addError()
+  +addErrors()
+  +logHardError()
+  +addErrorFromThrowable()
+  +objectClass()
+  +objectId()
+  +viewObject()
+  +user()
+  +role()
+  +presentation()
+}
+
+class Diagnostics {
+  +diagnosticsData
+  +setDiagnosticsData()
+  +collectDiagnostics()
+}
+
+class FieldValidator {
+  +validate()
+  +validateField()
+  +message()
+  +validatePassword()
+}
+
+class Presentation {
+  +templateVars
+  +__construct()
+  +assignTemplateVar()
+  +processTemplate()
+  +writeCookie()
+  +deleteCookie()
+  +getCookieProperty()
+  +logToFile()
+  +stringToTimestamp()
+  +timestampToString()
+  +newFormError()
+  +sendHtmlMail()
+  +shortText()
+  +cleanId()
+  +escapeIcalText()
+  +getJsonHeader()
+  +getJavaScriptHeader()
+  +getFileNamesFromDirectory()
+}
+
+class Request {
+  +objRules
+  +strScope
+  +arrCache
+  +param()
+  +setScope()
+  +reset()
+  +loadRules()
+  +getRule()
+  +applyRule()
+  +getRawValue()
+  +validateString()
+  +validateInt()
+  +validateFloat()
+}
+
+class Role {
+  +permissions
+  +defaultViewId
+  +permissions()
+  +defaultViewId()
+}
+
+class User {
+  +password
+  +roleId
+  +isUserSet
+  +__construct()
+  +password()
+  +roleId()
+  +role()
+  +getUser()
+  +getUserFromId()
+  +collectUsers()
+  +logout()
+  +createUser()
+  +saveUser()
+  +saveUserPassword()
+  +deleteUser()
+  +getUserFromLogin()
+  +getUserFromCookie()
+}
+
+class View {
+  +viewName
+  +className
+  +resultType
+  +templateNames
+  +roleIds
+  +actionNames
+  +viewName()
+  +resultType()
+  +templateNames()
+  +roleIds()
+  +actionNames()
+  +executeActions()
+  +validateActions()
+  +validatePermissions()
+  +executeView()
+}
+
+BaseObject <|-- App
+BaseObject <|-- AppError
+BaseObject <|-- Config
+BaseObject <|-- Controller
+BaseObject <|-- Diagnostics
+BaseObject <|-- Presentation
+BaseObject <|-- Role
+BaseObject <|-- User
+BaseObject <|-- View
+@enduml
