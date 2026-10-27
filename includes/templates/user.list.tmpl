@@ -6,7 +6,7 @@
     const allUsers = app.registry.getAll( 'User' );
 
     allUsers.forEach( ( userInstance, userId ) => {
-      userInstance.appendTemplate( 'user-list-template', 'user-list-container' );
+      userInstance.appendTemplate( app.currentUserRoleId, 'user-list-template', 'user-list-container' );
       userInstance.setSelectsOptions( 'form' );
       userInstance.fillForm( 'form' );
       userInstance.validateForm( 'form' );
@@ -17,7 +17,7 @@
     } );
 
     app.registry.onReady( 'User', 'new', ( newUser ) => {
-      newUser.appendTemplate( 'user-new-template', 'user-new-container', false );
+      newUser.appendTemplate( app.currentUserRoleId, 'user-new-template', 'user-new-container', false );
       newUser.setSelectsOptions( 'form-new-user', false );
       newUser.validateForm( 'form-new-user', false );
 

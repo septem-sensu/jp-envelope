@@ -48,6 +48,8 @@ class User extends BaseObject {
     const itemList = document.querySelector( '#navbar-top .navbar-menu-item-list' );
     const view     = app.currentView.id;
 
+    this.addNavbarItem( 'Profil', 'index.php?view=viewUser', itemList );
+
     if( this.roleId === 'administrator' ) this.addNavbarItem( 'Benutzer', 'index.php?view=viewUserList', itemList );
     if( this.roleId === 'administrator' ) this.addNavbarItem( 'Diagnostics', 'index.php?view=viewDiagnostics', itemList );
 

@@ -16,8 +16,9 @@
     ]
   },
   "user": {
-    "defaultViewId": "viewLogin",
+    "defaultViewId": "viewUser",
     "permissions": [
+      "User::saveUser",
       "User::saveUserPassword",
       "User::logout"
     ]

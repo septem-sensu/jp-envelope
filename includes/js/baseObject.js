@@ -323,7 +323,7 @@ class BaseObject extends EventTarget {
  * @example   instance.appendTemplate( 'user-form-template', 'user-cards', true );
  *
  */
-  appendTemplate( templateId, targetId, setId = true ) {
+  appendTemplate( roleId, templateId, targetId, setId = true ) {
     const targetContainer = document.querySelector( '#' + targetId );
     const template        = document.querySelector( '#' + templateId );
 
@@ -340,6 +340,17 @@ class BaseObject extends EventTarget {
 
       for( let i = 0; i < forTags.length; i++ ) {
         forTags[ i ].setAttribute( 'for', forTags[ i ].getAttribute( 'for' ) + '-' + this.validateId( this.id ) );
+      }
+    }
+
+    for( let field in this.fields ) {
+      if( typeof this.fields[ field ].roleIds !== 'object' || this.fields[ field ].roleIds === null ) continue;
+      if( this.fields[ field ].roleIds.includes( roleId ) ) continue;
+
+      const fields = templateClone.querySelectorAll( '[name="' + field + '"]' );
+
+      for( let i = 0; i < fields.length; i++ ) {
+        fields[ i ].setAttribute( 'disabled', 'disabled' );
       }
     }
 
@@ -397,8 +408,20 @@ class BaseObject extends EventTarget {
 
       if( ! this[ property ] ) continue;
 
-      if( propertyTagName === 'input' || propertyTagName === 'select' ) {
+      if( propertyTagName === 'input' ) {
         properties[ i ].value = this[ property ];
+      } else if( propertyTagName === 'select' ) {
+        properties[ i ].value = this[ property ];
+
+        if( ! properties[ i ].hasAttribute( 'disabled' ) ) continue;
+
+        const options = properties[ i ].querySelectorAll( 'option' );
+
+        for( let i = 0; i < options.length; i++ ) {
+          if( options[ i ].value === this[ property ] ) continue;
+
+          options[ i ].remove();
+        }
       } else {
         properties[ i ].innerHTML = this[ property ];
       }

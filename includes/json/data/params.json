@@ -8,12 +8,17 @@
   },
   "viewLogin": {},
   "viewLogout": {},
-  "viewDiagnostics": {},
+  "viewUser": {
+    "action":       { "type": "string" },
+    "password2":    { "type": "string" },
+    "roleId":       { "type": "string" }
+  },
   "viewUserList": {
     "action":       { "type": "string" },
     "password2":    { "type": "string" },
     "roleId":       { "type": "string" }
   },
+  "viewDiagnostics": {},
   "viewNewObject": {
     "newClass": { "type": "string", "values": [ "User" ] }
   }

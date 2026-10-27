@@ -15,12 +15,23 @@
     "templateNames": [],
     "actionNames": [ { "method": "User::logout", "always": true } ]
   },
+  "viewUser": {
+    "viewName": "view",
+    "className": "User",
+    "resultType": "",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "user.template.user.tmpl", "user.user.tmpl", "footer.tmpl" ],
+    "actionNames": [
+      { "method": "User::saveUser", "trigger": "changeUser" },
+      { "method": "User::saveUserPassword", "trigger": "changeUserPassword" }
+    ]
+  },
   "viewUserList": {
     "viewName": "view",
     "className": "User",
     "resultType": "",
     "roleIds": [ "administrator" ],
-    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "user.list.new.tmpl", "user.list.user.tmpl", "user.list.tmpl", "footer.tmpl" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "user.template.new.tmpl", "user.template.user.tmpl", "user.list.tmpl", "footer.tmpl" ],
     "actionNames": [
       { "method": "User::createUser", "trigger": "createUser" },
       { "method": "User::saveUser", "trigger": "changeUser" },

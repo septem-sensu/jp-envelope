@@ -1,0 +1,21 @@
+<div class="user-container" id="user-container"></div>
+
+<script type="text/javascript">
+  window[ appAlias ].registry.onAppReady( ( app ) => {
+    const userInstance = app.registry.get( 'User' );
+
+    userInstance.appendTemplate( app.currentUserRoleId, 'user-list-template', 'user-container' );
+    userInstance.setSelectsOptions( 'form' );
+    userInstance.fillForm( 'form' );
+    userInstance.validateForm( 'form' );
+
+    const headline = document.querySelector( '#form-' + userInstance.validateId( userInstance.id ) + ' p' );
+
+    if( headline !== null ) headline.classList.add( 'border-role-' + userInstance.roleId );
+
+    app.currentUser().addNavbarTop( app );
+    app.removeTemplates();
+
+    return;
+  } );
+</script>

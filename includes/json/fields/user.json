@@ -34,6 +34,14 @@
     },
     "mandatory": true,
     "unit": "",
+    "roleIds": [ "administrator" ],
     "position": 300
+  },
+  "delete": {
+    "nameDe": "Loschen",
+    "element": "button",
+    "type": "button",
+    "roleIds": [ "administrator" ],
+    "position": 500
   }
 }
