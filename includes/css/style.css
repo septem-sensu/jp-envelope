@@ -38,6 +38,7 @@ body {
   align-items: center;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: scroll;
 }
 
 @media screen and ( max-width: 660px ) {
@@ -133,6 +134,12 @@ body {
   border-right: 4px solid transparent;
   transition: transform 0.2s ease;
   margin-bottom: 20px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: var( --borderColor1 );
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: var( --borderColor1 );
 }
 
 .app-error.app-error-severity-error {
@@ -237,6 +244,9 @@ body {
   margin-right:auto;
   max-width: 660px;
   margin-bottom: 10px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var( --borderColor1 );
 }
 
 .navbar-top-name {
@@ -248,6 +258,8 @@ body {
 
 .navbar-top-brand-image {
   height: 40px;
+  position: relative;
+  top: 3px;
 }
 
 .navbar-top .navbar-menu-item-list {
@@ -266,6 +278,12 @@ body {
   border-right-width: 4px;
   border-right-color: var( --borderColor5 );
   padding: 8px 20px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: var( --borderColor1 ) !important;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: var( --borderColor1 ) !important;
   transition: transform 0.2s ease;
 }
 
@@ -331,6 +349,9 @@ body {
   max-height: 1000px;
   overflow: hidden;
   transition: max-height 1.0s ease;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var( --borderColor1 );
 }
 
 .diagnostics-suite-container-folded-in {
@@ -367,6 +388,12 @@ body {
   border-right: 4px solid var( --borderColor4 );
   padding-top: 10px;
   padding-bottom: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: var( --borderColor1 ) !important;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: var( --borderColor1 ) !important;
   cursor: pointer;
 }
 
@@ -402,6 +429,9 @@ textarea, select, input[ type="text" ], input[ type="email" ], input[ type="numb
   padding-bottom: 20px;
   border-radius: 12px;
   box-shadow: var( --boxShadow1 );
+  border-style: solid;
+  border-width: 1px;
+  border-color: var( --borderColor1 );
 }
 
 .user-login-container {
@@ -412,6 +442,9 @@ textarea, select, input[ type="text" ], input[ type="email" ], input[ type="numb
   padding-bottom: 20px;
   border-radius: 12px;
   box-shadow: var( --boxShadow1 );
+  border-style: solid;
+  border-width: 1px;
+  border-color: var( --borderColor1 );
 }
 
 .user-smal-container input.input-new-user-id {
@@ -426,6 +459,12 @@ textarea, select, input[ type="text" ], input[ type="email" ], input[ type="numb
   border-radius: 12px;
   border-left: 4px solid var( --borderColor7 );
   border-right: 4px solid var( --borderColor7 );
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: var( --borderColor1 ) !important;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-bottom-color: var( --borderColor1 ) !important;
 }
 
 .user-smal-container label {
