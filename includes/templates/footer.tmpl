@@ -1,0 +1,13 @@
+  </div>
+  <script type="text/javascript">
+    ( function() {
+      if( 'serviceWorker' in navigator ) {
+        navigator.serviceWorker.register( 'sw.js' ).then( ( objReg ) => {
+          if( window[ appAlias ].debug ) console.log( 'Service Worker erfolgreich im Root registriert!', objReg );
+        } ).catch( console.error );
+      }
+      return;
+    } )();
+  </script>
+</body>
+</html>

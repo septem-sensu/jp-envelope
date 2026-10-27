@@ -1,0 +1,13 @@
+*.json.json
+test.html
+test.php
+*.log
+.fiveserverrc
+notes.txt
+notes.md
+.cryptKeys.php
+users.json
+
+includes/data/csv/*.csv
+includes/data/json/*.json
+.claude/*

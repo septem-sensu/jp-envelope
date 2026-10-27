@@ -1,0 +1,193 @@
+:root {
+  --backgroundColorPrimary: #286090;
+  --backgroundColorSuccess: #449d44;
+  --backgroundColorInfo: #31b0d5;
+  --backgroundColorWarning: #ec971f;
+  --backgroundColorDanger: #d9534f;
+  --backgroundColorAppError: #fabbbb;
+  --backgroundColorAppWarning: #f4fabb;
+
+  --borderColorPrimary: #204d74;
+  --borderColorSuccess: #398439;
+  --borderColorInfo: #269abc;
+  --borderColorWarning: #d58512;
+  --borderColorDanger: #d43f3a;
+
+  --buttonColor: #ffffff;
+  --outlineFocusColor: #a0a0a9;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: sans-serif, arial;
+  font-weight: 300;
+  text-align: center;
+}
+
+h1 { font-size: 20px; }
+h2 { font-size: 18px; }
+h3 { font-size: 16px; }
+h4 { font-size: 15px; }
+h5 { font-size: 14px; }
+h6 { font-size: 20px; }
+
+td {
+  text-align: left;
+  height: 25px;
+}
+
+label {
+  display: inline-block;
+  max-width: 100%;
+  font-weight: 400;
+}
+
+body select {
+  padding: 5px 10px;
+  width: calc( 100% + 25px );
+}
+
+textarea,
+select,
+input[ type="text" ],
+input[ type="email" ],
+input[ type="number" ],
+input[ type="datetime-local" ],
+input[ type="password" ] {
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+input[ type="number" ],
+input[ type="datetime-local" ] {
+  text-align: right;
+  padding-right: 12px;
+}
+
+textarea {
+  width: calc(100% - 30px) !important;
+}
+
+.primary {
+  color: var( --buttonColor );
+  background-color: var( --backgroundColorPrimary );
+  border-color: var( --borderColorPrimary );
+}
+
+.primarey-text {
+  color: var( --backgroundColorPrimary );
+}
+
+.success {
+  color: var( --buttonColor );
+  background-color: var( --backgroundColorSuccess );
+  border-color: var( --borderColorSuccess );
+}
+
+.success-text {
+  color: var( --backgroundColorSuccess );
+}
+
+.info {
+  color: var( --buttonColor );
+  background-color: var( --backgroundColorInfo );
+  border-color: var( --borderColorInfo );
+}
+
+.info-text {
+  color: var( --backgroundColorInfo );
+}
+
+.warning {
+  color: var( --buttonColor );
+  background-color: var( --backgroundColorWarning );
+  border-color: var( --borderColorWarning );
+}
+
+.warning-text {
+  color: var( --backgroundColorWarning );
+}
+
+.danger {
+  color: var( --buttonColor );
+  background-color: var( --backgroundColorDanger );
+  border-color: var( --borderColorDanger );
+}
+
+.danger-text {
+  color: var( --backgroundColorDanger );
+}
+
+.form-error {
+  border-color: var( --backgroundColorDanger );
+  box-shadow: 0px 0px 5px 2px var( --backgroundColorDanger );
+}
+
+.form-warning {
+  box-shadow: 0px 0px 5px 2px var( --backgroundColorWarning );
+}
+
+.form-success {
+  box-shadow: 0px 0px 5px 2px var( --backgroundColorSuccess );
+}
+
+.form-info {
+  box-shadow: 0px 0px 5px 2px var( --backgroundColorInfo );
+}
+
+button,
+.button {
+  display: inline-block;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  border-radius: 4px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: transparent;
+  background-color: transparent;
+  color: var( --buttonColor );
+  transition: opacity 0.5s ease, transform 0.2s ease;
+}
+
+button:hover,
+.button:hover {
+  opacity: 0.8;
+}
+
+button:not( :disabled ):active {
+  transform: scale( 0.95 );
+}
+
+textarea:focus-visible,
+select:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 1px solid var( --outlineFocusColor );
+  outline-offset: 2px;
+}
+
+.disabled,
+textarea[ disabled ],
+select[ disabled ],
+input[ disabled ],
+button[ disabled ] {
+  cursor: not-allowed;
+  filter: alpha( opacity=65 );
+  opacity: .65;
+}

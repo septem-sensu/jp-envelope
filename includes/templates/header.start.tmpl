@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" />
+
+  <title>{{config::Translate::appName}}</title>
+
+  <link rel="stylesheet" href="includes/css/classes.css?v={{config::Translate::version}}" />
+  <link rel="stylesheet" href="includes/css/spacer.css?v={{config::Translate::version}}" />
+  <link rel="stylesheet" href="includes/css/core.css?v={{config::Translate::version}}" />
+  <link rel="stylesheet" href="includes/css/style.css?v={{config::Translate::version}}" />
+  <link rel="manifest" href="includes/json/manifest.json" />
+
+  <script type="text/javascript" src="includes/js/utils.js?v={{config::Translate::version}}"></script>
+  <script type="text/javascript" src="includes/js/loader.js?v={{config::Translate::version}}"></script>
+  <script type="text/javascript" src="includes/js/registry.js?v={{config::Translate::version}}"></script>
+  <script type="text/javascript" src="includes/js/fieldValidator.js?v={{config::Translate::version}}"></script>
+  <script type="text/javascript" src="includes/js/baseObject.js?v={{config::Translate::version}}"></script>
+
+  <script type="text/javascript">
+    var appAlias                  = '{{config::Translate::appAlias}}';
+    window[ appAlias ]            = window[ appAlias ] || {};
+    window[ appAlias ].rawObjects = {{default::rawObjects}};
+    window[ appAlias ].config     = {{default::config}};
+    window[ appAlias ].registry   = new Registry();
+    window[ appAlias ].loader     = new Loader();
+    window[ appAlias ].debug      = false;
+
+    window[ appAlias ].loader.registerObjects();
+  </script>
+
+  <link rel="icon" href="includes/images/icons/jp-envelope-icon-white-16x16.png" sizes="16x16" />
+  <link rel="icon" href="includes/images/icons/jp-envelope-icon-white-32x32.png" sizes="32x32" />
+  <link rel="icon" href="includes/images/icons/jp-envelope-icon-white-192x192.png" sizes="192x192" />
+  <link rel="icon" href="includes/images/icons/jp-envelope-icon-white-512x512.png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="includes/images/icons/jp-envelope-icon-white-180x180.png" />
+

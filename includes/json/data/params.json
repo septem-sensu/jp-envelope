@@ -1,0 +1,20 @@
+{
+  "global": {
+    "view":     { "type": "string", "pattern": "/^[\\w]+$/" },
+    "id":       { "type": "string" },
+    "class":    { "type": "string", "values": [ "User", "Role", "View", "Diagnostics" ] },
+    "user":     { "type": "string" },
+    "password": { "type": "string" }
+  },
+  "viewLogin": {},
+  "viewLogout": {},
+  "viewDiagnostics": {},
+  "viewUserList": {
+    "action":       { "type": "string" },
+    "password2":    { "type": "string" },
+    "roleId":       { "type": "string" }
+  },
+  "viewNewObject": {
+    "newClass": { "type": "string", "values": [ "User" ] }
+  }
+}

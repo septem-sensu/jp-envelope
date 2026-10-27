@@ -1,0 +1,27 @@
+body .display-block { display: block; }
+body .display-inline-block { display: inline-block; }
+body .display-flex { display: flex; }
+body .display-hidden { display: none; }
+
+.clear-both { clear: both; height: 0px; min-height: 0px }
+.float-left { float: left; }
+.float-right { float: right; }
+
+.align-left { text-align: left; }
+.align-right { text-align: right; }
+.align-center { text-align: center; }
+.align-justify { text-align: justify; }
+.align-top { vertical-align: top; }
+.align-bottom { vertical-align: bottom; }
+.align-middle { vertical-align: middle; }
+
+.font-bold { font-weight: 600; }
+
+.cursor-pointer { cursor: pointer; }
+.cursor-crosshair { cursor: crosshair !important; }
+
+.position-relative { position: relative; }
+.position-absolute { position: absolute; }
+
+.overflow-hidden { overflow: hidden; }
+

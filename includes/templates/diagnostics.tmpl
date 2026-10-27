@@ -1,0 +1,12 @@
+<div class="diagnostics-container" id="diagnostics-container"></div>
+
+<script type="text/javascript">
+  window[ appAlias ].registry.onAppReady( ( app ) => {
+    const diagnostics = app.registry.get( 'Diagnostics' );
+
+    diagnostics.renderDiagnostics();
+    app.currentUser().addNavbarTop( app );
+
+    return;
+  } );
+</script>

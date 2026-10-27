@@ -1,0 +1,48 @@
+{
+  "viewLogin": {
+    "viewName": "view",
+    "className": "User",
+    "resultType": "",
+    "roleIds": [ "guest" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "user.login.tmpl", "footer.tmpl" ],
+    "actionNames": []
+  },
+  "viewLogout": {
+    "viewName": "view",
+    "className": "User",
+    "resultType": "",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [],
+    "actionNames": [ { "method": "User::logout", "always": true } ]
+  },
+  "viewUserList": {
+    "viewName": "view",
+    "className": "User",
+    "resultType": "",
+    "roleIds": [ "administrator" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "user.list.new.tmpl", "user.list.user.tmpl", "user.list.tmpl", "footer.tmpl" ],
+    "actionNames": [
+      { "method": "User::createUser", "trigger": "createUser" },
+      { "method": "User::saveUser", "trigger": "changeUser" },
+      { "method": "User::saveUserPassword", "trigger": "changeUserPassword" },
+      { "method": "User::deleteUser", "trigger": "deleteUser" },
+      { "method": "User::collectUsers", "always": true }
+    ]
+  },
+  "viewDiagnostics": {
+    "viewName": "view",
+    "className": "Diagnostics",
+    "resultType": "",
+    "roleIds": [ "administrator" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "diagnostics.tmpl", "footer.tmpl" ],
+    "actionNames": [ { "method": "Diagnostics::collectDiagnostics", "always": true } ]
+  },
+  "viewNewObject": {
+    "viewName": "viewNewObject",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [],
+    "actionNames": []
+  }
+}

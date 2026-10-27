@@ -1,0 +1,32 @@
+<div class="user-list-container" id="user-list-container"></div>
+<div class="user-new-container" id="user-new-container"></div>
+
+<script type="text/javascript">
+  window[ appAlias ].registry.onAppReady( ( app ) => {
+    const allUsers = app.registry.getAll( 'User' );
+
+    allUsers.forEach( ( userInstance, userId ) => {
+      userInstance.appendTemplate( 'user-list-template', 'user-list-container' );
+      userInstance.setSelectsOptions( 'form' );
+      userInstance.fillForm( 'form' );
+      userInstance.validateForm( 'form' );
+
+      const headline = document.querySelector( '#form-' + userInstance.validateId( userId ) + ' p' );
+
+      if( headline !== null ) headline.classList.add( 'border-role-' + userInstance.roleId );
+    } );
+
+    app.registry.onReady( 'User', 'new', ( newUser ) => {
+      newUser.appendTemplate( 'user-new-template', 'user-new-container', false );
+      newUser.setSelectsOptions( 'form-new-user', false );
+      newUser.validateForm( 'form-new-user', false );
+
+      app.removeTemplates();
+    } );
+
+    app.currentUser().addNavbarTop( app );
+    app.newObject( 'User' );
+
+    return;
+  } );
+</script>

@@ -1,0 +1,20 @@
+{
+  "default": {
+    "version": "0.2.15",
+    "appName": "JPEnvelope",
+    "appAlias": "JPEnvelope",
+    "appBrandImagePath": "includes/images/brands/jp-envelope-lettering-white.png",
+    "cookieName": "JPEnvelope",
+    "defaultRoleId": "guest",
+    "defaultUserId": "guest",
+    "jsPath": "includes/js/",
+    "cssPath": "includes/css/",
+    "passwordRules": {
+      "passwordMinLength": 8,
+      "passwordHasNumbers": true,
+      "passwordHasSpecialCharacters": true,
+      "passwordHasCapitalLetters": true,
+      "passwordHasLowercaseLetters": true
+    }
+  }
+}

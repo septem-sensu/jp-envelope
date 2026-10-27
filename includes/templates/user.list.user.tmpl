@@ -1,0 +1,27 @@
+<template id="user-list-template">
+  <div class="user-smal-container">
+    <div class="container-1 mb-10">
+      <form id="form">
+        <input data-property="id" type="hidden" name="id" />
+        <input type="hidden" name="action" id="action" value="" />
+        <p data-property="id" class="pt-15 pb-15" id="id"></p>
+        <div class="input-box">
+          <label for="roleId">Rolle:</label>
+          <select data-property="roleId" name="roleId" id="roleId" class="mr-10 mb-15" placeholder="Auswahl Rolle"></select>
+        </div>
+        <div class="input-box">
+          <label for="password">Passwort:</label>
+          <input type="password" class="no-validate align-left mr-10" name="password" id="password" placeholder="Eingabe Passwort" />
+        </div>
+        <div class="input-box">
+          <label for="password2">Passwort wiederh.:</label>
+          <input type="password" class="no-validate align-left mr-10" name="password2" id="password2" placeholder="Eingabe Passwort wiederh." />
+        </div>
+        <div class="button-bar">
+          <button type="button" data-action="changeUser" class="mr-10 w-120 warning save" id="btn-change-user-password" disabled="disabled">Speichern</button>
+          <button type="button" data-action="deleteUser" class="w-120 danger delete" id="btn-delete-user">Löschen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>

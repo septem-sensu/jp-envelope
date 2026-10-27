@@ -1,0 +1,39 @@
+{
+  "id": {
+    "nameDe": "ID",
+    "element": "input",
+    "type": "text",
+    "mandatory": true,
+    "unit": "",
+    "minLength": 3,
+    "messages": {
+      "mandatory": "Bitte eine E-Mail-Adresse angeben.",
+      "minLength": "Die E-Mail-Adresse muss mindestens {minLength} Zeichen haben."
+    },
+    "position": 100
+  },
+  "password": {
+    "nameDe": "Passwort",
+    "element": "input",
+    "type": "password",
+    "mandatory": true,
+    "crypt": true,
+    "unit": "",
+    "minLength": 5,
+    "validatePasswordSecurity": true,
+    "position": 200
+  },
+  "roleId": {
+    "nameDe": "Rolle",
+    "element": "select",
+    "type": "text",
+    "options": {
+      "guest": "Gast",
+      "user": "Benutzer",
+      "administrator": "Administrator"
+    },
+    "mandatory": true,
+    "unit": "",
+    "position": 300
+  }
+}

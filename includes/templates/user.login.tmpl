@@ -1,0 +1,24 @@
+<div class="mt-50">
+  <form id="login-form">
+    <input type="hidden" name="resetForm" value="1" />
+    <div class="user-login-container w-350 mh-auto align-left pl-50 pr-50">
+      <h2 class="align-center">{{config::Translate::appName}} Login</h2>
+      <label class="display-block mt-15 mb-5 align-left" for="name">E-Mail Adresse</label>
+      <input type="email" name="id" autocomplete="email" id="id" class="w-240 mb-10 align-left" placeholder="Eingabe E-Mail Adresse" />
+      <label class="m-auto display-block mb-5 align-left" for="password">Password</label>
+      <input type="password" autocomplete="off" name="password" id="password" class="w-240 mb-15" placeholder="Eingabe Passwort" />
+      <p class="mt-15 align-center"><button type="button" class="success submit mb-10 w-140" disabled="disabled">Anmelden</button></p>
+      <p class="align-center"><button type="button" class="info w-140 mb-10 app-install-button" disabled="disabled">App installieren</button></p>
+    </div>
+  </form>
+</div>
+
+<script type="text/javascript">
+  window[ appAlias ].registry.onAppReady( ( app ) => {
+    const userInstance = app.registry.get( 'User' );
+
+    if( typeof userInstance === 'object' && userInstance != null ) userInstance.validateForm( 'login-form', false );
+
+    return;
+  } );
+</script>

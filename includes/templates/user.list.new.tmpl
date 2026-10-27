@@ -1,0 +1,26 @@
+<template id="user-new-template">
+  <div class="user-smal-container">
+    <div class="container-1 mt-10">
+      <form id="form-new-user">
+        <input type="hidden" name="action" id="action" value="" />
+        <p class="align-center pt-10 pb-10">
+          <label for="id" class="mr-10">E-Mail Adresse:</label>
+          <input type="text" id="id" class="align-left w-220 input-new-user-id" name="id" placeholder="Eingabe E-Mail Adresse" />
+        </p>
+        <div class="input-box">
+          <label for="roleId">Rolle:</label>
+          <select data-property="roleId" id="roleId" name="roleId" class="mr-10 mb-15" placeholder="Auswahl Rolle"></select>
+        </div>
+        <div class="input-box">
+          <label for="password">Passwort:</label>
+          <input type="password" class="align-left w-200 mr-10" name="password" id="password" placeholder="Eingabe Passwort" />
+        </div>
+        <div class="input-box">
+          <label for="password2">Passwort wiederh.:</label>
+          <input type="password" class="align-left w-200 mr-10" name="password2" id="password2" placeholder="Eingabe Passwort wiederh." />
+        </div>
+        <button type="button" data-action="createUser" class="w-120 primary new" id="btn-new-user" disabled="disabled">Neu</button>
+      </form>
+    </div>
+  </div>
+</template>

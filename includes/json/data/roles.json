@@ -1,0 +1,25 @@
+{
+  "guest":{
+    "defaultViewId": "viewLogin",
+    "permissions": []
+  },
+  "administrator": {
+    "defaultViewId": "viewUserList",
+    "permissions": [
+      "User::collectUsers",
+      "User::createUser",
+      "User::saveUserPassword",
+      "User::saveUser",
+      "User::deleteUser",
+      "User::logout",
+      "Diagnostics::collectDiagnostics"
+    ]
+  },
+  "user": {
+    "defaultViewId": "viewLogin",
+    "permissions": [
+      "User::saveUserPassword",
+      "User::logout"
+    ]
+  }
+}
