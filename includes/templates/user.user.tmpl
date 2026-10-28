@@ -4,7 +4,7 @@
   window[ appAlias ].registry.onAppReady( ( app ) => {
     const userInstance = app.registry.get( 'User' );
 
-    userInstance.appendTemplate( app.currentUserRoleId, 'user-list-template', 'user-container' );
+    userInstance.appendTemplate( 'user-list-template', 'user-container' );
     userInstance.setSelectsOptions( 'form' );
     userInstance.fillForm( 'form' );
     userInstance.validateForm( 'form' );

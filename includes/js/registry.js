@@ -94,15 +94,19 @@ class Registry {
 
     this._registry.get( classKey ).set( id, instance );
 
-    const eventNameInstance = this.eventNameReady( classKey, id );
-    this.firedEvents[ eventNameInstance ] = instance;
-    if( this.listeners[ eventNameInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameInstance ] );
+    const eventNameInstance               = this.eventNameReady( classKey, id );
 
+    this.firedEvents[ eventNameInstance ] = instance;
+
+    if( this.listeners[ eventNameInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameInstance ] );
     if( id === this.constructor.BLUEPRINTID ) return;
 
     const eventNameClass = this.eventNameReady( classKey, null );
+
     if( ! this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ] = new Map();
+
     this.firedEvents[ eventNameClass ].set( id, instance );
+
     if( this.listeners[ eventNameClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameClass ] );
 
     return;
@@ -252,7 +256,6 @@ class Registry {
 
     if( id === null ) {
       if( this.firedEvents[ eventName ] ) this.firedEvents[ eventName ].forEach( ( instance ) => this._dispatchSafely( instance, callback ) );
-
       if( ! this.listeners[ eventName ] ) this.listeners[ eventName ] = [];
 
       this.listeners[ eventName ].push( callback );

@@ -241,10 +241,13 @@ class User extends BaseObject {
 
     if( BaseObject::existsObject( 'User', $strId ) ) {
       $objController->addError( 'Unter der E-Mail-Adresse existiert bereits ein Account.', 'createUser' );
+
       return;
     }
+
     if( ! BaseObject::existsObject( 'Role', $strRoleId ) ) {
       $objController->addError( 'Die ausgewählte Rolle ist ungültig.', 'createUser' );
+
       return;
     }
 
@@ -347,10 +350,13 @@ class User extends BaseObject {
 
     if( ! isset( $strId ) || ! BaseObject::existsObject( 'User', $strId ) ) {
       $objController->addError( 'Der User existiert nicht.', 'changeUserPassword' );
+
       return;
     }
+
     if( $strId !== $objController->user()->id() ) {
       $objController->addError( 'Es kann nur das eigene Passwort geändert werden.', 'changeUserPassword' );
+
       return;
     }
 
@@ -380,11 +386,13 @@ class User extends BaseObject {
 
     if( ! isset( $strId ) || ! BaseObject::existsObject( 'User', $strId ) ) {
       $objController->addError( 'Der zu löschende User existiert nicht.', 'deleteUser' );
+
       return;
     }
 
     if( $strId === $objController->user()->id() ) {
       $objController->addError( 'Der eigene Account kann nicht gelöscht werden.', 'deleteUser' );
+
       return;
     }
 

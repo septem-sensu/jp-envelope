@@ -96,6 +96,7 @@ class Presentation extends BaseObject {
 
     foreach( $this->templateVars as $strProperty => $mixValue ) {
       if( gettype( $mixValue ) == 'object' || gettype( $mixValue ) == 'array' ) $mixValue = json_encode( $mixValue );
+
       $strContent = str_replace( '{{' . $strProperty . '}}', strval( $mixValue ), $strContent );
     }
 
@@ -265,7 +266,7 @@ class Presentation extends BaseObject {
       $arrHeader[] = 'Content-type: text/html; charset=utf-8';
     }
 
-    if( isset( $objEmail->cc ) ) $arrHeader[] = 'Cc: ' . $objEmail->cc;
+    if( isset( $objEmail->cc ) ) $arrHeader[]  = 'Cc: ' . $objEmail->cc;
     if( isset( $objEmail->bcc ) ) $arrHeader[] = 'Bcc: ' . $objEmail->bcc;
 
     preg_match( '/[\w\.-]+@[\w\.-]+\.\w+/', $objEmail->mailAddress, $arrMatches );
@@ -354,6 +355,7 @@ class Presentation extends BaseObject {
     if( php_sapi_name() === 'cli' ) return;
 
     header( 'Content-type: application/json' );
+
     return;
   }
 
@@ -367,6 +369,7 @@ class Presentation extends BaseObject {
    */
   public function getJavaScriptHeader() : void {
     header( 'Content-type: text/javascript' );
+
     return;
   }
 

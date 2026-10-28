@@ -186,18 +186,15 @@ class View extends BaseObject {
       if( $boolTriggered ) $boolMatched = true;
 
       if( ! in_array( $strMethod, $arrPermissions ) ) {
-        if( $boolTriggered )
-          $objController->addError( 'Keine Berechtigung für diese Aktion.', $objAction->trigger );
+        if( $boolTriggered ) $objController->addError( 'Keine Berechtigung für diese Aktion.', $objAction->trigger );
 
         continue;
       }
 
-      if( $boolAlways || $boolTriggered )
-        $strMethod( $objController );
+      if( $boolAlways || $boolTriggered ) $strMethod( $objController );
     }
 
-    if( isset( $strActionTrigger ) && ! $boolMatched )
-      $objController->addError( 'Unbekannte Aktion.', $strActionTrigger );
+    if( isset( $strActionTrigger ) && ! $boolMatched ) $objController->addError( 'Unbekannte Aktion.', $strActionTrigger );
 
     return;
   }
@@ -223,32 +220,20 @@ class View extends BaseObject {
     $strPrefix = 'Die View ' . $this->id() . ' konfiguriert ';
 
     foreach( $arrActions as $objAction ) {
-
-      if( ! is_object( $objAction ) )
-        throw new RuntimeException( $strPrefix . 'einen ungültigen Action-Eintrag (Objekt erwartet): ' . gettype( $objAction ) );
-
-      if( ! isset( $objAction->method ) || ! is_string( $objAction->method ) )
-        throw new RuntimeException( $strPrefix . 'einen Action-Eintrag ohne gültige Methode.' );
+      if( ! is_object( $objAction ) ) throw new RuntimeException( $strPrefix . 'einen ungültigen Action-Eintrag (Objekt erwartet): ' . gettype( $objAction ) );
+      if( ! isset( $objAction->method ) || ! is_string( $objAction->method ) ) throw new RuntimeException( $strPrefix . 'einen Action-Eintrag ohne gültige Methode.' );
 
       $arrMethodParts = explode( '::', $objAction->method );
 
-      if( count( $arrMethodParts ) !== 2 || ! class_exists( $arrMethodParts[ 0 ] ) || ! method_exists( $arrMethodParts[ 0 ], $arrMethodParts[ 1 ] ) )
-        throw new RuntimeException( $strPrefix . 'eine unbekannte Action: ' . $objAction->method );
+      if( count( $arrMethodParts ) !== 2 || ! class_exists( $arrMethodParts[ 0 ] ) || ! method_exists( $arrMethodParts[ 0 ], $arrMethodParts[ 1 ] ) ) throw new RuntimeException( $strPrefix . 'eine unbekannte Action: ' . $objAction->method );
 
       $boolHasTrigger = isset( $objAction->trigger );
       $boolHasAlways  = isset( $objAction->always );
 
-      if( $boolHasTrigger && $boolHasAlways )
-        throw new RuntimeException( $strPrefix . 'eine Action mit trigger und gleichzeitig always: ' . $objAction->method );
-
-      if( ! $boolHasTrigger && ! $boolHasAlways )
-        throw new RuntimeException( $strPrefix . 'eine Action ohne trigger und ohne always: ' . $objAction->method );
-
-      if( $boolHasTrigger && ! is_string( $objAction->trigger ) )
-        throw new RuntimeException( $strPrefix . 'eine Action mit ungültigem trigger (String erwartet): ' . $objAction->method );
-
-      if( $boolHasAlways && $objAction->always !== true )
-        throw new RuntimeException( $strPrefix . 'eine Action mit ungültigem always (true erwartet): ' . $objAction->method );
+      if( $boolHasTrigger && $boolHasAlways ) throw new RuntimeException( $strPrefix . 'eine Action mit trigger und gleichzeitig always: ' . $objAction->method );
+      if( ! $boolHasTrigger && ! $boolHasAlways ) throw new RuntimeException( $strPrefix . 'eine Action ohne trigger und ohne always: ' . $objAction->method );
+      if( $boolHasTrigger && ! is_string( $objAction->trigger ) ) throw new RuntimeException( $strPrefix . 'eine Action mit ungültigem trigger (String erwartet): ' . $objAction->method );
+      if( $boolHasAlways && $objAction->always !== true ) throw new RuntimeException( $strPrefix . 'eine Action mit ungültigem always (true erwartet): ' . $objAction->method );
     }
 
     return;
@@ -273,8 +258,9 @@ class View extends BaseObject {
     foreach( $arrPermissions as $strPermission ) {
       $arrPermissionParts = explode( '::', $strPermission );
 
-      if( count( $arrPermissionParts ) !== 2 || ! class_exists( $arrPermissionParts[ 0 ] ) || ! method_exists( $arrPermissionParts[ 0 ], $arrPermissionParts[ 1 ] ) )
+      if( count( $arrPermissionParts ) !== 2 || ! class_exists( $arrPermissionParts[ 0 ] ) || ! method_exists( $arrPermissionParts[ 0 ], $arrPermissionParts[ 1 ] ) ) {
         throw new RuntimeException( 'Die Rolle konfiguriert eine Permission ohne existierende Methode: ' . $strPermission );
+      }
     }
 
     return;

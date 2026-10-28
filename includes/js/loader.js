@@ -218,8 +218,8 @@ class Loader extends EventTarget {
     this.promises[ scriptName ] = new Promise( ( resolve, reject ) => {
       const script = document.createElement('script');
 
-      script.type = 'text/javascript';
-      script.src  = window[ appAlias ].config.jsPath + scriptName + '?v=' + window[ appAlias ].config.version;
+      script.type  = 'text/javascript';
+      script.src   = window[ appAlias ].config.jsPath + scriptName + '?v=' + window[ appAlias ].config.version;
 
       script.setAttribute( 'data-script', scriptName );
 

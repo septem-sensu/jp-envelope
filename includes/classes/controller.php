@@ -162,17 +162,16 @@ class Controller extends BaseObject {
     $this->user         = new User();
     $this->presentation = new Presentation();
     $this->role         = $this->user->role();
-
-    $strView          = Request::param( 'view' );
-    $this->viewObject = isset( $strView ) && $this::existsObject( 'View', $strView ) ? new View( $strView ) : new View( $this->role->defaultViewId() );
-    $this->viewObject = in_array( $this->role->id, $this->viewObject->roleIds() ) ? $this->viewObject : new View( $this->role->defaultViewId() );
+    $strView            = Request::param( 'view' );
+    $this->viewObject   = isset( $strView ) && $this::existsObject( 'View', $strView ) ? new View( $strView ) : new View( $this->role->defaultViewId() );
+    $this->viewObject   = in_array( $this->role->id, $this->viewObject->roleIds() ) ? $this->viewObject : new View( $this->role->defaultViewId() );
 
     Request::setScope( $this->viewObject->id() );
 
-    $strId    = Request::param( 'id' );
-    $strClass = Request::param( 'class' );
+    $strId              = Request::param( 'id' );
+    $strClass           = Request::param( 'class' );
 
-    if( isset( $strId ) ) $this->objectId    = $strId;
+    if( isset( $strId ) ) $this->objectId       = $strId;
     if( isset( $strClass ) ) $this->objectClass = $strClass;
 
     return;
@@ -208,7 +207,9 @@ class Controller extends BaseObject {
       $this->addErrorFromThrowable( $objException, 'executeActions' );
     }
 
-    foreach( $this->arrErrors as $objError ) $this->addRawObject( $objError );
+    foreach( $this->arrErrors as $objError ) {
+      $this->addRawObject( $objError );
+    }
 
     $this->addRawObject( $this->user() );
 
@@ -252,6 +253,7 @@ class Controller extends BaseObject {
       $this->arrRawObjects[ $this->arrRawObjectKeys[ $strObjectKey ] ] = $objRawObject;
     } else {
       $this->arrRawObjectKeys[ $strObjectKey ] = count( $this->arrRawObjects );
+
       array_push( $this->arrRawObjects, $objRawObject );
     }
 

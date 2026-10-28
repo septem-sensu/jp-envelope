@@ -60,7 +60,7 @@ class App extends BaseObject {
    *
    */
   public function __construct( Controller $objController ) {
-    $objConfig = BaseObject::config();
+    $objConfig               = BaseObject::config();
 
     $this->currentUserId     = $objController->user()->id();
     $this->currentUserRoleId = $objController->user()->roleId();

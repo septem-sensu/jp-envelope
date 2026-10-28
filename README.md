@@ -214,7 +214,7 @@ Das Framework unterscheidet zwischen **weichen Fehlern** (Validierungsfehler, ab
 │   ├── classes/              # Core PHP-Klassen (BaseObject, Controller, Request, etc.)
 │   ├── css/                  # Stylesheets (core.css, classes.css, style.css, etc.)
 │   ├── docs/                 # Dokumentation und API Dokumentation (PHP & JS)
-│   ├── images/               # Immages, Icons, Brands
+│   ├── images/               # Images, Icons, Brands, Assets
 │   ├── js/                   # Vanilla JS App-Infrastruktur (loader.js, registry.js, etc.)
 │   ├── json/
 │   │   ├── data/             # Systemkonfigurationen (configs.json, views.json, params.json, roles.json)

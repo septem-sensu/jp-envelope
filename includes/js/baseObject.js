@@ -207,7 +207,6 @@ class BaseObject extends EventTarget {
       this.activateInstallAppButton( event );
 
       return;
-
     } );
 
     if( document.readyState === 'loading' ) {
@@ -299,7 +298,7 @@ class BaseObject extends EventTarget {
         installEvent.prompt();
 
         return;
-     } );
+      } );
     }
 
     return;
@@ -323,7 +322,7 @@ class BaseObject extends EventTarget {
  * @example   instance.appendTemplate( 'user-form-template', 'user-cards', true );
  *
  */
-  appendTemplate( roleId, templateId, targetId, setId = true ) {
+  appendTemplate( templateId, targetId, setId = true ) {
     const targetContainer = document.querySelector( '#' + targetId );
     const template        = document.querySelector( '#' + templateId );
 
@@ -332,6 +331,9 @@ class BaseObject extends EventTarget {
     const templateClone   = template.content.cloneNode( true );
     const idTags          = templateClone.querySelectorAll( '[id]' );
     const forTags         = templateClone.querySelectorAll( '[for]' );
+    const registry        = window[ appAlias ].registry;
+    const app             = registry.get( 'app' );
+    const currentRoleId   = app.currentUserRoleId;
 
     if( setId ) {
       for( let i = 0; i < idTags.length; i++ ) {
@@ -345,7 +347,7 @@ class BaseObject extends EventTarget {
 
     for( let field in this.fields ) {
       if( typeof this.fields[ field ].roleIds !== 'object' || this.fields[ field ].roleIds === null ) continue;
-      if( this.fields[ field ].roleIds.includes( roleId ) ) continue;
+      if( this.fields[ field ].roleIds.includes( currentRoleId ) ) continue;
 
       const fields = templateClone.querySelectorAll( '[name="' + field + '"]' );
 
