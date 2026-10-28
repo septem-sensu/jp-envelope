@@ -1,8 +1,12 @@
 # JPEnvelope
 
+<img src="includes/images/brands/jp-envelope.png" align="left" width="150" alt="JPEnvelope" title="JPEnvelope" />
+
 JPEnvelope ist ein datengetriebenes, leichtgewichtiges Full-Stack-Framework für die nahtlose und asynchrone Zusammenarbeit zwischen PHP im Backend und modernem Vanilla JavaScript im Frontend.
 
 Das Kernkonzept basiert auf dem Prinzip der namensgebenden Envelopes (Datenumschläge): Anstatt schwerfällige Frameworks oder relationale SQL-Datenbanken zu bemühen, verpackt JPEnvelope Geschäftslogik, Zustände und Validierungen in standardisierte JSON-Strukturen. Diese dienen als Single Source of Truth für Client und Server gleichermaßen.
+
+<br clear="left">
 
 <p float="left">
   <img src="includes/images/assets/php.png" alt="PHP" title="PHP" height="46" />
@@ -15,11 +19,6 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden Envelopes (Datenumsch
   <img src="includes/images/assets/claude.png" alt="Claude Code" title="Claude Code" height="46" />
   <img src="includes/images/assets/obsidian.png" alt="Obdisian" title="Obdisian" height="46" />
   <img src="includes/images/assets/photoshop.png" alt="Adobe Photoshop" title="Adobe Photoshop" height="46" />
-</p>
-
-<p float="left">
-  <img src="includes/images/brands/jp-envelope-black.png" width="200" alt="JPEnvelope black" title="JPEnvelope black" />
-  <img src="includes/images/brands/jp-envelope-white.png" width="200" alt="JPEnvelope white" title="JPEnvelope white" />
 </p>
 
 ---

@@ -3,7 +3,7 @@
     "version": "0.2.15",
     "appName": "JPEnvelope",
     "appAlias": "JPEnvelope",
-    "appBrandImagePath": "includes/images/brands/jp-envelope-lettering-white.png",
+    "appBrandImagePath": "includes/images/brands/jp-envelope-lettering.png",
     "cookieName": "JPEnvelope",
     "defaultRoleId": "guest",
     "defaultUserId": "guest",
