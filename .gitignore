@@ -7,6 +7,7 @@ notes.txt
 notes.md
 .cryptKeys.php
 users.json
+CLAUDE.md
 
 includes/data/csv/*.csv
 includes/data/json/*.json

@@ -1,3 +1,5 @@
+this.debug = false;
+
 self.addEventListener( 'install', function( event ) {
   if( this.debug ) console.log( 'Service Worker Install' );
 });

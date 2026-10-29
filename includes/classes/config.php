@@ -95,6 +95,14 @@ class Config extends BaseObject {
    */
   protected string $appBrandImagePath;
 
+    /**
+   * The state of the debug mode (true: debug mode on, false: debug mode off).
+   *
+   * @var       bool
+   *
+   */
+  protected bool $debug;
+
   /**
    * The password rules for the frontend FieldValidator and the
    * server-side password checks.
@@ -210,6 +218,18 @@ class Config extends BaseObject {
    */
   public function appBrandImagePath() : string {
     return $this->appBrandImagePath;
+  }
+
+  /**
+   * This method returns the state of the debug mode (true: debug mode on, false: debug mode off).
+   *
+   * @return    bool   The state of the debug mode (true: debug mode on, false: debug mode off)
+   *
+   * @example   $boolDebug = $objConfig->debug();
+   *
+   */
+  public function debug() : bool {
+    return $this->debug;
   }
 
   /**

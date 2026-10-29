@@ -67,12 +67,18 @@ class Presentation extends BaseObject {
   public function assignTemplateVar( string $strClass, string $strProperty, mixed $mixValue = null ) : void {
     if( $strProperty == 'Translate' ) {
       foreach( $mixValue as $strKey => $strValue ) {
+        if( gettype( $strValue ) === 'boolean' ) $strValue = $strValue ? 'true' : 'false';
+        if( gettype( $strValue ) === 'object' || gettype( $strValue ) === 'array' ) $strValue = json_encode( $strValue );
+
         $strTemplateVarName                       = $strClass . '::' . $strProperty . '::' . $strKey;
         $this->templateVars->$strTemplateVarName  = $strValue;
       }
     } else {
+      if( gettype( $mixValue ) === 'boolean' ) $mixValue = $mixValue ? 'true' : 'false';
+      if( gettype( $mixValue ) === 'object' || gettype( $mixValue ) === 'array' ) $mixValue = json_encode( $mixValue );
+
+      $mixValue                                = strval( $mixValue );
       $strTemplateVarName                      = $strClass . '::' . $strProperty;
-      $mixValue                                =  gettype( $mixValue ) == 'object' || gettype( $mixValue ) == 'array' ? json_encode( $mixValue ) : strval( $mixValue );
       $this->templateVars->$strTemplateVarName = $mixValue;
     }
 
@@ -94,13 +100,31 @@ class Presentation extends BaseObject {
   public function processTemplate( string $strTemplateName ) : string {
     $strContent = file_get_contents( Presentation::FILEPATHTEMPLATES . $strTemplateName );
 
-    foreach( $this->templateVars as $strProperty => $mixValue ) {
-      if( gettype( $mixValue ) == 'object' || gettype( $mixValue ) == 'array' ) $mixValue = json_encode( $mixValue );
-
-      $strContent = str_replace( '{{' . $strProperty . '}}', strval( $mixValue ), $strContent );
+    foreach( $this->templateVars as $strProperty => $strValue ) {
+      $strContent = str_replace( '{{' . $strProperty . '}}', strval( $strValue ), $strContent );
     }
 
     return preg_replace( '/\{\{.*?\}\}/s', '', $strContent );
+  }
+
+  /**
+   * This method processes all templates in the order in which they are processed
+   * and returns the finished content.
+   *
+   * @param     View      $objView   The current view to be rendered
+   * @return    string    The processed and rendered view
+   *
+   * @example   $strContent = $objPresentation->renderView(  $objController->viewObject() );
+   *
+   */
+  public function renderView( View $objView ) : string {
+    $strContent = '';
+
+    foreach( $objView->templateNames() as $strTemplateName ) {
+      $strContent .= $this->processTemplate( $strTemplateName );
+    }
+
+    return $strContent;
   }
 
   /**

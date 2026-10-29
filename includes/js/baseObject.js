@@ -39,7 +39,7 @@ class BaseObject extends EventTarget {
     this.loader                   = window[ appAlias ].loader;
     this.config                   = window[ appAlias ].config;
     this.appAlias                 = window.appAlias;
-    this.debug                    = window[ appAlias ].debug ? true : false;
+    this.debug                    = this.config.debug ? true : false;
     this.registeredEventHandler   = {};
 
     this.registerEventHandler();

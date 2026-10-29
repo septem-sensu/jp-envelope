@@ -31,7 +31,7 @@ class FieldValidator {
     this.form          = null;
     this.fieldTypes    = [ 'input', 'select', 'textarea' ];
     this.passwordRules = window[ appAlias ].config.passwordRules;
-    this.debug         = window[ appAlias ].debug ? true : false;
+    this.debug         = window[ appAlias ].config.debug ? true : false;
 
     return;
   }

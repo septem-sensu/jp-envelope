@@ -19,13 +19,12 @@
   <script type="text/javascript" src="includes/js/baseObject.js?v={{config::Translate::version}}"></script>
 
   <script type="text/javascript">
-    var appAlias                  = '{{config::Translate::appAlias}}';
+    const appAlias                = '{{config::Translate::appAlias}}';
     window[ appAlias ]            = window[ appAlias ] || {};
     window[ appAlias ].rawObjects = {{default::rawObjects}};
     window[ appAlias ].config     = {{default::config}};
     window[ appAlias ].registry   = new Registry();
     window[ appAlias ].loader     = new Loader();
-    window[ appAlias ].debug      = false;
 
     window[ appAlias ].loader.registerObjects();
   </script>

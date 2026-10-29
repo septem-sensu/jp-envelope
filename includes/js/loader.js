@@ -78,7 +78,7 @@ class Loader extends EventTarget {
           window[ appAlias ].registry.register( rawObjects[ i ].class, rawObjects[ i ].id, instances[ i ] );
         }
 
-        if( ! window[ appAlias ].debug ) delete window[ appAlias ].rawObjects;
+        if( ! window[ appAlias ].config.debug ) delete window[ appAlias ].rawObjects;
 
         window[ appAlias ].registry.setAppReady();
 

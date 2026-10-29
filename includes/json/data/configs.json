@@ -9,6 +9,7 @@
     "defaultUserId": "guest",
     "jsPath": "includes/js/",
     "cssPath": "includes/css/",
+    "debug": false,
     "passwordRules": {
       "passwordMinLength": 8,
       "passwordHasNumbers": true,

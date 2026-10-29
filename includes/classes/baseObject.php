@@ -311,16 +311,10 @@ class BaseObject {
    *
    */
   public function view( Controller $objController ) : string {
-    $strContent = '';
-
     $objController->presentation()->assignTemplateVar( 'default', 'config', $this->config()->serializeObject() );
     $objController->presentation()->assignTemplateVar( 'config', 'Translate', $this->config()->serializeObject() );
 
-    foreach( $objController->viewObject()->templateNames() as $strTemplateName ) {
-      $strContent .= $objController->presentation()->processTemplate( $strTemplateName );
-    }
-
-    return $strContent;
+    return $objController->presentation()->renderView( $objController->viewObject() );
   }
 
   /**
