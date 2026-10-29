@@ -447,6 +447,11 @@ textarea, select, input[ type="text" ], input[ type="email" ], input[ type="numb
   border-color: var( --borderColor1 );
 }
 
+.user-login-container input,
+.user-login-container-brand-image {
+  width: 100%;
+}
+
 .user-smal-container input.input-new-user-id {
   margin-bottom: 0px;
 }

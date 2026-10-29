@@ -101,6 +101,7 @@ class User extends BaseObject {
 
       appBrandImage.src   = appBrandImagePath;
       appBrandImage.alt   = this.config.appName;
+      appBrandImage.title = this.config.appName;
 
       appBrandImage.classList.add( 'navbar-top-brand-image' )
 

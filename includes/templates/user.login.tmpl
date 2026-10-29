@@ -2,7 +2,8 @@
   <form id="login-form">
     <input type="hidden" name="resetForm" value="1" />
     <div class="user-login-container w-350 mh-auto align-left pl-50 pr-50">
-      <h2 class="align-center">{{config::Translate::appName}} Login</h2>
+      <div id="name-or-brand" class="mb-10"></div>
+      <h2 class="align-center">Login</h2>
       <label class="display-block mt-15 mb-5 align-left" for="name">E-Mail Adresse</label>
       <input type="email" name="id" autocomplete="email" id="id" class="w-240 mb-10 align-left" placeholder="Eingabe E-Mail Adresse" />
       <label class="m-auto display-block mb-5 align-left" for="password">Password</label>
@@ -17,7 +18,10 @@
   window[ appAlias ].registry.onAppReady( ( app ) => {
     const userInstance = app.registry.get( 'User' );
 
-    if( typeof userInstance === 'object' && userInstance != null ) userInstance.validateForm( 'login-form', false );
+    if( typeof userInstance === 'object' && userInstance != null ) {
+      userInstance.validateForm( 'login-form', false );
+      userInstance.addBrandOrName( 'name-or-brand', 'user-login-container-brand-image' );
+    }
 
     return;
   } );

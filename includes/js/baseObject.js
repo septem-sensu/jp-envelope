@@ -627,4 +627,45 @@ class BaseObject extends EventTarget {
     return;
   }
 
+/**
+ * This method adds the brand logo image to an html tag if configured
+ * otherwise the app name is added. The first parameter is not passed
+ * the method tries to find an html tag with the id: name-or-brand.
+ * If a css class is specified as the second parameter, the brand logo image is sent
+ * this css class attached.
+ *
+ * @public
+ *
+ * @param     {string|null}   tagId      Html tag id should be added in the place of the app name or the brand logo image
+ * @param     {string|null}   cssClass   Css class which should be attached to the brand logo image
+ * @return    {void}
+ *
+ * @example   instance.addBrandOrName( 'name-or-brand', 'user-login-container-brand-image' );
+ *
+ */
+  addBrandOrName( tagId = null, cssClass = null ) {
+    tagId = tagId && document.querySelector( '#' + tagId ) ? tagId : 'name-or-brand';
+
+    if( document.querySelector( '#' + tagId ) === null ) return;
+
+    const tag               = document.querySelector( '#' + tagId );
+    const appBrandImagePath = this.config.appBrandImagePath;
+
+    if( typeof appBrandImagePath === 'string' && appBrandImagePath != '' ) {
+      const appBrandImage = document.createElement( 'img' );
+
+      appBrandImage.src   = appBrandImagePath;
+      appBrandImage.alt   = this.config.appName;
+      appBrandImage.title = this.config.appName;
+
+      if( cssClass ) appBrandImage.classList.add( cssClass )
+
+      tag.append( appBrandImage );
+    } else {
+      tag.innerHTML  = this.config.appName;
+    }
+
+    return;
+  }
+
 }
