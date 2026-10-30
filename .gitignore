@@ -1,14 +1,16 @@
 *.json.json
+*.log
+.cryptKeys.php
+.fiveserverrc
+.htaccess
+.htpasswd
+CLAUDE.md
+notes.md
 test.html
 test.php
-*.log
-.fiveserverrc
-notes.txt
-notes.md
-.cryptKeys.php
 users.json
-CLAUDE.md
 
-includes/data/csv/*.csv
-includes/data/json/*.json
 .claude/*
+.vscode/*
+./.logs-virtuell/*
+includes/data/*
