@@ -78,6 +78,10 @@ class Loader extends EventTarget {
           window[ appAlias ].registry.register( rawObjects[ i ].class, rawObjects[ i ].id, instances[ i ] );
         }
 
+        for( let i = 0; i < instances.length; i++ ) {
+          instances[ i ].fillObjects();
+        }
+
         if( ! window[ appAlias ].config.debug ) delete window[ appAlias ].rawObjects;
 
         window[ appAlias ].registry.setAppReady();
@@ -148,6 +152,42 @@ class Loader extends EventTarget {
   }
 
 /**
+ * This method runs the complete envelope pipeline for a whole envelope
+ * array in collector order: every envelope is instantiated and registered
+ * via instantiateRawObject, then the sub object references of all
+ * instances are resolved via fillObjects(). Use this variant for the json
+ * views that deliver an array of envelopes (blueprint, viewLoadObject).
+ *
+ * @public
+ *
+ * @param     {object}     rawObjects   The envelope array (class, id, data) from the collector
+ * @return    {Promise}    instances    The registered instances in collector order
+ *
+ * @example   const instances = await loader.instantiateRawObjects( rawObjects );
+ *
+ * @see Loader#instantiateRawObject
+ *
+ */
+  async instantiateRawObjects( rawObjects ) {
+    const instances = [];
+
+    for( let i = 0; i < rawObjects.length; i++ ) {
+      if( ! rawObjects[ i ].class || ! rawObjects[ i ].id ) throw new Error( 'Envelope ohne Instanz-Daten: ' + JSON.stringify( rawObjects[ i ] ) );
+
+      const instance = await this.instantiateRawObject( rawObjects[ i ] );
+
+      instances.push( instance );
+    }
+
+    for( let i = 0; i < instances.length; i++ ) {
+      instances[ i ].fillObjects();
+    }
+
+    return instances;
+
+  }
+
+/**
  * This method loads a blueprint on demand (called by app.newObject):
  * fetch on the JSON view viewNewObject, the envelope runs through the
  * standard pipeline — the class file can load for the first time on
@@ -168,7 +208,7 @@ class Loader extends EventTarget {
     const url      = document.location.pathname + '?view=viewNewObject&newClass=' + encodeURIComponent( newClass );
     const response = await fetch( url );
 
-    return await this.instantiateRawObject( await response.json() );
+    return await this.instantiateRawObjects( await response.json() );
   }
 
 /**
@@ -192,7 +232,7 @@ class Loader extends EventTarget {
     const url      = document.location.pathname + '?view=viewLoadObject&class=' + encodeURIComponent( className ) + '&id=' + encodeURIComponent( id );
     const response = await fetch( url );
 
-    return await this.instantiateRawObject( await response.json() );
+    return await this.instantiateRawObjects( await response.json() );
   }
 
 /**

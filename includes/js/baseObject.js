@@ -38,7 +38,7 @@ class BaseObject extends EventTarget {
     this.fieldValidator           = new FieldValidator();
     this.loader                   = window[ appAlias ].loader;
     this.config                   = window[ appAlias ].config;
-    this.appAlias                 = window.appAlias;
+    this.appAlias                 = appAlias;
     this.debug                    = this.config.debug ? true : false;
     this.registeredEventHandler   = {};
 
@@ -107,6 +107,39 @@ class BaseObject extends EventTarget {
     }
 
     delete this.data;
+
+    return;
+  }
+
+/**
+ * This method resolves the loose sub object references of the instance:
+ * every property marked with propertyType 'object' is replaced by the
+ * matching instance from the registry. It runs after the registry
+ * registration, so referenced objects of the same envelope batch are
+ * already resolvable.
+ *
+ * @public
+ *
+ * @return    {void}
+ *
+ * @example   instance.fillObjects();
+ *
+ * @see BaseObject#fillObject
+ *
+ */
+  fillObjects() {
+    for( const property in this ) {
+      if( typeof this[ property ] !== 'object' || this[ property ] === null ) continue;
+      if( typeof this[ property ].propertyType !== 'string' || this[ property ].propertyType === '' ) continue;
+
+      if( this[ property ].propertyType === 'object' ) {
+        this[ property ] = window[ appAlias ].registry.get( this[ property ].class, this[ property ].value );
+      }
+
+      if( this[ property ].propertyType === 'collection' ) {
+
+      }
+    }
 
     return;
   }

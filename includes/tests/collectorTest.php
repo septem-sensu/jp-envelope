@@ -53,7 +53,7 @@ $objController = mockController();
 $objTestA = new TestObject();
 $objTestB = new TestObject();
 
-$objRawObject = $objTestA->rawObject();
+$objRawObject = $objTestA->rawObject()[ 0 ];
 check( $objRawObject->class === 'TestObject', 'rawObject: Klassenname im Envelope' );
 check( $objRawObject->id === $objTestA->id(), 'rawObject: Id im Envelope' );
 check( $objRawObject->data->class === 'TestObject', 'rawObject: Property class serialisiert' );
@@ -76,15 +76,6 @@ check( count( $arrRawObjects ) === 2, 'Dedupe: doppeltes Objekt erzeugt keinen n
 check( $arrRawObjects[ 0 ]->data->mixTest === 'zweite Version', 'Dedupe: letzter Eintrag gewinnt' );
 check( $arrRawObjects[ 1 ]->id === $objTestB->id(), 'Dedupe: Position von Objekt B unverändert' );
 
-$objController->addRawObject( $objTestB, 'User' );
-
-$arrRawObjects = json_decode( getTemplateVar( $objController->presentation(), 'default::rawObjects' ) );
-check( count( $arrRawObjects ) === 3, 'Override: alternativer JS-Klassenname erzeugt separaten Eintrag' );
-check( $arrRawObjects[ 2 ]->class === 'User', 'Override: JS-Klassenname im Envelope' );
-check( $arrRawObjects[ 2 ]->data->id === $objTestB->id(), 'Override: Objekt-Id in data bleibt erhalten' );
-
-check( count( $objController->rawObjects() ) === 3, 'Getter rawObjects: Kollektor lesbar' );
-
 // --- App envelope: the JS context access comes from PHP instead of the loader unshift ---
 
 $objConfig        = BaseObject::config();
@@ -93,7 +84,7 @@ $objApp           = new App( $objAppController );
 
 check( $objApp->id() === $objConfig->appAlias() . '_' . $objConfig->version(), 'App: Id ist appAlias_version aus der configs.json' );
 
-$objRawObject = $objApp->rawObject();
+$objRawObject = $objApp->rawObject()[ 0 ];
 
 check( $objRawObject->class === 'App', 'App: Klassenname im Envelope' );
 check( $objRawObject->id === $objApp->id(), 'App: Id im Envelope' );

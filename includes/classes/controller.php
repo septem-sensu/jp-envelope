@@ -232,29 +232,31 @@ class Controller extends BaseObject {
   }
 
   /**
-   * This method adds a business object to the frontend collector as a
-   * raw object envelope ({ class, id, data }). The collector dedupes over
+   * This method adds a business object and its sub objects to the frontend collector
+   * as a raw object envelope ({ class, id, data }). The collector dedupes over
    * "class::id": a repeated key overwrites the old envelope in place —
    * the last one wins, the position stays. The collector is injected
    * into the header template as window[appAlias].rawObjects.
    *
    * @param     BaseObject      $objObject         The business object to collect
-   * @param     string|null     $strJsClassName    The frontend class name override or null
    * @return    void
    *
    * @example   $objController->addRawObject( $objUser );
    *
    */
-  public function addRawObject( BaseObject $objObject, string | null $strJsClassName = null ) : void {
-    $objRawObject = $objObject->rawObject( $strJsClassName );
-    $strObjectKey = $objRawObject->class . '::' . $objRawObject->id;
+  public function addRawObject( BaseObject $objObject ) : void {
+    $arrRawObjects = $objObject->rawObject( $this );
 
-    if( isset( $this->arrRawObjectKeys[ $strObjectKey ] ) ) {
-      $this->arrRawObjects[ $this->arrRawObjectKeys[ $strObjectKey ] ] = $objRawObject;
-    } else {
-      $this->arrRawObjectKeys[ $strObjectKey ] = count( $this->arrRawObjects );
+    foreach( $arrRawObjects as $objRawObject ) {
+      $strObjectKey = $objRawObject->class . '::' . $objRawObject->id;
 
-      array_push( $this->arrRawObjects, $objRawObject );
+      if( isset( $this->arrRawObjectKeys[ $strObjectKey ] ) ) {
+        $this->arrRawObjects[ $this->arrRawObjectKeys[ $strObjectKey ] ] = $objRawObject;
+      } else {
+        $this->arrRawObjectKeys[ $strObjectKey ] = count( $this->arrRawObjects );
+
+        array_push( $this->arrRawObjects, $objRawObject );
+      }
     }
 
     $this->presentation()->assignTemplateVar( 'default', 'rawObjects', $this->arrRawObjects );

@@ -34,7 +34,8 @@ check( count( ( array ) $objBlueprint->fields() ) > 0, 'createBlueprint: Fields 
 
 // --- Blueprint envelope: shape identical to the bootstrap collector entry ---
 
-$objRawObject = $objBlueprint->rawObject();
+$arrRawObject = $objBlueprint->rawObject();
+$objRawObject = $arrRawObject[ 0 ];
 
 check( $objRawObject->class === 'User', 'Blaupausen-Envelope: class ist der PHP-Klassenname' );
 check( $objRawObject->id === 'new', 'Blaupausen-Envelope: id ist new' );
@@ -53,7 +54,7 @@ Request::reset();
 $objController = mockController( 'viewNewObject' );
 $objCarrier    = new BaseObject();
 
-$objViewResult = $objCarrier->viewNewObject( $objController );
+$objViewResult = $objCarrier->viewNewObject( $objController )[ 0 ];
 
 check( $objViewResult->class === 'User', 'viewNewObject: gültige newClass liefert das Klassen-Envelope' );
 check( $objViewResult->id === 'new', 'viewNewObject: Envelope-Id ist new' );
@@ -68,7 +69,7 @@ Request::reset();
 $objController = mockController( 'viewNewObject' );
 $objCarrier    = new BaseObject();
 
-$objViewResult = $objCarrier->viewNewObject( $objController );
+$objViewResult = $objCarrier->viewNewObject( $objController )[ 0 ];
 
 check( $objViewResult instanceof stdClass, 'viewNewObject: gefilterte Klasse antwortet mit stdClass' );
 check( get_object_vars( $objViewResult ) === [], 'viewNewObject: Klasse außerhalb der Whitelist liefert eine leere Antwort' );
@@ -82,7 +83,7 @@ Request::reset();
 $objController = mockController( 'viewNewObject' );
 $objCarrier    = new BaseObject();
 
-$objViewResult = $objCarrier->viewNewObject( $objController );
+$objViewResult = $objCarrier->viewNewObject( $objController )[ 0 ];
 
 check( get_object_vars( $objViewResult ) === [], 'viewNewObject: ohne newClass leere Antwort' );
 

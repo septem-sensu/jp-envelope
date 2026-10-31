@@ -273,13 +273,13 @@ class View extends BaseObject {
    * the controller as parameter. The return value is the rendered
    * HTML (string) or the json payload (object).
    *
-   * @param     Controller          $objController   The controller instance of the request
-   * @return    string|object       The view output (HTML) or the json payload
+   * @param     Controller           $objController   The controller instance of the request
+   * @return    string|object|array  The view output (HTML) or the json payload
    *
    * @example   $mixContent = $objView->executeView( $objController );
    *
    */
-  public function executeView( Controller $objController ) : string | object {
+  public function executeView( Controller $objController ) : string | object | array {
     $strObjectId = $objController->objectId();
     $objObject   = isset( $strObjectId ) ? new $this->className( $strObjectId ) : new $this->className();
 

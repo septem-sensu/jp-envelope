@@ -75,7 +75,7 @@ check( count( $objController->errors() ) === 2, 'addError: der Exception-Wurf sa
 $objError = new AppError( 'errorEnvelopeTest' );
 $objError->setMessage( 'Envelope-Testmeldung', 'deleteUser', 'warning' );
 
-$objRawObject = $objError->rawObject();
+$objRawObject = $objError->rawObject()[ 0 ];
 
 check( $objRawObject->class === 'AppError', 'AppError-Envelope: class ist der PHP-Klassenname' );
 check( $objRawObject->id === 'errorEnvelopeTest', 'AppError-Envelope: id ist die Registry-Id' );

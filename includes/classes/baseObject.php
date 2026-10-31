@@ -289,26 +289,75 @@ class BaseObject {
     if( ! isset( $objRawObject ) ) return;
 
     foreach( $objRawObject as $strProperty => $mixValue ) {
-      $objField = isset( $this->fields->$strProperty ) && gettype( $this->fields->$strProperty ) === 'object' ? $this->fields->$strProperty : null;
-
       if( ! property_exists( $this->class, $strProperty ) ) continue;
-      if( ! isset( $objField ) || ! isset( $objField->class ) || $objField->class === '' ) {
+
+      $strPropertyType = $this->getPropertyType( $strProperty );
+
+      if( $strPropertyType === 'builtin' ) {
         $this->$strProperty = $mixValue;
 
         continue;
       }
 
-      if( ! isset( $objField->isArray ) || ! $objField->isArray ) {
+      if( ! isset( $mixValue ) || $mixValue === '' ) continue;
 
+      if( $strPropertyType === 'class' ) {
+        $strClassName       = $this->getPropertyClass( $strProperty );
+        $this->$strProperty = new $strClassName( $mixValue );
 
         continue;
       }
+
 
 
 
     }
 
     return;
+  }
+
+  /**
+   * This method resolves the declared type category of a property by
+   * reflection: 'builtin' for scalar and array types, 'collection' for
+   * BaseCollection and its subclasses, 'class' for business object
+   * references and 'undefined' when the property carries no type hint.
+   * It drives the branch selection in fillObject().
+   *
+   * @param     string    $strProperty   The name of the property
+   * @return    string    The type category (builtin, collection, class or undefined)
+   *
+   * @example   $strType = $objBaseObject->getPropertyType( 'roleId' );
+   *
+   */
+  private function getPropertyType( string $strProperty ) : string {
+    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+
+    if( ! $objReflectionProperty->hasType() ) return 'undefined';
+    if( $objReflectionProperty->getType()->isBuiltin() ) return 'builtin';
+    if( $objReflectionProperty->getType()->getName() === 'BaseCollection' ) return 'collection';
+    if( is_subclass_of( $objReflectionProperty->getType()->getName(), 'BaseCollection' ) ) return 'collection';
+
+    return 'class';
+  }
+
+  /**
+   * This method returns the declared class name of a typed property as a
+   * string. It is used to instantiate business object references and
+   * collection properties from the stored id during fillObject(). Returns
+   * null when the property carries no type hint.
+   *
+   * @param     string         $strProperty   The name of the property
+   * @return    string|null    The declared class name or null
+   *
+   * @example   $strClass = $objBaseObject->getPropertyClass( 'role' );
+   *
+   */
+  private function getPropertyClass( string $strProperty ) : string | null {
+    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+
+    if( ! $objReflectionProperty->hasType() ) return null;
+
+    return ( string ) $objReflectionProperty->getType();
   }
 
   /**
@@ -353,25 +402,43 @@ class BaseObject {
    * carry an AppError channel.
    *
    * @param     Controller    $objController   The controller instance of the request
-   * @return    object        The blueprint envelope or an empty stdClass
+   * @return    array        The blueprint envelope or an empty stdClass
    *
    * @example   $objEnvelope = $objBaseObject->viewNewObject( $objController );
    *
    */
-  public function viewNewObject( Controller $objController ) : object {
+  public function viewNewObject( Controller $objController ) : array {
     $strNewClass = Request::param( 'newClass' );
 
-    if( ! isset( $strNewClass ) ) return new stdClass();
+    if( ! isset( $strNewClass ) ) return [ new stdClass() ];
 
-    return BaseObject::createBlueprint( $strNewClass )->rawObject();
+    $objBlueprint = BaseObject::createBlueprint( $strNewClass );
+    $arrBlueprint = $objBlueprint->rawObject( $objController );
+
+    return $arrBlueprint;
   }
 
-  public function viewLoadObject( Controller $objController ) : object {
+  /**
+   * This method serves the json view behind index.php?view=viewLoadObject&class=...
+   * and returns a object instance in the collector envelope format for
+   * on-demand object loading in the frontend. Invalid class values or
+   * invalid id values or the object dont exists arrive
+   * from the request layer already filtered as null — the response is then
+   * deliberately empty instead of an AppError, because json views do not
+   * carry an AppError channel.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @return    array        The object envelope or an empty stdClass
+   *
+   * @example   $objEnvelope = $objBaseObject->viewLoadObject( $objController );
+   *
+   */
+  public function viewLoadObject( Controller $objController ) : array {
     $strClass = Request::param( 'class' );
     $strId    = Request::param( 'id' );
 
-    if( ! isset( $strClass ) || ! isset( $strId ) ) return new stdClass();
-    if( ! self::existsObject( $strClass, $strId ) ) return new stdClass();
+    if( ! isset( $strClass ) || ! isset( $strId ) ) return [];
+    if( ! self::existsObject( $strClass, $strId ) ) return [];
 
     $objObject = new $strClass( $strId );
 
@@ -403,23 +470,42 @@ class BaseObject {
   }
 
   /**
-   * This method builds the collector envelope { class, id, data } of the object
-   * for the frontend. The class name can be overridden for the rare case that
-   * the frontend class differs from the PHP class name.
+   * This method builds the collector envelope [ { class, id, data } ... ]
+   * of the object array for the frontend.
    *
-   * @param     string|null   $strJsClassName   The frontend class name override or null
-   * @return    object        The collector envelope of the object
+   * @param     Controller|null   $objController   The controller object or null
+   * @return    array             The collector envelope of the object array
    *
-   * @example   $objEnvelope = $objBaseObject->rawObject();
+   * @example   $objEnvelope = $objBaseObject->rawObject( $objController );
    *
    */
-  public function rawObject( string | null $strJsClassName = null ) : object {
+  public function rawObject( Controller | null $objController = null, array | null &$arrResult = [], object | null $objPropertyValue = null ) : array {
+    foreach( $this as $strProperty => $mixValue ) {
+      if( $this->getPropertyType( $strProperty ) === 'class' ) {
+        $objPropertyValue               = new stdClass();
+
+        $objPropertyValue->propertyType = 'object';
+        $objPropertyValue->property     = $strProperty;
+        $objPropertyValue->class        = $this->getPropertyClass( $strProperty );
+        $objPropertyValue->value        = $mixValue->id;
+
+        $this->$strProperty->rawObject( $objController, $arrResult, $objPropertyValue );
+      }
+    }
+
     $objRawObject        = new StdClass();
-    $objRawObject->class = $strJsClassName ?? $this->class;
+    $objRawObject->class = $this->class;
     $objRawObject->id    = $this->id;
     $objRawObject->data  = $this->serializeObject();
 
-    return $objRawObject;
+    if( isset( $objPropertyValue ) ) {
+      $strProperty                      = $objPropertyValue->property;
+      $objRawObject->data->$strProperty = $objPropertyValue;
+    }
+
+    $arrResult[] = $objRawObject;
+
+    return $arrResult;
   }
 
   /**
