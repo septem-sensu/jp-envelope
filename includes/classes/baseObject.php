@@ -284,15 +284,28 @@ class BaseObject {
     if( ! isset( $this->class ) || $this->class == '' ) return;
     if( ! file_exists( $this->dataJsonFile ) ) return;
 
-    $strId      = $this->id;
-    $objObjects = $this->loadFileDeCrypted( $this->dataJsonFile );
+    $objRawObject = self::getRawObject( $this->class, $this->id );
 
-    if( ! isset( $objObjects ) || ! isset( $objObjects->$strId ) ) return;
+    if( ! isset( $objRawObject ) ) return;
 
-    foreach( $objObjects->$strId as $strProperty => $mixValue ) {
+    foreach( $objRawObject as $strProperty => $mixValue ) {
+      $objField = isset( $this->fields->$strProperty ) && gettype( $this->fields->$strProperty ) === 'object' ? $this->fields->$strProperty : null;
+
       if( ! property_exists( $this->class, $strProperty ) ) continue;
+      if( ! isset( $objField ) || ! isset( $objField->class ) || $objField->class === '' ) {
+        $this->$strProperty = $mixValue;
 
-      $this->$strProperty = $mixValue;
+        continue;
+      }
+
+      if( ! isset( $objField->isArray ) || ! $objField->isArray ) {
+
+
+        continue;
+      }
+
+
+
     }
 
     return;
@@ -351,6 +364,18 @@ class BaseObject {
     if( ! isset( $strNewClass ) ) return new stdClass();
 
     return BaseObject::createBlueprint( $strNewClass )->rawObject();
+  }
+
+  public function viewLoadObject( Controller $objController ) : object {
+    $strClass = Request::param( 'class' );
+    $strId    = Request::param( 'id' );
+
+    if( ! isset( $strClass ) || ! isset( $strId ) ) return new stdClass();
+    if( ! self::existsObject( $strClass, $strId ) ) return new stdClass();
+
+    $objObject = new $strClass( $strId );
+
+    return $objObject->rawObject();
   }
 
   /**
@@ -551,10 +576,32 @@ class BaseObject {
    */
   public static function getRawObjectsFromClass( string $strClassName ) : object | null {
     if( ! isset( $strClassName ) || $strClassName == '' ) return null;
+    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' ) ) return null;
 
     $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' );
 
     return $objRawObjects;
+  }
+
+  /**
+   * This static method returns a raw object (stdClass).
+   * or null if the class name or id is empty.
+   *
+   * @param     string         $strClassName   The name of the business class
+   * @param     string         $strId          The id of the business object
+   * @return    object|null    The raw object from the business class or null
+   *
+   * @example   $objRawObject = BaseObject::getRawObject( 'User', 'max@musterman.de' );
+   *
+   */
+  public static function getRawObject( string $strClassName, string $strId ) : object | null {
+    if( ! isset( $strClassName ) || $strClassName == '' ) return null;
+    if( ! isset( $strId ) || $strId == '' ) return null;
+    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' ) ) return null;
+
+    $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' );
+
+    return isset( $objRawObjects->$strId ) ? $objRawObjects->$strId : null;
   }
 
   /**

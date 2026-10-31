@@ -1,4 +1,20 @@
 {
+  "viewNewObject": {
+    "viewName": "viewNewObject",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [],
+    "actionNames": []
+  },
+  "viewLoadObject": {
+    "viewName": "viewLoadObject",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [],
+    "actionNames": []
+  },
   "viewLogin": {
     "viewName": "view",
     "className": "User",
@@ -47,13 +63,5 @@
     "roleIds": [ "administrator" ],
     "templateNames": [ "header.start.tmpl", "header.end.tmpl", "diagnostics.tmpl", "footer.tmpl" ],
     "actionNames": [ { "method": "Diagnostics::collectDiagnostics", "always": true } ]
-  },
-  "viewNewObject": {
-    "viewName": "viewNewObject",
-    "className": "BaseObject",
-    "resultType": "json",
-    "roleIds": [ "administrator", "user" ],
-    "templateNames": [],
-    "actionNames": []
   }
 }

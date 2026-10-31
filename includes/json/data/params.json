@@ -6,6 +6,10 @@
     "user":     { "type": "string" },
     "password": { "type": "string" }
   },
+  "viewNewObject": {
+    "newClass": { "type": "string", "values": [ "User" ] }
+  },
+  "viewLoadObject": {},
   "viewLogin": {},
   "viewLogout": {},
   "viewUser": {
@@ -18,8 +22,5 @@
     "password2":    { "type": "string" },
     "roleId":       { "type": "string" }
   },
-  "viewDiagnostics": {},
-  "viewNewObject": {
-    "newClass": { "type": "string", "values": [ "User" ] }
-  }
+  "viewDiagnostics": {}
 }

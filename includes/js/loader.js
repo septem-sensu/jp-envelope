@@ -136,7 +136,7 @@ class Loader extends EventTarget {
  *
  */
   async instantiateRawObject( rawObject ) {
-    if( ! rawObject.class ) throw new Error( 'Envelope ohne Instanz-Daten: ' + JSON.stringify( rawObject ) );
+    if( ! rawObject.class || ! rawObject.id ) throw new Error( 'Envelope ohne Instanz-Daten: ' + JSON.stringify( rawObject ) );
 
     const instance = await this.createInstance( rawObject );
 
@@ -166,6 +166,30 @@ class Loader extends EventTarget {
   async loadNewObject( newClass ) {
     // pathname instead of href: old query parameters of the current view (e.g. graphAction) must not travel along
     const url      = document.location.pathname + '?view=viewNewObject&newClass=' + encodeURIComponent( newClass );
+    const response = await fetch( url );
+
+    return await this.instantiateRawObject( await response.json() );
+  }
+
+/**
+ * This method loads a object on demand (called by app.loadObject):
+ * fetch on the JSON view viewLoadObject, the envelope runs through the
+ * standard pipeline — the class file can load for the first time on
+ * this way. Errors (HTML answer at a wrong role, empty 500 body,
+ * network) tear the promise up, the catch sits in the app wrapper
+ * (overlay).
+ *
+ * @public
+ *
+ * @param     {string}    className   The PHP class name of the object
+ * @param     {string}    id          The PHP od of the object
+ * @return    {Promise}   instance    The registered object instance
+ *
+ * @example   const user = await loader.loadObject( 'User', 'max@musterman.de' );
+ *
+ */
+  async loadObject( className, id ) {
+    const url      = document.location.pathname + '?view=viewLoadObject&class=' + encodeURIComponent( className ) + '&id=' + encodeURIComponent( id );
     const response = await fetch( url );
 
     return await this.instantiateRawObject( await response.json() );

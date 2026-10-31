@@ -161,6 +161,33 @@ class App extends BaseObject {
   }
 
 /**
+ * This method demands a object on demand: it loads the
+ * instance of the class over the view viewLoadObject and registers
+ * it under the id — templates access the finished instance
+ * over registry.onReady( className, id, ... ) (with replay,
+ * timing irrelevant). Every disturbance runs over the JS error
+ * channel as overlay instead of as silent silence.
+ *
+ * @public
+ *
+ * @param     {string}    className    The PHP class name of the object
+ * @param     {string}    id           The PHP id of the object
+ * @return    {Promise}   instance     The registered object instance
+ *
+ * @example   const user = await app.newObject( 'User', 'max@musterman.de' );
+ *
+ */
+  async loadObject( className, id ) {
+    try {
+      return await this.loader.loadObject( className, id );
+    } catch( loadObjectError ) {
+      this.reportError( loadObjectError, 'Class: ' + className + ' Id: ' + id );
+    }
+
+    return;
+  }
+
+/**
  * This method shows every registered AppError instance in the
  * overlay — the central sweep on app-ready, templates stay free of
  * error code.
