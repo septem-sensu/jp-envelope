@@ -12,7 +12,7 @@ require_once ( __DIR__ . '/../classes/config.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.12
+ * @version   0.2.13
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -51,6 +51,25 @@ class BaseObject {
    *
    */
   const FILEPATHTEMPLATES = __DIR__ . '/../templates/';
+
+  /**
+   * The timeout in seconds when acquiring the exclusive file lock of a
+   * class json file (withFileLock). Exceeded, a RuntimeException is
+   * thrown — fail loud instead of an endless wait.
+   *
+   * @var       float
+   *
+   */
+  const LOCKTIMEOUT       = 5.0;
+
+  /**
+   * The sleep time in microseconds between non-blocking lock retries
+   * (withFileLock).
+   *
+   * @var       int
+   *
+   */
+  const LOCKSLEEP         = 50000;
 
   /**
    * Property names that are filtered from the frontend payload (rawObject / serializeObject),
@@ -512,7 +531,8 @@ class BaseObject {
    * This method persists the object: it writes only the own entry back into
    * the class json file. The NOSAVE constant filters technical runtime properties
    * from the payload; NOSERIALIZE deliberately does NOT apply here — a user's
-   * password hash must be persisted after all.
+   * password hash must be persisted after all. The whole read-modify-write cycle
+   * runs under an exclusive file lock on <file>.lock (see withFileLock).
    *
    * @return    void
    *
@@ -520,13 +540,15 @@ class BaseObject {
    *
    */
   public function saveObject() : void {
-    $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
+    BaseObject::withFileLock( $this->dataJsonFile, function() {
+      $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
 
-    if( ! isset( $objObjects ) ) $objObjects = new stdClass();
+      if( ! isset( $objObjects ) ) $objObjects = new stdClass();
 
-    $objObjects->{ $this->id } = $this->serializeObjectForSave();
+      $objObjects->{ $this->id } = $this->serializeObjectForSave();
 
-    BaseObject::saveFileEnCrypted( $this->dataJsonFile, $objObjects );
+      BaseObject::saveFileEnCrypted( $this->dataJsonFile, $objObjects );
+    } );
 
     return;
   }
@@ -557,6 +579,8 @@ class BaseObject {
   /**
    * This method deletes the own entry from the class json file.
    * It returns false when the file or the entry does not exist.
+   * The whole read-modify-write cycle runs under an exclusive file
+   * lock on <file>.lock (see withFileLock).
    *
    * @return    boolean   True when the entry was deleted, false otherwise
    *
@@ -566,15 +590,17 @@ class BaseObject {
   public function deleteObject() : bool {
     if( ! file_exists( $this->dataJsonFile ) ) return false;
 
-    $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
+    return BaseObject::withFileLock( $this->dataJsonFile, function() : bool {
+      $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
 
-    if( ! isset( $objObjects ) || ! isset( $objObjects->{ $this->id } ) ) return false;
+      if( ! isset( $objObjects ) || ! isset( $objObjects->{ $this->id } ) ) return false;
 
-    unset( $objObjects->{ $this->id } );
+      unset( $objObjects->{ $this->id } );
 
-    BaseObject::saveFileEnCrypted( $this->dataJsonFile, $objObjects );
+      BaseObject::saveFileEnCrypted( $this->dataJsonFile, $objObjects );
 
-    return true;
+      return true;
+    } );
   }
 
   /**
@@ -582,7 +608,11 @@ class BaseObject {
    * The class name is passed as a parameter, the file path is derived from it
    * internally via strtolower. It returns false when the id is already taken.
    * The method deliberately bypasses the constructor — this way user instances
-   * for example cannot be created "empty-new" (getUser fallback).
+   * for example cannot be created "empty-new" (getUser fallback). The whole
+   * read-modify-write cycle including the already-taken check runs under an
+   * exclusive file lock on <file>.lock (see withFileLock): two concurrent
+   * inserts of the same id resolve deterministically — one returns true,
+   * the other false.
    *
    * @param     string    $strClassName   The name of the business class
    * @param     string    $strId          The self-chosen id of the new entry
@@ -594,18 +624,21 @@ class BaseObject {
    */
   public static function insertObject( string $strClassName, string $strId, object $objEntry ) : bool {
     if( $strId == '' ) return false;
-    if( BaseObject::existsObject( $strClassName, $strId ) ) return false;
 
-    $strFile    = BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json';
-    $objObjects = BaseObject::loadFileDeCrypted( $strFile );
+    $strFile = BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json';
 
-    if( ! isset( $objObjects ) ) $objObjects = new stdClass();
+    return BaseObject::withFileLock( $strFile, function() use ( $strFile, $strId, $objEntry ) : bool {
+      $objObjects = BaseObject::loadFileDeCrypted( $strFile );
 
-    $objObjects->{ $strId } = $objEntry;
+      if( ! isset( $objObjects ) ) $objObjects = new stdClass();
+      if( isset( $objObjects->{ $strId } ) ) return false;
 
-    BaseObject::saveFileEnCrypted( $strFile, $objObjects );
+      $objObjects->{ $strId } = $objEntry;
 
-    return true;
+      BaseObject::saveFileEnCrypted( $strFile, $objObjects );
+
+      return true;
+    } );
   }
 
   /**
@@ -853,6 +886,50 @@ class BaseObject {
     file_put_contents( $strFile, $strContent, LOCK_EX );
 
     return;
+  }
+
+  /**
+   * This static method runs a callback under an exclusive file lock on
+   * <file>.lock — the surrounding critical section for the whole
+   * read-modify-write cycles of the persistence methods (saveObject,
+   * deleteObject, insertObject). The lock is acquired non-blocking in
+   * a retry loop with short sleep times; after LOCKTIMEOUT seconds a
+   * RuntimeException is thrown (the framework routes it over the
+   * established error channels). The lock is always released in the
+   * finally block, even when the callback throws. A held lock dies
+   * with the process anyway, so a stale .lock side file next to the
+   * class json file is harmless.
+   *
+   * @param     string     $strFile      The file path of the class json file (lock file: <path>.lock)
+   * @param     callable   $fnCallback   The callback to run under the lock
+   * @return    mixed      The return value of the callback
+   *
+   * @example   BaseObject::withFileLock( $strFile, function() use ( $strFile ) : bool { ... } );
+   *
+   */
+  private static function withFileLock( string $strFile, callable $fnCallback ) : mixed {
+    $objLockHandle = fopen( $strFile . '.lock', 'c' );
+
+    if( $objLockHandle === false ) throw new RuntimeException( 'Die Lock-Datei konnte nicht geöffnet werden: ' . $strFile . '.lock' );
+
+    $floatDeadline = microtime( true ) + BaseObject::LOCKTIMEOUT;
+
+    while( ! flock( $objLockHandle, LOCK_EX | LOCK_NB ) ) {
+      if( microtime( true ) >= $floatDeadline ) {
+        fclose( $objLockHandle );
+
+        throw new RuntimeException( 'Die Daten-Datei ist nach ' . BaseObject::LOCKTIMEOUT . ' Sekunden weiterhin gesperrt: ' . $strFile );
+      }
+
+      usleep( BaseObject::LOCKSLEEP );
+    }
+
+    try {
+      return $fnCallback();
+    } finally {
+      flock( $objLockHandle, LOCK_UN );
+      fclose( $objLockHandle );
+    }
   }
 
 }

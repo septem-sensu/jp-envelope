@@ -3,7 +3,7 @@
 
 ## Projekt
 
-Dokumentationsstand: Version 0.2.15 / 2026-10-27
+Dokumentationsstand: Version 0.2.16 / 2026-11-01
 
 **JPEnvelope** ist ein datengetriebenes, leichtgewichtiges Full-Stack-Framework, das für die nahtlose und asynchrone Zusammenarbeit zwischen **PHP** im Backend und modernem **Vanilla JavaScript** im Frontend entwickelt wurde.
 
@@ -35,6 +35,7 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden **Envelopes (Datenums
 	- [Persistenz & Datenspeicherung (`BaseObject`)](#Persistenz%20&%20Datenspeicherung%20(%60BaseObject%60))
 		- [Das Datei- und Speicherkonzept](#Das%20Datei-%20und%20Speicherkonzept)
 		- [CRUD-Operationen auf Instanz-Ebene](#CRUD-Operationen%20auf%20Instanz-Ebene)
+		- [Write-Locking für gleichzeitige Zugriffe](#Write-Locking%20f%C3%BCr%20gleichzeitige%20Zugriffe)
 		- [Filter-Konstanten für Properties](#Filter-Konstanten%20f%C3%BCr%20Properties)
 		- [Erstellung neuer Objekte](#Erstellung%20neuer%20Objekte)
 		- [Verschlüsselung & Key-Management (`AES-256-CBC`)](#Verschl%C3%BCsselung%20&%20Key-Management%20(%60AES-256-CBC%60))
@@ -237,6 +238,19 @@ Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 
 - **Speichern & Aktualisieren:** Ein Aufruf von `$instanz->saveObject()` schreibt oder aktualisiert ausschließlich den Eintrag des aktuellen Objekts in der jeweiligen JSON-Datei.
 - **Löschen:** Ein Aufruf von `$instanz->deleteObject()` entfernt den Eintrag des Objekts aus der Datei.
+
+#### Write-Locking für gleichzeitige Zugriffe
+
+Alle Schreibpfade der Persistenz (`saveObject()`, `deleteObject()`, `insertObject()`) folgen dem Muster *ganze Klassen-Datei lesen → Eintrag ändern → ganze Datei zurückschreiben*. Liest ein Request die Datei, während ein zweiter in der Zwischenzeit schreibt, überschreibt das spätere Zurückschreiben des ersten die Änderungen des zweiten (**Lost Update**).
+
+Deshalb läuft der gesamte Lese-Schreib-Zyklus dieser drei Methoden unter einer **exklusiven flock-Sperre auf einer Nebendatei** neben der jeweiligen Klassendatei (Beispiel: `includes/json/data/users.json.lock`), verwaltet von der internen Methode `BaseObject::withFileLock()`:
+
+- **Erwerb:** Non-Blocking (`flock` mit `LOCK_EX` + `LOCK_NB`) in einer Retry-Schleife mit 50-ms-Wartepausen (Konstante `LOCKSLEEP`).
+- **Timeout:** Nach 5 Sekunden (Konstante `LOCKTIMEOUT`) wirft `withFileLock()` eine `RuntimeException` — Fail-loud statt stillen Wartens. Aus einer View-Action aufgerufen landet der Fehler im weichen AppError-Kanal (HTTP 200, zentrales Overlay); anderswo fliegt er auf die HTTP-500-Notfallseite. In beiden Fällen wandern die Details via `Controller::logHardError()` in `includes/logs/messages.log`.
+- **Release:** Immer im `finally`-Block, auch wenn der Callback eine Exception wirft. Die zurückbleibende 0-Byte-`.lock`-Nebendatei ist harmlos: flock ist prozessgebunden, eine davongetrennte Datei blockiert nicht.
+- **Insert-Schutz:** Der bereits-vergeben-Check von `insertObject()` läuft *innerhalb* der Sperre — gleichzeitige Inserts derselben ID lösen sich deterministisch (einer gibt `true` zurück, der andere `false`).
+- **Lesepfade:** Reine Leseoperationen (`loadFileDeCrypted()`, `existsObject()` u. a.) bleiben bewusst ungeglockt, da sie keinen Schreibzyklus umfassen.
+- **Regressionstest:** `php includes/tests/lockTest.php` — Lost-Update-Race mit zwei parallelen Prozessen und deterministischer Timeout-Fall in einem isolierten Temp-Verzeichnis, ohne Berührung der lokalen Produktivdaten.
 
 #### Filter-Konstanten für Properties
 
