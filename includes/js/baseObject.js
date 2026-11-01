@@ -137,7 +137,13 @@ class BaseObject extends EventTarget {
       }
 
       if( this[ property ].propertyType === 'collection' ) {
+        const value = [];
 
+        for( let i = 0; i < this[ property ].value.length; i++ ) {
+          value.push( window[ appAlias ].registry.get( this[ property ].class, this[ property ].value[ i ] ) );
+        }
+
+        this[ property ] = value;
       }
     }
 

@@ -12,7 +12,7 @@ require_once ( __DIR__ . '/../classes/config.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.13
+ * @version   0.2.15
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -327,12 +327,43 @@ class BaseObject {
         continue;
       }
 
+      if( $strPropertyType === 'collection' ) {
+        $strCollectionClass        = $this->getPropertyClass( $strProperty );
+        $strCollectionAllowedClass = $this->getCollectionAllowedType( $strProperty );
+        $this->$strProperty        = new $strCollectionClass();
 
-
-
+        foreach( $mixValue as $strId ) {
+          $this->$strProperty->push( new $strCollectionAllowedClass( $strId ) );
+        }
+      }
     }
 
     return;
+  }
+
+  /**
+   * This method resolves the allowed element class of a collection
+   * property via reflection: it instantiates the declared collection
+   * class without constructor and asks its getAllowedType(). It is
+   * used by fillObject() to build the element instances from the
+   * stored id list and by rawObject() to report the element class in
+   * the frontend envelopes. The declared collection type must be
+   * concrete — an abstract collection type would throw a
+   * ReflectionException (fail loud).
+   *
+   * @param     string    $strProperty   The name of the collection property
+   * @return    string    The class name of the allowed element type
+   *
+   * @example   $strClassName = $this->getCollectionAllowedType( 'users' );
+   *
+   */
+  private function getCollectionAllowedType( string $strProperty ) : string {
+    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+    $strCollectionClass    = $objReflectionProperty->getType()->getName();
+    $objReflectionClass    = new ReflectionClass( $strCollectionClass );
+    $objInstanz            = $objReflectionClass->newInstanceWithoutConstructor();
+
+    return $objInstanz->getAllowedType();
   }
 
   /**
@@ -362,8 +393,10 @@ class BaseObject {
   /**
    * This method returns the declared class name of a typed property as a
    * string. It is used to instantiate business object references and
-   * collection properties from the stored id during fillObject(). Returns
-   * null when the property carries no type hint.
+   * collection properties from the stored id during fillObject(). The
+   * type name is read via getName(), so a nullable declaration returns
+   * the bare class name without the '?' prefix. Returns null when the
+   * property carries no type hint.
    *
    * @param     string         $strProperty   The name of the property
    * @return    string|null    The declared class name or null
@@ -376,7 +409,7 @@ class BaseObject {
 
     if( ! $objReflectionProperty->hasType() ) return null;
 
-    return ( string ) $objReflectionProperty->getType();
+    return $objReflectionProperty->getType()->getName();
   }
 
   /**
@@ -490,7 +523,12 @@ class BaseObject {
 
   /**
    * This method builds the collector envelope [ { class, id, data } ... ]
-   * of the object array for the frontend.
+   * of the object array for the frontend. Every referenced business
+   * object ('class' typed) and collection property is embedded into the
+   * own data payload as a descriptor (with its id respectively its
+   * element id list), replacing the raw instance value from
+   * serializeObject() — for multiple reference properties all of their
+   * descriptors are embedded.
    *
    * @param     Controller|null   $objController   The controller object or null
    * @return    array             The collector envelope of the object array
@@ -499,6 +537,8 @@ class BaseObject {
    *
    */
   public function rawObject( Controller | null $objController = null, array | null &$arrResult = [], object | null $objPropertyValue = null ) : array {
+    $arrDescriptors = [];
+
     foreach( $this as $strProperty => $mixValue ) {
       if( $this->getPropertyType( $strProperty ) === 'class' ) {
         $objPropertyValue               = new stdClass();
@@ -508,7 +548,25 @@ class BaseObject {
         $objPropertyValue->class        = $this->getPropertyClass( $strProperty );
         $objPropertyValue->value        = $mixValue->id;
 
+        $arrDescriptors[] = $objPropertyValue;
+
         $this->$strProperty->rawObject( $objController, $arrResult, $objPropertyValue );
+      }
+
+      if( $this->getPropertyType( $strProperty ) === 'collection' ) {
+        $arrCollectionValue             = $mixValue->getAll();
+        $objPropertyValue               = new stdClass();
+        $objPropertyValue->propertyType = 'collection';
+        $objPropertyValue->property     = $strProperty;
+        $objPropertyValue->class        = $this->getCollectionAllowedType( $strProperty );
+        $objPropertyValue->value        = [];
+
+        foreach( $arrCollectionValue as $objCollectionValue ) {
+          array_push( $objPropertyValue->value, $objCollectionValue->id() );
+          $objCollectionValue->rawObject( $objController, $arrResult, $objPropertyValue );
+        }
+
+        $arrDescriptors[] = $objPropertyValue;
       }
     }
 
@@ -517,7 +575,7 @@ class BaseObject {
     $objRawObject->id    = $this->id;
     $objRawObject->data  = $this->serializeObject();
 
-    if( isset( $objPropertyValue ) ) {
+    foreach( $arrDescriptors as $objPropertyValue ) {
       $strProperty                      = $objPropertyValue->property;
       $objRawObject->data->$strProperty = $objPropertyValue;
     }
@@ -554,9 +612,13 @@ class BaseObject {
   }
 
   /**
-   * This method serializes the object for persistence.
-   * Unset properties and properties filtered by the NOSAVE
-   * constant are removed.
+   * This method serializes the object for persistence. Unset properties
+   * and properties filtered by the NOSAVE constant are removed. Referenced
+   * business objects ('class' typed properties) are serialized as their id
+   * and collection properties ('collection' typed) as the id list of their
+   * elements — fillObject() reads both forms back as instances. Builtin
+   * properties keep their value. NOSERIALIZE deliberately does NOT apply
+   * here — a user's password hash must be persisted after all.
    *
    * @return    object   The serialized object for persistence
    *
@@ -569,6 +631,26 @@ class BaseObject {
     foreach( get_object_vars( $this ) as $strKey => $mixValue ) {
       if( ! isset( $mixValue ) ) continue;
       if( in_array( $strKey, $this::NOSAVE ) ) continue;
+
+      $strPropertyType = $this->getPropertyType( $strKey );
+
+      if( $strPropertyType === 'collection' ) {
+        $objIds = [];
+
+        foreach( $mixValue->getAll() as $objItem ) {
+          array_push( $objIds, $objItem->id() );
+        }
+
+        $objStdObject->$strKey = $objIds;
+
+        continue;
+      }
+
+      if( $strPropertyType === 'class' ) {
+        $objStdObject->$strKey = $mixValue->id();
+
+        continue;
+      }
 
       $objStdObject->$strKey = $mixValue;
     }

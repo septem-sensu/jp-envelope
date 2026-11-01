@@ -37,7 +37,8 @@ class Diagnostics extends BaseObject {
     'requestTest'        => 'Requests',
     'userListTest'       => 'User List',
     'userLoginTest'      => 'User Login',
-    'userSaveDeleteTest' => 'User CRUD'
+    'userSaveDeleteTest' => 'CRUD',
+    'lockTest'           => 'Write Lock'
   ];
 
   /**

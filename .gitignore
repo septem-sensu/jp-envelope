@@ -16,9 +16,5 @@ users.json
 ./.logs-virtuell/*
 includes/data/*
 
-# Testfiles
-category.*
-categorys.*
-
 # Runtime lock side files of the write locking (BaseObject::withFileLock)
 includes/json/data/*.lock
