@@ -168,6 +168,22 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
   }
 
   /**
+   * This method returns the ids of the collection elements as an
+   * array, in their insertion order. It is the id-list read route
+   * of the persistence contract: serializeObjectForSave() stores
+   * collection properties as this list and rawObject() reports it
+   * as the value of the collection descriptor.
+   *
+   * @return    array   The ids of the collection elements as an array
+   *
+   * @example   $arrUserIds = $objUserCollection->idArray();
+   *
+   */
+  public function idArray() : array {
+    return array_values( array_map( fn( BaseObject $objItem ) : string => $objItem->id(), $this->items ) );
+  }
+
+  /**
    * This method replaces the complete collection content: it clears
    * the current elements and appends the given ones via push()
    * (with the same type validation, single element or array).

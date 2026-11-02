@@ -536,7 +536,7 @@ class BaseObject {
    * @example   $objEnvelope = $objBaseObject->rawObject( $objController );
    *
    */
-  public function rawObject( Controller | null $objController = null, array | null &$arrResult = [], object | null $objPropertyValue = null ) : array {
+  public function rawObject( Controller | null $objController = null, array | null &$arrResult = [] ) : array {
     $arrDescriptors = [];
 
     foreach( $this as $strProperty => $mixValue ) {
@@ -550,7 +550,7 @@ class BaseObject {
 
         $arrDescriptors[] = $objPropertyValue;
 
-        $this->$strProperty->rawObject( $objController, $arrResult, $objPropertyValue );
+        $this->$strProperty->rawObject( $objController, $arrResult );
       }
 
       if( $this->getPropertyType( $strProperty ) === 'collection' ) {
@@ -559,11 +559,10 @@ class BaseObject {
         $objPropertyValue->propertyType = 'collection';
         $objPropertyValue->property     = $strProperty;
         $objPropertyValue->class        = $this->getCollectionAllowedType( $strProperty );
-        $objPropertyValue->value        = [];
+        $objPropertyValue->value        = $mixValue->idArray();
 
         foreach( $arrCollectionValue as $objCollectionValue ) {
-          array_push( $objPropertyValue->value, $objCollectionValue->id() );
-          $objCollectionValue->rawObject( $objController, $arrResult, $objPropertyValue );
+          $objCollectionValue->rawObject( $objController, $arrResult );
         }
 
         $arrDescriptors[] = $objPropertyValue;
@@ -575,9 +574,9 @@ class BaseObject {
     $objRawObject->id    = $this->id;
     $objRawObject->data  = $this->serializeObject();
 
-    foreach( $arrDescriptors as $objPropertyValue ) {
-      $strProperty                      = $objPropertyValue->property;
-      $objRawObject->data->$strProperty = $objPropertyValue;
+    foreach( $arrDescriptors as $objPropertyVal ) {
+      $strProperty                      = $objPropertyVal->property;
+      $objRawObject->data->$strProperty = $objPropertyVal;
     }
 
     $arrResult[] = $objRawObject;
@@ -635,13 +634,7 @@ class BaseObject {
       $strPropertyType = $this->getPropertyType( $strKey );
 
       if( $strPropertyType === 'collection' ) {
-        $objIds = [];
-
-        foreach( $mixValue->getAll() as $objItem ) {
-          array_push( $objIds, $objItem->id() );
-        }
-
-        $objStdObject->$strKey = $objIds;
+        $objStdObject->$strKey = $mixValue->idArray();
 
         continue;
       }

@@ -208,8 +208,9 @@ class Presentation extends BaseObject {
    * @example   Presentation::logToFile( 'Something failed' );
    *
    */
-  public static function logToFile( string | array | object $strMessage, bool $boolTimestamp = true, string | null $strFile = null  ) : void {
+  public static function logToFile( string | array | object | null $strMessage, bool $boolTimestamp = true, string | null $strFile = null  ) : void {
     $strFile    = isset( $strFile ) ? $strFile : __DIR__ . '/../logs/messages.log';
+    $strMessage = ! isset( $strMessage ) ? 'null' : $strMessage;
     $strMessage = is_object( $strMessage ) || is_array( $strMessage ) ? json_encode( $strMessage ) : strval( $strMessage );
     $strMessage = $boolTimestamp ? date( "Y-m-d H:i:s" ) . ' ' . $strMessage : $strMessage;
 
