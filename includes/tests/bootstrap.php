@@ -18,6 +18,7 @@ declare( strict_types = 1 );
  */
 
 require_once ( __DIR__ . '/../classes/controller.php' );
+require_once ( __DIR__ . '/../classes/baseCollection.php' );
 
 /**
  * This function reads a single template variable from the protected

@@ -12,7 +12,7 @@ require_once ( __DIR__ . '/../classes/config.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.15
+ * @version   0.2.16
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -916,18 +916,23 @@ class BaseObject {
   }
 
   /**
-   * This method reads and decodes a json file. It auto-detects whether the
-   * content is plain JSON (local/dev) or encrypted (production) before
-   * decrypting. Line breaks are stripped upfront so that encrypted content
-   * can be detected safely.
+   * This method reads and decodes a json file. It returns null when the
+   * file does not exist — the persistence callers (saveObject, insertObject,
+   * deleteObject) interpret this as the empty storage state of a class that
+   * has never been persisted. It auto-detects whether the content is plain
+   * JSON (local/dev) or encrypted (production) before decrypting. Line
+   * breaks are stripped upfront so that encrypted content can be detected
+   * safely.
    *
-   * @param     string           $strFile   The file path to load
-   * @return    object|array     The decoded file content
+   * @param     string               $strFile   The file path to load
+   * @return    object|array|null    The decoded file content or null when the file does not exist
    *
    * @example   $objContent = BaseObject::loadFileDeCrypted( $strFile );
    *
    */
-  public static function loadFileDeCrypted( string $strFile ) : object | array {
+  public static function loadFileDeCrypted( string $strFile ) : object | array | null {
+    if( ! file_exists( $strFile ) ) return null;
+
     $strContent = file_get_contents( $strFile );
     $strContent = str_replace( array( "\r", "\n" ), '', $strContent );
 
