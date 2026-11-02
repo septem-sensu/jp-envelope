@@ -288,10 +288,14 @@ class BaseObject {
 
   /**
    * This method fills the instance properties from the persisted entry
-   * of the object in the class json file. Properties that do not exist
-   * on the class are skipped, as are unset properties (fillObject never
-   * overwrites already set properties). It is a no-op when the id, the
-   * class name or the file is missing.
+   * of the object in the class json file. It reads the complete stored
+   * state: builtin properties are set directly, 'class' references are
+   * instantiated from the stored id and 'collection' properties are
+   * rebuilt from the stored id list — already set instance properties
+   * are overwritten (consistent reload semantics). Values that are
+   * missing or empty in the file leave the corresponding property
+   * untouched, properties that do not exist on the class are skipped.
+   * It is a no-op when the id, the class name or the file is missing.
    *
    * @return    void
    *
@@ -814,6 +818,8 @@ class BaseObject {
 
     $objRawObjects = BaseObject::getRawObjectsFromClass( $strClassName );
     $arrObjects    = [];
+
+    if( ! isset( $objRawObjects ) ) return $arrObjects;
 
     foreach( $objRawObjects as $strId => $objRawObject ) {
       array_push( $arrObjects, new $strClassName( $strId ) );

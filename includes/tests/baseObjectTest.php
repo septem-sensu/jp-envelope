@@ -296,6 +296,7 @@ $arrChildren = BaseObject::getObjectsFromClass( 'PersistTestChild' );
 
 check( count( $arrChildren ) === 1 && $arrChildren[ 0 ] instanceof PersistTestChild, 'getObjectsFromClass: Instanz jedes Eintrags zurückgegeben' );
 check( BaseObject::getObjectsFromClass( '' ) === [], 'getObjectsFromClass: leere Klasse liefert ein leeres Array' );
+check( BaseObject::getObjectsFromClass( 'KlasseOhneKlassendatei' ) === [], 'getObjectsFromClass: Klasse ohne Klassendatei liefert ein leeres Array ohne Warning' );
 
 // --- persistence roundtrip: saveObject -> raw file -> fillObject ---
 
