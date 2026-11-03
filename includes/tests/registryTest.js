@@ -10,6 +10,8 @@
  *   full replay, blueprints stay silent class-wide
  * - the app ready channel: storage, dispatch with the app instance
  *   and replay for late listeners
+ * - remove: instance removal without ghost replays (delete and
+ *   blueprint replacement route)
  * - _dispatchSafely: a callback exception does not abort the sister
  *   listeners
  * It runs in node without any browser dependency — same pattern as
@@ -127,6 +129,52 @@ const arrAppAfter = [];
 objRegistry.onAppReady( ( app ) => arrAppAfter.push( app.name ) );
 
 check( arrAppAfter.length === 1 && arrAppAfter[ 0 ] === 'app' && objApp !== undefined, 'AppReady: Late-Listener bekommt den Replay' );
+
+// --- remove: Entfernen ohne Geister-Instanzen und tote Replays ---
+
+const objRegistryRemove = new Registry();
+const arrRemoveTrack    = [];
+
+objRegistryRemove.onReady( 'Item', null, ( objInstance ) => arrRemoveTrack.push( objInstance.name ) );
+
+objRegistryRemove.register( 'Item', 'itemA', { name: 'A' } );
+objRegistryRemove.register( 'Item', 'itemB', { name: 'B' } );
+
+objRegistryRemove.remove( 'Item', 'itemA' );
+
+check( objRegistryRemove.has( 'Item', 'itemA' ) === false && objRegistryRemove.has( 'Item', 'itemB' ) === true, 'remove: Instanz entfernt, Geschwister bleiben' );
+
+arrRemoveTrack.length = 0;
+
+objRegistryRemove.register( 'Item', 'itemC', { name: 'C' } );
+
+check( arrRemoveTrack.length === 1 && arrRemoveTrack[ 0 ] === 'C', 'remove: entfernte Instanz feuert in der permanenten Subscription nicht nach' );
+
+objRegistryRemove.remove( 'Item', 'itemC' );
+
+const arrOnceAfter = [];
+
+objRegistryRemove.onReady( 'Item', 'itemC', ( objInstance ) => arrOnceAfter.push( objInstance ) );
+
+check( arrOnceAfter.length === 0, 'remove: Einmal-Replay der entfernten Id verfällt (kein Zombie-Dispatch)' );
+
+const arrClassReplay = [];
+
+objRegistryRemove.onReady( 'Item', null, ( objInstance ) => arrClassReplay.push( objInstance.name ) );
+
+check( arrClassReplay.length === 1 && arrClassReplay[ 0 ] === 'B', 'remove: Klassenweiter Replay ohne die entfernten Instanzen' );
+
+objRegistryRemove.remove( 'Item', 'itemB' );
+
+check( objRegistryRemove.get( 'Item' ) === undefined, 'remove: letzter Eintrag entfernt, get liefert undefined' );
+
+try {
+  objRegistryRemove.remove( 'Item', 'itemB' );
+} catch( removeError ) {
+  check( false, 'remove: doppeltes Entfernen wirft' );
+}
+
+check( objRegistryRemove.has( 'Item', 'itemB' ) === false, 'remove: doppeltes Entfernen bleibt still' );
 
 // --- _dispatchSafely: Schwester-Risiko (eigene Registry ohne App-Kanal) ---
 

@@ -357,11 +357,14 @@ $objGhost = new PersistTestObject( 'niemandDa' );
 
 check( $objGhost->payload() === '' && $objGhost->child() === null && $objGhost->items() === null, 'fillObject: nicht existierende Id bleibt eine leere Instanz (Blaupausen-Pfad)' );
 
-// --- deleteObject cycle ---
+// --- deleteObject cycle + the generic route hook defaults ---
 
 check( $objParent->deleteObject() === true, 'deleteObject: Eintrag entfernt' );
 check( BaseObject::existsObject( 'PersistTestObject', $objParent->id() ) === false, 'deleteObject: Id danach unbekannt' );
 check( $objParent->deleteObject() === false, 'deleteObject: zweites Löschen liefert false' );
+
+check( $objParent->onSave( null ) === null, 'hook: onSave-Basis-Default erlaubt den Save (null)' );
+check( $objParent->onDelete( null ) === null, 'hook: onDelete-Basis-Default erlaubt das Löschen (null)' );
 
 // --- viewLoadObject: the envelope route of the loader ---
 

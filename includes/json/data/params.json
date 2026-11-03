@@ -10,6 +10,10 @@
     "newClass": { "type": "string", "values": [ "User" ] }
   },
   "viewLoadObject": {},
+  "viewSaveObject": {
+    "object": { "type": "string" }
+  },
+  "viewDeleteObject": {},
   "viewLogin": {},
   "viewLogout": {},
   "viewUser": {

@@ -15,6 +15,22 @@
     "templateNames": [],
     "actionNames": []
   },
+  "viewSaveObject": {
+    "viewName": "viewSaveObject",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator", "user" ],
+    "templateNames": [],
+    "actionNames": []
+  },
+  "viewDeleteObject": {
+    "viewName": "viewDeleteObject",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator" ],
+    "templateNames": [],
+    "actionNames": []
+  },
   "viewLogin": {
     "viewName": "view",
     "className": "User",

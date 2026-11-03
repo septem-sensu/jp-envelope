@@ -10,7 +10,11 @@ declare( strict_types = 1 );
  * above. It also pins the fieldset contract: without a fieldset every
  * field runs with its own mandatory flag, bare fieldset entries stay
  * mandatory, boolean entries downgrade to optional, fields without a
- * definition are skipped silently. The suite needs no production data —
+ * definition are skipped silently. The generic data contract
+ * (validateData, envelope payload of the generic save route) runs in
+ * the D scenarios: only present declared fields, mandatory fields in
+ * the create case, password and roleIds-restricted fields skipped. The
+ * suite needs no production data —
  * every case sets its own request state (Request::reset() + setScope
  * between the scenarios, the cache survives $_GET/$_POST otherwise).
  *
@@ -120,6 +124,36 @@ check( count( $arrFieldErrors ) === 1 && $arrFieldErrors[ 'password' ] === 'Das 
 setParams( [] );
 
 check( FieldValidator::validate( 'User', [ 'gibtEsNicht' ] ) === [], 'S9: Fieldset-Eintrag ohne Felddefinition wird still übersprungen' );
+
+// --- D1: validateData create: mandatory runs over the payload, password and roleIds-restricted fields are skipped ---
+
+$arrFieldErrors = FieldValidator::validateData( 'User', new stdClass(), true, mockController( 'viewUserList' ) );
+
+check( count( $arrFieldErrors ) === 1 && $arrFieldErrors[ 'id' ] === 'Bitte eine E-Mail-Adresse angeben.', 'D1: validateData Create ohne Felder meldet nur die Pflicht-Id (Passwort übersprungen, roleId-Restriktion respektiert)' );
+
+// --- D2: validateData update: only present fields run the rule cascade over the payload values ---
+
+$objData    = new stdClass();
+$objData->id = 'ab';
+
+$arrFieldErrors = FieldValidator::validateData( 'User', $objData, false, mockController( 'viewUserList' ) );
+
+check( count( $arrFieldErrors ) === 1 && $arrFieldErrors[ 'id' ] === 'Die E-Mail-Adresse muss mindestens 3 Zeichen haben.', 'D2: validateData Update prüft nur gelieferte Felder (minLength aus dem Payload)' );
+
+$objData->id = 'testen@example.com';
+
+check( FieldValidator::validateData( 'User', $objData, false, mockController( 'viewUserList' ) ) === [], 'D2: gültige gelieferte Werte collectieren keine Fehler' );
+
+// --- D3: validateData skips password fields entirely (hashing belongs to the actions) ---
+
+$objData       = new stdClass();
+$objData->password = 'garKeinSicheresPasswort';
+
+check( FieldValidator::validateData( 'User', $objData, false, mockController( 'viewUserList' ) ) === [], 'D3: Passwort-Felder werden im Data-Vertrag übersprungen' );
+
+// --- D4: validateData without a controller keeps the roleIds filter (fail-open skip) ---
+
+check( FieldValidator::validateData( 'User', new stdClass(), true ) === [ 'id' => 'Bitte eine E-Mail-Adresse angeben.' ], 'D4: ohne Controller bleibt der Constraintsatz auf die rollenfreien Felder' );
 
 Request::reset();
 

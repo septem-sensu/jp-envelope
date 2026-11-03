@@ -10,7 +10,7 @@
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.11
+ * @version   0.2.17
  * @since     2026-10-17
  *
  * @example   const user = window[ appAlias ].registry.get( 'user' );
@@ -187,6 +187,41 @@ class Registry {
     const classKey = this._key( className );
 
     return this._registry.has( classKey ) && this._registry.get( classKey ).has( id );
+  }
+
+/**
+ * This method removes an instance from the registry: the instance map
+ * entry, the one-time replay of ready:{class}:{id} and the entry in the
+ * class-wide replay map — delete and blueprint replacement leave no
+ * ghost instances behind. Missing classes or ids pass silently.
+ *
+ * @public
+ *
+ * @param     {string}   className   The PHP class name
+ * @param     {string}   id          The instance id
+ * @return    {void}
+ *
+ * @example   registry.remove( 'User', 'max@musterman.de' );
+ *
+ */
+  remove( className, id ) {
+    const classKey = this._key( className );
+
+    if( ! this._registry.has( classKey ) ) return;
+
+    const classMap = this._registry.get( classKey );
+
+    classMap.delete( id );
+
+    if( classMap.size === 0 ) this._registry.delete( classKey );
+
+    delete this.firedEvents[ this.eventNameReady( classKey, id ) ];
+
+    const eventNameClass = this.eventNameReady( classKey, null );
+
+    if( this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ].delete( id );
+
+    return;
   }
 
 /**

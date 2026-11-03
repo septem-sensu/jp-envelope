@@ -21,7 +21,7 @@ require_once ( __DIR__ . '/../classes/request.php' );
  * (existence, permissions, ownership) deliberately stay in the actions.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.12
+ * @version   0.2.17
  * @since     2026-10-25
  *
  * @example   $arrFieldErrors = FieldValidator::validate( 'User' );
@@ -74,7 +74,12 @@ class FieldValidator {
     if( is_null( $arrFieldset ) ) {
       foreach( $objFields as $strFieldName => $objFieldDefinition ) {
         $boolMandatory = isset( $objFieldDefinition->mandatory ) && $objFieldDefinition->mandatory;
-        $strError      = self::validateField( $objFieldDefinition, $strFieldName, $boolMandatory );
+
+        $boolIsPassword = isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password';
+        $strValue       = Request::param( $strFieldName );
+        $strValueRepeat = $boolIsPassword ? Request::param( $strFieldName . '2' ) : null;
+
+        $strError = self::validateField( $objFieldDefinition, $strFieldName, $boolMandatory, $strValue, $strValueRepeat );
 
         if( isset( $strError ) ) $arrFieldErrors[ $strFieldName ] = $strError;
       }
@@ -87,8 +92,65 @@ class FieldValidator {
 
       if( ! isset( $objFields->$strFieldName ) ) continue;
 
-      $boolMandatory = is_string( $mixFieldsetKey ) ? ( $mixFieldsetValue === true ) : true;
-      $strError      = self::validateField( $objFields->$strFieldName, $strFieldName, $boolMandatory );
+      $objFieldDefinition = $objFields->$strFieldName;
+      $boolMandatory      = is_string( $mixFieldsetKey ) ? ( $mixFieldsetValue === true ) : true;
+
+      $boolIsPassword = isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password';
+      $strValue       = Request::param( $strFieldName );
+      $strValueRepeat = $boolIsPassword ? Request::param( $strFieldName . '2' ) : null;
+
+      $strError = self::validateField( $objFieldDefinition, $strFieldName, $boolMandatory, $strValue, $strValueRepeat );
+
+      if( isset( $strError ) ) $arrFieldErrors[ $strFieldName ] = $strError;
+    }
+
+    return $arrFieldErrors;
+  }
+
+  /**
+   * This method validates the data payload of an envelope against the form
+   * field definitions — the server side of the generic save route
+   * (viewSaveObject). Unlike validate() the values come from the given
+   * data object instead of the request parameters. Only declared fields
+   * run; password fields are skipped entirely (the hashing and the
+   * companion rules belong to the specialized actions). A field missing
+   * or empty in the data pass untouched except the create case: declared
+   * mandatory fields must arrive. Present values run the normal rule
+   * cascade (minLength, select options, mail). It returns the first
+   * error message per failed field (field name => message), an empty
+   * array means the payload is valid.
+   *
+   * @param     string          $strClassName     The business class to validate for
+   * @param     object          $objData          The envelope data payload to validate
+   * @param     boolean         $boolCreate       True for the create case (mandatory fields must arrive)
+   * @param     Controller|null $objController    The controller instance of the request or null
+   * @return    array           The error messages keyed by field name
+   *
+   * @example   $arrFieldErrors = FieldValidator::validateData( 'User', $objData, true, $objController );
+   *
+   */
+  public static function validateData( string $strClassName, object $objData, bool $boolCreate, ?Controller $objController = null ) : array {
+    $objFields        = BaseObject::getFieldsOfClass( $strClassName );
+    $arrFieldErrors   = [];
+    $strCurrentRoleId = isset( $objController ) && $objController->role() !== null ? $objController->role()->id() : null;
+
+    foreach( $objFields as $strFieldName => $objFieldDefinition ) {
+      if( isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password' ) continue;
+
+      if( isset( $objFieldDefinition->roleIds ) && ( $strCurrentRoleId === null || ! in_array( $strCurrentRoleId, $objFieldDefinition->roleIds, true ) ) ) continue;
+
+      $boolPresent = isset( $objData->$strFieldName ) && is_string( $objData->$strFieldName ) && $objData->$strFieldName != '';
+
+      if( ! $boolPresent ) {
+        if( ! $boolCreate ) continue;
+        if( ! isset( $objFieldDefinition->mandatory ) || ! $objFieldDefinition->mandatory ) continue;
+
+        $arrFieldErrors[ $strFieldName ] = self::message( $objFieldDefinition, $strFieldName, 'mandatory' );
+
+        continue;
+      }
+
+      $strError = self::validateField( $objFieldDefinition, $strFieldName, false, $objData->$strFieldName, null );
 
       if( isset( $strError ) ) $arrFieldErrors[ $strFieldName ] = $strError;
     }
@@ -105,17 +167,17 @@ class FieldValidator {
    * request carries the field or its companion.
    *
    * @param     object          $objFieldDefinition   The field definition from the class field file
-   * @param     string          $strFieldName         The name of the field (request parameter)
+   * @param     string          $strFieldName         The name of the field
    * @param     boolean         $boolMandatory        True when the field must be present
+   * @param     string|null     $strValue             The value to validate (request or envelope data)
+   * @param     string|null     $strValueRepeat       The companion value of a password field or null
    * @return    string|null     The first error message of the field or null
    *
-   * @example   $strError = FieldValidator::validateField( $objFieldDefinition, 'password', true );
+   * @example   $strError = FieldValidator::validateField( $objFieldDefinition, 'password', true, $strValue, $strValueRepeat );
    *
    */
-  private static function validateField( object $objFieldDefinition, string $strFieldName, bool $boolMandatory ) : string | null {
-    $strValue        = Request::param( $strFieldName );
-    $boolIsPassword  = isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password';
-    $strValueRepeat  = $boolIsPassword ? Request::param( $strFieldName . '2' ) : null;
+  private static function validateField( object $objFieldDefinition, string $strFieldName, bool $boolMandatory, string | null $strValue, string | null $strValueRepeat ) : string | null {
+    $boolIsPassword = isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password';
 
     if( is_null( $strValue ) && ( ! $boolIsPassword || is_null( $strValueRepeat ) ) ) {
       if( ! $boolMandatory ) return null;

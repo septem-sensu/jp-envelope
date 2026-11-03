@@ -13,7 +13,7 @@
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.10
+ * @version   0.2.17
  * @since     2026-10-16
  *
  * @example   const loader = new Loader();
@@ -233,6 +233,99 @@ class Loader extends EventTarget {
     const response = await fetch( url );
 
     return await this.instantiateRawObjects( await response.json() );
+  }
+
+/**
+ * This method saves an envelope over the generic json save route
+ * (viewSaveObject, POST): the envelope (class, id, data) travels as the
+ * urlencoded 'object' parameter — with the blueprint id the server
+ * creates the object under a generated id. The response envelopes run
+ * through the standard pipeline (instantiateRawObjects): object
+ * envelopes register/refresh their registry instances, AppError
+ * envelopes display in the overlay afterwards. On a successful
+ * blueprint save the stale blueprint instance leaves the registry —
+ * the server id replaced it. Errors (HTML answer at a wrong role,
+ * empty 500 body, network) tear the promise up, the catch sits in the
+ * app wrapper (overlay).
+ *
+ * @public
+ *
+ * @param     {object}    rawObject        The envelope (class, id, data) to save
+ * @return    {Promise}   instances        The registered instances of the response (saved object or AppError cards)
+ *
+ * @example   await loader.saveObject( { class: 'User', id: 'new', data: { ... } } );
+ *
+ */
+  async saveObject( rawObject ) {
+    const url  = document.location.pathname + '?view=viewSaveObject';
+    const body = new URLSearchParams();
+
+    body.set( 'object', JSON.stringify( rawObject ) );
+
+    const response = await fetch( url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body:    body
+    } );
+
+    const instances = await this.instantiateRawObjects( await response.json() );
+
+    let boolHasErrors = false;
+
+    for( let i = 0; i < instances.length; i++ ) {
+      if( instances[ i ] instanceof window.AppError ) {
+        boolHasErrors = true;
+
+        instances[ i ].showError();
+      }
+    }
+
+    if( ! boolHasErrors && rawObject.id === window[ appAlias ].registry.constructor.BLUEPRINTID ) {
+      window[ appAlias ].registry.remove( rawObject.class, window[ appAlias ].registry.constructor.BLUEPRINTID );
+    }
+
+    return instances;
+  }
+
+/**
+ * This method deletes an addressed object over the generic json delete
+ * route (viewDeleteObject, POST): the parameters class and id travel as
+ * urlencoded body. The empty success response removes the registry
+ * instance; AppError envelopes display in the overlay afterwards.
+ * Errors (HTML answer at a wrong role, empty 500 body, network) tear
+ * the promise up, the catch sits in the app wrapper (overlay).
+ *
+ * @public
+ *
+ * @param     {string}    className   The PHP class name of the object
+ * @param     {string}    id          The id of the object
+ * @return    {Promise}   instances   The registered instances of the response (AppError cards on rejection, empty on success)
+ *
+ * @example   await loader.deleteObject( 'User', 'max@musterman.de' );
+ *
+ */
+  async deleteObject( className, id ) {
+    const url  = document.location.pathname + '?view=viewDeleteObject';
+    const body = new URLSearchParams();
+
+    body.set( 'class', className );
+    body.set( 'id', id );
+
+    const response = await fetch( url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body:    body
+    } );
+
+    const instances = await this.instantiateRawObjects( await response.json() );
+
+    for( let i = 0; i < instances.length; i++ ) {
+      if( instances[ i ] instanceof window.AppError ) instances[ i ].showError();
+    }
+
+    if( instances.length === 0 ) window[ appAlias ].registry.remove( className, id );
+
+    return instances;
   }
 
 /**

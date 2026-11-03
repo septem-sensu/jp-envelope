@@ -3,6 +3,8 @@
 declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/../classes/config.php' );
+require_once ( __DIR__ . '/../classes/appError.php' );
+require_once ( __DIR__ . '/../classes/fieldValidator.php' );
 
 /**
  * This class is the base class of all business objects and provides their persistence.
@@ -12,7 +14,7 @@ require_once ( __DIR__ . '/../classes/config.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.16
+ * @version   0.2.17
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -70,6 +72,28 @@ class BaseObject {
    *
    */
   const LOCKSLEEP         = 50000;
+
+  /**
+   * The blueprint id of the generic json routes (viewNewObject carries it
+   * in the response envelope, viewSaveObject treats it as the create
+   * trigger and replaces it with a generated id) — the same contract
+   * value the client Registry.BLUEPRINTID holds.
+   *
+   * @var       string
+   *
+   */
+  const BLUEPRINTID       = 'new';
+
+  /**
+   * The running number for the ids of the AppError envelopes the generic
+   * json routes (viewSaveObject, viewDeleteObject) return on rejection —
+   * every failed response gets unique display ids without a controller
+   * error counter.
+   *
+   * @var       int
+   *
+   */
+  static int $intErrorEnvelopeCount = 0;
 
   /**
    * Property names that are filtered from the frontend payload (rawObject / serializeObject),
@@ -216,6 +240,44 @@ class BaseObject {
   }
 
   /**
+   * This method is the lifecycle hook of the generic save route
+   * (viewSaveObject). Business classes override it to enforce ownership
+   * and domain guards before the merged object persists. Returning a
+   * string aborts the save — the message travels to the frontend as an
+   * AppError envelope; returning null allows the save. The controller
+   * follows the request context of the save (a null value means the
+   * save runs outside a request, e.g. in tests).
+   *
+   * @param     Controller|null   $objController   The controller instance of the request or null
+   * @return    string|null       The rejection message or null to allow the save
+   *
+   * @example   protected function onSave( ?Controller $objController = null ) : ?string { ... }
+   *
+   */
+  public function onSave( ?Controller $objController = null ) : ?string {
+    return null;
+  }
+
+  /**
+   * This method is the lifecycle hook of the generic delete route
+   * (viewDeleteObject). Business classes override it to enforce ownership
+   * and domain guards and to prepare cascades before the entry is removed.
+   * Returning a string aborts the delete — the message travels to the
+   * frontend as an AppError envelope; returning null allows the delete.
+   * The controller follows the request context of the delete (a null
+   * value means the delete runs outside a request, e.g. in tests).
+   *
+   * @param     Controller|null   $objController   The controller instance of the request or null
+   * @return    string|null       The rejection message or null to allow the delete
+   *
+   * @example   protected function onDelete( ?Controller $objController = null ) : ?string { ... }
+   *
+   */
+  public function onDelete( ?Controller $objController = null ) : ?string {
+    return null;
+  }
+
+  /**
    * This method loads the form field definitions of a class from the
    * field file in FILEPATHFIELDS. When the file does not exist, an
    * empty stdClass is returned. It is the static read route next to
@@ -259,14 +321,14 @@ class BaseObject {
    * route.
    *
    * @param     string       $strClassName   The name of the business class
-   * @return    BaseObject   The blueprint instance with the id 'new'
+   * @return    BaseObject   The blueprint instance with the blueprint id
    *
    * @example   $objBlueprint = BaseObject::createBlueprint( 'User' );
    *
    */
   public static function createBlueprint( string $strClassName ) : BaseObject {
     $objBlueprint = ( new ReflectionClass( $strClassName ) )->newInstanceWithoutConstructor();
-    $objBlueprint->initObject( 'new' );
+    $objBlueprint->initObject( self::BLUEPRINTID );
 
     return $objBlueprint;
   }
@@ -499,6 +561,193 @@ class BaseObject {
     $objObject = new $strClass( $strId );
 
     return $objObject->rawObject();
+  }
+
+  /**
+   * This method serves the generic json save route behind
+   * index.php?view=viewSaveObject (POST): the request parameter 'object'
+   * carries the envelope { class, id, data } the client wants to persist —
+   * with the blueprint id the route creates (server generated id), without
+   * it the client addresses an existing object (merge update). The route
+   * accepts only CRUD-capable classes: a BaseObject subclass with a field
+   * definition — every other class name is silently filtered (like
+   * viewLoadObject, json views carry no information channel for foreign
+   * classes). The merged values follow the field contract: only declared
+   * fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
+   * password fields are never merged, fields with a roleIds attribute only
+   * for roles the definition allows, the own id is immutable and reference
+   * descriptors (class/collection properties) are skipped in this slice.
+   * Rejections travel as AppError envelopes (validation field errors one
+   * envelope per field, the onSave hook and the guards one envelope per
+   * rejection); on success the response is the rawObject (envelope array)
+   * of the saved instance.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @return    array         The envelope array of the saved object or the rejection AppError envelopes
+   *
+   * @example   $arrEnvelopes = $objBaseObject->viewSaveObject( $objController );
+   *
+   */
+  public function viewSaveObject( Controller $objController ) : array {
+    $strObjectParam = Request::param( 'object' );
+
+    if( ! isset( $strObjectParam ) ) return [];
+
+    $objEnvelope = json_decode( $strObjectParam );
+
+    if( ! is_object( $objEnvelope )
+      || ! isset( $objEnvelope->class ) || ! is_string( $objEnvelope->class )
+      || ! isset( $objEnvelope->id )    || ! is_string( $objEnvelope->id )    || $objEnvelope->id == ''
+      || ! isset( $objEnvelope->data )  || ! is_object( $objEnvelope->data ) ) {
+      return self::crudErrorEnvelope( 'Ungültiges Objekt übermittelt.', 'viewSaveObject' );
+    }
+
+    $strClass   = $objEnvelope->class;
+    $strId      = $objEnvelope->id;
+    $objData    = $objEnvelope->data;
+    $boolCreate = $strId === self::BLUEPRINTID;
+
+    if( ! self::isCrudClass( $strClass ) ) return [];
+
+    if( $boolCreate ) {
+      $objObject = ( new ReflectionClass( $strClass ) )->newInstanceWithoutConstructor();
+      $objObject->initObject( null );
+    } else {
+      if( ! self::existsObject( $strClass, $strId ) ) {
+        return self::crudErrorEnvelope( 'Das zu speichernde Objekt existiert nicht.', 'viewSaveObject' );
+      }
+
+      $objObject = new $strClass( $strId );
+    }
+
+    $objFields        = BaseObject::getFieldsOfClass( $strClass );
+    $strCurrentRoleId = $objController->role()->id();
+
+    foreach( $objData as $strProperty => $mixValue ) {
+      if( ! property_exists( $strClass, $strProperty ) ) continue;
+      if( ! isset( $objFields->$strProperty ) ) continue;
+      if( in_array( $strProperty, $strClass::NOSERIALIZE ) ) continue;
+      if( in_array( $strProperty, $strClass::NOSAVE ) ) continue;
+      if( ! $boolCreate && $strProperty === 'id' ) continue;
+      if( ( $objFields->$strProperty->type ?? null ) === 'password' ) continue;
+      if( isset( $objFields->$strProperty->roleIds ) && ! in_array( $strCurrentRoleId, $objFields->$strProperty->roleIds, true ) ) continue;
+
+      $objReflectionProperty = new ReflectionProperty( $strClass, $strProperty );
+
+      if( $objReflectionProperty->getType() !== null && ! $objReflectionProperty->getType()->isBuiltin() ) continue;
+
+      $objObject->$strProperty = $mixValue;
+    }
+
+    $arrFieldErrors = FieldValidator::validateData( $strClass, $objData, $boolCreate, $objController );
+
+    if( count( $arrFieldErrors ) > 0 ) {
+      $arrErrorEnvelopes = [];
+
+      foreach( $arrFieldErrors as $strMessage ) {
+        array_push( $arrErrorEnvelopes, ...self::crudErrorEnvelope( $strMessage, 'viewSaveObject' ) );
+      }
+
+      return $arrErrorEnvelopes;
+    }
+
+    $strHookError = $objObject->onSave( $objController );
+
+    if( isset( $strHookError ) ) return self::crudErrorEnvelope( $strHookError, 'onSave' );
+
+    if( $boolCreate ) {
+      $objEntry = $objObject->serializeObjectForSave();
+
+      if( ! BaseObject::insertObject( $strClass, $objObject->id(), $objEntry ) ) {
+        return self::crudErrorEnvelope( 'Die Objekt-ID ist bereits vergeben.', 'viewSaveObject' );
+      }
+    } else {
+      $objObject->saveObject();
+    }
+
+    return $objObject->rawObject();
+  }
+
+  /**
+   * This method serves the generic json delete route behind
+   * index.php?view=viewDeleteObject (POST): the request parameters class
+   * and id address the envelope to remove. The route accepts only
+   * CRUD-capable classes (a BaseObject subclass with a field definition,
+   * see viewSaveObject) — every other class name is silently filtered.
+   * The onDelete hook runs before the persistence and can abort the delete
+   * with its message as an AppError envelope. A successful response is
+   * empty (the envelope no longer exists — the client removes its registry
+   * instance), a lost delete race reports the AppError envelope.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @return    array         Empty on success or the rejection AppError envelopes
+   *
+   * @example   $arrEnvelopes = $objBaseObject->viewDeleteObject( $objController );
+   *
+   */
+  public function viewDeleteObject( Controller $objController ) : array {
+    $strClass = Request::param( 'class' );
+    $strId    = Request::param( 'id' );
+
+    if( ! isset( $strClass ) || ! isset( $strId ) ) return [];
+    if( ! self::isCrudClass( $strClass ) ) return [];
+    if( ! self::existsObject( $strClass, $strId ) ) {
+      return self::crudErrorEnvelope( 'Das zu löschende Objekt existiert nicht.', 'viewDeleteObject' );
+    }
+
+    $objObject    = new $strClass( $strId );
+    $strHookError = $objObject->onDelete( $objController );
+
+    if( isset( $strHookError ) ) return self::crudErrorEnvelope( $strHookError, 'onDelete' );
+
+    if( ! $objObject->deleteObject() ) {
+      return self::crudErrorEnvelope( 'Das Objekt konnte nicht gelöscht werden.', 'viewDeleteObject' );
+    }
+
+    return [];
+  }
+
+  /**
+   * This private method is the class gate of the generic json routes:
+   * only a BaseObject subclass with a non-empty field definition is
+   * CRUD-capable — the field contract is the single declaration that
+   * opens class, id and data of the envelope for the route. Core classes
+   * (controller, views, roles...) carry no field definitions and stay
+   * unreachable, so the generic route can never write engine files.
+   *
+   * @param     string    $strClassName   The name of the business class
+   * @return    boolean   True when the class is CRUD-capable, false otherwise
+   *
+   * @example   if( ! BaseObject::isCrudClass( $strClass ) ) return [];
+   *
+   */
+  private static function isCrudClass( string $strClassName ) : bool {
+    if( ! class_exists( $strClassName ) || ! is_subclass_of( $strClassName, BaseObject::class ) ) return false;
+
+    return count( (array) BaseObject::getFieldsOfClass( $strClassName ) ) > 0;
+  }
+
+  /**
+   * This private method builds the rejection envelope(s) of the generic
+   * json routes: one AppError instance per message (id pattern
+   * error{N} over a route-local counter), returned as its rawObject
+   * envelope array — the client overlays report the cards themselves
+   * (loader error display), the same channel the html views use.
+   *
+   * @param     string    $strMessage   The rejection message for the frontend
+   * @param     string    $strSource    The route or hook source (e.g. 'viewSaveObject')
+   * @return    array     The AppError envelope as single-element array
+   *
+   * @example   return self::crudErrorEnvelope( 'Ungültiges Objekt übermittelt.', 'viewSaveObject' );
+   *
+   */
+  private static function crudErrorEnvelope( string $strMessage, string $strSource ) : array {
+    self::$intErrorEnvelopeCount++;
+
+    $objError = new AppError( 'error' . self::$intErrorEnvelopeCount );
+    $objError->setMessage( $strMessage, $strSource, 'error' );
+
+    return $objError->rawObject();
   }
 
   /**
