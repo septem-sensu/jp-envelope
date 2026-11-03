@@ -79,5 +79,13 @@
     "roleIds": [ "administrator" ],
     "templateNames": [ "header.start.tmpl", "header.end.tmpl", "diagnostics.tmpl", "footer.tmpl" ],
     "actionNames": [ { "method": "Diagnostics::collectDiagnostics", "always": true } ]
+  },
+  "viewDemoOne": {
+    "viewName": "view",
+    "className": "DemoOne",
+    "resultType": "",
+    "roleIds": [ "administrator" ],
+    "templateNames": [ "header.start.tmpl", "header.end.tmpl", "demoOne.demoOne.tmpl", "footer.tmpl" ],
+    "actionNames": []
   }
 }

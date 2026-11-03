@@ -13,6 +13,9 @@ require_once ( __DIR__ . '/../classes/appError.php' );
 require_once ( __DIR__ . '/../classes/app.php' );
 require_once ( __DIR__ . '/../classes/diagnostics.php' );
 
+require_once ( __DIR__ . '/../classes/demoOne.php' );
+require_once ( __DIR__ . '/../classes/demoTwo.php' );
+
 /**
  * This class is the front controller of the app.
  * index.php instantiates it and calls execute(). The constructor resolves the

@@ -51,6 +51,7 @@ class User extends BaseObject {
     this.addNavbarItem( 'Profil', 'index.php?view=viewUser', itemList );
 
     if( this.roleId === 'administrator' ) this.addNavbarItem( 'Benutzer', 'index.php?view=viewUserList', itemList );
+    if( this.roleId === 'administrator' ) this.addNavbarItem( 'Demo', 'index.php?view=viewDemoOne', itemList );
     if( this.roleId === 'administrator' ) this.addNavbarItem( 'Diagnostics', 'index.php?view=viewDiagnostics', itemList );
 
     this.addNavbarItem( 'Logout', 'index.php?view=viewLogout', itemList );

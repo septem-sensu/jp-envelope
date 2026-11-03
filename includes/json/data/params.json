@@ -2,12 +2,12 @@
   "global": {
     "view":     { "type": "string", "pattern": "/^[\\w]+$/" },
     "id":       { "type": "string" },
-    "class":    { "type": "string", "values": [ "User", "Role", "View", "Diagnostics" ] },
+    "class":    { "type": "string", "values": [ "User", "Role", "View", "Diagnostics", "DemoOne", "DemoTwo" ] },
     "user":     { "type": "string" },
     "password": { "type": "string" }
   },
   "viewNewObject": {
-    "newClass": { "type": "string", "values": [ "User" ] }
+    "newClass": { "type": "string", "values": [ "User", "DemoOne", "DemoTwo" ] }
   },
   "viewLoadObject": {},
   "viewSaveObject": {
@@ -26,5 +26,6 @@
     "password2":    { "type": "string" },
     "roleId":       { "type": "string" }
   },
-  "viewDiagnostics": {}
+  "viewDiagnostics": {},
+  "viewDemoOne": {}
 }

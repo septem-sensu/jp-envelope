@@ -1,0 +1,14 @@
+<div class="demo-one-container" id="demo-one-container"></div>
+
+<script type="text/javascript">
+  window[ appAlias ].registry.onAppReady( ( app ) => {
+    app.registry.onReady( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
+      console.log( demoOneInstance );
+    } );
+
+    app.loadObject( 'DemoOne', 'demoOne_001' );
+    app.currentUser().addNavbarTop( app );
+
+    return;
+  } );
+</script>
