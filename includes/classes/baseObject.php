@@ -575,12 +575,18 @@ class BaseObject {
    * classes). The merged values follow the field contract: only declared
    * fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
    * password fields are never merged, fields with a roleIds attribute only
-   * for roles the definition allows, the own id is immutable and reference
-   * descriptors (class/collection properties) are skipped in this slice.
-   * Rejections travel as AppError envelopes (validation field errors one
-   * envelope per field, the onSave hook and the guards one envelope per
-   * rejection); on success the response is the rawObject (envelope array)
-   * of the saved instance.
+   * for roles the definition allows and the own id is immutable — at a
+   * create the delivered id is taken over the declared id field contract,
+   * the blueprint id itself is ignored (the server generates the id).
+   * Reference properties (class/collection typed) arrive as the mirrored
+   * collector descriptors (propertyType, class, value) and are merged
+   * through mergeReferenceProperty(): the declared class comes from the
+   * property reflection, every delivered id is existence-checked, empty
+   * values clear the reference. Rejections travel as AppError envelopes
+   * (validation field errors and reference errors one envelope per field,
+   * the onSave hook and the guards one envelope per rejection); on
+   * success the response is the rawObject (envelope array) of the saved
+   * instance.
    *
    * @param     Controller    $objController   The controller instance of the request
    * @return    array         The envelope array of the saved object or the rejection AppError envelopes
@@ -620,26 +626,33 @@ class BaseObject {
       $objObject = new $strClass( $strId );
     }
 
-    $objFields        = BaseObject::getFieldsOfClass( $strClass );
-    $strCurrentRoleId = $objController->role()->id();
+    $objFields         = BaseObject::getFieldsOfClass( $strClass );
+    $strCurrentRoleId  = $objController->role()->id();
+    $arrReferenceErrors = [];
 
     foreach( $objData as $strProperty => $mixValue ) {
       if( ! property_exists( $strClass, $strProperty ) ) continue;
       if( ! isset( $objFields->$strProperty ) ) continue;
       if( in_array( $strProperty, $strClass::NOSERIALIZE ) ) continue;
       if( in_array( $strProperty, $strClass::NOSAVE ) ) continue;
-      if( ! $boolCreate && $strProperty === 'id' ) continue;
+      if( $strProperty === 'id' && ( ! $boolCreate || $mixValue === self::BLUEPRINTID ) ) continue;
       if( ( $objFields->$strProperty->type ?? null ) === 'password' ) continue;
       if( isset( $objFields->$strProperty->roleIds ) && ! in_array( $strCurrentRoleId, $objFields->$strProperty->roleIds, true ) ) continue;
 
-      $objReflectionProperty = new ReflectionProperty( $strClass, $strProperty );
+      $strPropertyType = $objObject->getPropertyType( $strProperty );
 
-      if( $objReflectionProperty->getType() !== null && ! $objReflectionProperty->getType()->isBuiltin() ) continue;
+      if( $strPropertyType === 'class' || $strPropertyType === 'collection' ) {
+        $strReferenceError = $this->mergeReferenceProperty( $objObject, $strProperty, $mixValue );
+
+        if( isset( $strReferenceError ) ) $arrReferenceErrors[] = $strReferenceError;
+
+        continue;
+      }
 
       $objObject->$strProperty = $mixValue;
     }
 
-    $arrFieldErrors = FieldValidator::validateData( $strClass, $objData, $boolCreate, $objController );
+    $arrFieldErrors = array_merge( FieldValidator::validateData( $strClass, $objData, $boolCreate, $objController ), $arrReferenceErrors );
 
     if( count( $arrFieldErrors ) > 0 ) {
       $arrErrorEnvelopes = [];
@@ -666,6 +679,94 @@ class BaseObject {
     }
 
     return $objObject->rawObject();
+  }
+
+  /**
+   * This private method merges one reference value of the save envelope
+   * onto the instance: the value arrives as the mirrored collector
+   * descriptor (propertyType, class, value). The declared reference class
+   * comes from the property reflection and never from the request — a
+   * malformed descriptor, a class mismatch, a propertyType mismatch and a
+   * delivered unknown id are rejected with a message (the caller collects
+   * them into the AppError envelopes). Empty object values (null or the
+   * empty string) clear the property (unset — serializeObjectForSave()
+   * drops uninitialized properties), empty collection values persist as
+   * an empty id list. A valid object reference is set as the instantiated
+   * business object (persisted as its id), a valid collection as a
+   * freshly built collection of element instances (persisted as the id
+   * list).
+   *
+   * @param     BaseObject    $objObject     The object to merge onto
+   * @param     string        $strProperty   The reference property name
+   * @param     mixed         $mixValue      The delivered reference value (descriptor)
+   * @return    string|null   The rejection message or null
+   *
+   * @example   $strError = $this->mergeReferenceProperty( $objObject, 'demoTwo', $mixValue );
+   *
+   * @see       BaseObject::viewSaveObject
+   *
+   */
+  private function mergeReferenceProperty( BaseObject $objObject, string $strProperty, mixed $mixValue ) : ?string {
+    if( ! is_object( $mixValue )
+      || ! isset( $mixValue->propertyType ) || ! is_string( $mixValue->propertyType )
+      || ! isset( $mixValue->class )       || ! is_string( $mixValue->class )       || $mixValue->class == '' ) {
+      return 'Das Referenz-Format des Feldes ' . $strProperty . ' ist ungültig.';
+    }
+
+    if( $objObject->getPropertyType( $strProperty ) === 'class' ) {
+      if( $mixValue->propertyType !== 'object' ) {
+        return 'Das Feld ' . $strProperty . ' erwartet eine Objekt-Referenz.';
+      }
+
+      $strReferenceClass = $objObject->getPropertyClass( $strProperty );
+
+      if( $mixValue->class !== $strReferenceClass ) {
+        return 'Das Feld ' . $strProperty . ' referenziert eine nicht deklarierte Klasse.';
+      }
+
+      if( ! isset( $mixValue->value ) || $mixValue->value == '' ) {
+        unset( $objObject->$strProperty );
+
+        return null;
+      }
+
+      if( ! is_string( $mixValue->value ) || ! self::existsObject( $strReferenceClass, $mixValue->value ) ) {
+        return 'Das referenzierte Objekt des Feldes ' . $strProperty . ' existiert nicht.';
+      }
+
+      $objObject->$strProperty = new $strReferenceClass( $mixValue->value );
+
+      return null;
+    }
+
+    if( $mixValue->propertyType !== 'collection' ) {
+      return 'Das Feld ' . $strProperty . ' erwartet eine Sammlungs-Referenz.';
+    }
+
+    $strCollectionClass = $objObject->getPropertyClass( $strProperty );
+    $strAllowedClass    = $objObject->getCollectionAllowedType( $strProperty );
+
+    if( $mixValue->class !== $strAllowedClass ) {
+      return 'Das Feld ' . $strProperty . ' referenziert eine nicht deklarierte Klasse.';
+    }
+
+    if( ! is_array( $mixValue->value ) ) {
+      return 'Das Referenz-Format des Feldes ' . $strProperty . ' ist ungültig.';
+    }
+
+    $objCollection = new $strCollectionClass();
+
+    foreach( $mixValue->value as $strElementId ) {
+      if( ! is_string( $strElementId ) || ! self::existsObject( $strAllowedClass, $strElementId ) ) {
+        return 'Ein referenziertes Objekt des Feldes ' . $strProperty . ' existiert nicht.';
+      }
+
+      $objCollection->push( new $strAllowedClass( $strElementId ) );
+    }
+
+    $objObject->$strProperty = $objCollection;
+
+    return null;
   }
 
   /**

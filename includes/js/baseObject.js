@@ -12,7 +12,7 @@
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.11
+ * @version   0.2.12
  * @since     2026-10-15
  *
  * @example   const baseObject = new BaseObject();
@@ -148,6 +148,72 @@ class BaseObject extends EventTarget {
     }
 
     return;
+  }
+
+/**
+ * This method mirrors fillObjects(): it serializes the instance back
+ * into the data payload of the save envelope — declared builtin fields
+ * travel flat, every resolved reference instance returns as the
+ * collector descriptor (propertyType, property, class, value) with its
+ * id respectively its element id list. Technical runtime properties
+ * stay out (only declared fields leave the instance), an empty object
+ * reference travels as null and an empty collection as empty list.
+ *
+ * @public
+ *
+ * @return    {object}   data   The data payload for the save envelope
+ *
+ * @example   const data = instance.toData();
+ *
+ * @see BaseObject#fillObjects
+ *
+ */
+  toData() {
+    const data = {};
+
+    for( const field in this.fields ) {
+      const value = this[ field ];
+
+      if( value === undefined ) continue;
+
+      if( typeof this.fields[ field ].class === 'string' && this.fields[ field ].class !== '' ) {
+        if( this.fields[ field ].isCollection ) {
+          const valueIds = [];
+
+          if( Array.isArray( value ) ) {
+            for( let i = 0; i < value.length; i++ ) {
+              if( ! value[ i ] || ! value[ i ].id ) continue;
+
+              valueIds.push( value[ i ].id );
+            }
+          }
+
+          data[ field ] = {
+            propertyType: 'collection',
+            property:     field,
+            class:        this.fields[ field ].class,
+            value:        valueIds
+          };
+
+          continue;
+        }
+
+        const referenceId = value !== null && typeof value === 'object' && value.id ? value.id : null;
+
+        data[ field ] = {
+          propertyType: 'object',
+          property:     field,
+          class:        this.fields[ field ].class,
+          value:        referenceId
+        };
+
+        continue;
+      }
+
+      data[ field ] = value;
+    }
+
+    return data;
   }
 
 /**

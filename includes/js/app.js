@@ -187,6 +187,29 @@ class App extends BaseObject {
     return;
   }
 
+  async saveObject( object ) {
+    try {
+      return await this.loader.saveObject( { 'class': object.class, 'id': object.id, 'data': object.toData() } );
+    } catch( saveObjectError ) {
+      this.reportError( saveObjectError, 'Class: ' + object.class + ' Id: ' + object.id );
+    }
+
+    return;
+  }
+
+  async deleteObject( value, id = null ) {
+    const className = typeof value === 'object' && value !== null ? value.class : value;
+    id              = typeof value === 'object' && value !== null ? value.id : id;
+
+    try {
+      return await this.loader.saveObject( { 'class': className, 'id': id } );
+    } catch( deleteObjectError ) {
+      this.reportError( deleteObjectError, 'Class: ' + className + ' Id: ' + id );
+    }
+
+    return;
+  }
+
 /**
  * This method shows every registered AppError instance in the
  * overlay — the central sweep on app-ready, templates stay free of

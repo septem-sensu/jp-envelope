@@ -7,20 +7,25 @@ declare( strict_types = 1 );
  * BaseObject: viewSaveObject (merge create with blueprint id and server
  * generated id, merge update of declared fields with the NOSERIALIZE,
  * NOSAVE, id-immutability, roleIds and password filters, FieldValidator
- * gate, onSave hook rejection) and viewDeleteObject (unknown id, params
- * whitelist silence, positive delete over the User class with a
- * suite-owned test account). The still-closed guards (missing/broken
- * request payload, classes without field definitions) answer empty per
- * the json view convention; rejections travel as AppError envelopes.
- * The suite writes only into its own class json file
- * (persisttestobjects.json) including the matching temporary field
- * definitions (fields/persisttestobject.json) — both are removed on
- * every suite end by the shutdown handler. The User positive cases use
- * a suite-owned test account (persisttest@local.test) that the handler
- * also removes; the local production accounts are never touched.
+ * gate, onSave hook rejection, reference descriptor merge) and
+ * viewDeleteObject (unknown id, params whitelist silence, positive
+ * delete over the User class with a suite-owned test account). The
+ * reference merge covers the mirrored collector descriptors (object and
+ * collection), the declared-class and existence guards, the format
+ * rejections and the empty-value clearing — persisted as id and id list
+ * and reloaded through fillObject(). The still-closed guards
+ * (missing/broken request payload, classes without field definitions)
+ * answer empty per the json view convention; rejections travel as
+ * AppError envelopes. The suite writes only into its own class json
+ * files (persisttestobjects.json, persisttestelements.json) including
+ * the matching temporary field definitions (fields/persisttestobject.json,
+ * fields/persisttestreferenceobject.json) — all removed on every suite
+ * end by the shutdown handler. The User positive cases use a suite-owned
+ * test account (persisttest@local.test) that the handler also removes;
+ * the local production accounts are never touched.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.18
+ * @version   0.2.19
  * @since     2026-11-03
  *
  * @example   php includes/tests/genericCrudTest.php
@@ -29,9 +34,12 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strDataFile   = BaseObject::FILEPATHJSON . 'data/persisttestobjects.json';
-$strFieldsFile = BaseObject::FILEPATHFIELDS . 'persisttestobject.json';
-$strTestUserId = 'persisttest@local.test';
+$strDataFile      = BaseObject::FILEPATHJSON . 'data/persisttestobjects.json';
+$strFieldsFile    = BaseObject::FILEPATHFIELDS . 'persisttestobject.json';
+$strRefDataFile   = BaseObject::FILEPATHJSON . 'data/persisttestreferenceobjects.json';
+$strElemDataFile  = BaseObject::FILEPATHJSON . 'data/persisttestelements.json';
+$strRefFieldsFile = BaseObject::FILEPATHFIELDS . 'persisttestreferenceobject.json';
+$strTestUserId    = 'persisttest@local.test';
 
 /**
  * This shutdown handler removes the class json file, the lock side file
@@ -43,10 +51,15 @@ $strTestUserId = 'persisttest@local.test';
  * @return    void
  *
  */
-register_shutdown_function( function() use ( $strDataFile, $strFieldsFile, $strTestUserId ) : void {
+register_shutdown_function( function() use ( $strDataFile, $strFieldsFile, $strRefDataFile, $strElemDataFile, $strRefFieldsFile, $strTestUserId ) : void {
   @unlink( $strDataFile );
   @unlink( $strDataFile . '.lock' );
   @unlink( $strFieldsFile );
+  @unlink( $strRefDataFile );
+  @unlink( $strRefDataFile . '.lock' );
+  @unlink( $strElemDataFile );
+  @unlink( $strElemDataFile . '.lock' );
+  @unlink( $strRefFieldsFile );
 
   if( BaseObject::existsObject( 'User', $strTestUserId ) ) {
     ( new User( $strTestUserId ) )->deleteObject();
@@ -130,11 +143,81 @@ class PersistTestObject extends BaseObject {
 
 }
 
+/**
+ * Local test class: the referenced element of the reference suite cases,
+ * a bare BaseObject subclass without own fields (persisted as the
+ * suite-owned id/class entry in persisttestelements.json).
+ *
+ */
+class PersistTestElement extends BaseObject {
+
+}
+
+/**
+ * Local test collection: the typed container of the reference suite
+ * cases, allowed element type PersistTestElement.
+ *
+ */
+class PersistTestElementCollection extends BaseCollection {
+
+  /**
+   * This method declares the allowed element type of the test
+   * collection.
+   *
+   * @return    string   The class name of the allowed element type
+   *
+   */
+  public function getAllowedType() : string {
+    return 'PersistTestElement';
+  }
+
+}
+
+/**
+ * Local test class: a CRUD-capable BaseObject subclass with the
+ * declared reference mix (one object reference and one collection
+ * reference, both onto PersistTestElement) beside the mandatory
+ * mixPayload field — the subject of the reference descriptor merge.
+ *
+ */
+class PersistTestReferenceObject extends BaseObject {
+
+  /**
+   * The declared payload field of the test class (mandatory).
+   *
+   * @var       string
+   *
+   */
+  protected string $mixPayload = '';
+
+  /**
+   * The declared object reference field of the test class.
+   *
+   * @var       PersistTestElement
+   *
+   */
+  protected PersistTestElement $objElement;
+
+  /**
+   * The declared collection reference field of the test class.
+   *
+   * @var       PersistTestElementCollection
+   *
+   */
+  protected PersistTestElementCollection $objElements;
+
+}
+
 // --- setup: remove leftovers of earlier crashed runs ---
 
 @unlink( $strDataFile );
 @unlink( $strDataFile . '.lock' );
 @unlink( $strFieldsFile );
+@unlink( $strRefDataFile );
+@unlink( $strRefDataFile . '.lock' );
+@unlink( $strElemDataFile );
+@unlink( $strElemDataFile . '.lock' );
+@unlink( $strRefFieldsFile );
 
 // --- viewSaveObject: the still-closed guards answer empty ---
 
@@ -268,6 +351,154 @@ $arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'vie
 $strKeepId = $arrEnvelope[ 0 ]->id;
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestObject', 'viewSaveObject: onSave ohne Blockierung persisted (KEEP-Objekt erzeugt)' );
+
+// --- setup: reference element objects and field definitions ---
+
+( new PersistTestElement( 'element-1' ) )->saveObject();
+( new PersistTestElement( 'element-2' ) )->saveObject();
+
+file_put_contents( $strRefFieldsFile, json_encode( [
+  'mixPayload'  => [ 'nameDe' => 'Testpayload', 'element' => 'input', 'type' => 'text', 'mandatory' => true, 'minLength' => 3, 'position' => 100 ],
+  'objElement'  => [ 'nameDe' => 'Element', 'class' => 'PersistTestElement', 'position' => 200 ],
+  'objElements' => [ 'nameDe' => 'Elemente', 'class' => 'PersistTestElement', 'isCollection' => true, 'position' => 300 ]
+] ) );
+
+// --- viewSaveObject: reference descriptor merge (create) ---
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => 'new', 'data' => [
+  'mixPayload'  => 'Referenz Eins',
+  'objElement'  => [ 'propertyType' => 'object', 'property' => 'objElement', 'class' => 'PersistTestElement', 'value' => 'element-1' ],
+  'objElements' => [ 'propertyType' => 'collection', 'property' => 'objElements', 'class' => 'PersistTestElement', 'value' => [ 'element-1', 'element-2' ] ]
+] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+$strRefId = $arrEnvelope[ 3 ]->id ?? null;
+
+check( count( $arrEnvelope ) === 4 && $arrEnvelope[ 3 ]->class === 'PersistTestReferenceObject' && str_starts_with( (string) $strRefId, 'PersistTestReferenceObject_' ), 'viewSaveObject: Create mit gültigen Referenz-Deskriptoren persistiert unter der generierten Id' );
+check( $arrEnvelope[ 0 ]->class === 'PersistTestElement' && $arrEnvelope[ 0 ]->id === 'element-1' && $arrEnvelope[ 2 ]->id === 'element-2', 'viewSaveObject: die Antwort lädt die Referenz-Objekte als Sub-Envelopes (Kollektor-Konvention)' );
+check( $arrEnvelope[ 3 ]->data->objElement->propertyType === 'object' && $arrEnvelope[ 3 ]->data->objElement->value === 'element-1', 'viewSaveObject: die Antwort trägt den Objekt-Referenz-Deskriptor (Kollektor-Format)' );
+check( $arrEnvelope[ 3 ]->data->objElements->propertyType === 'collection' && $arrEnvelope[ 3 ]->data->objElements->value === [ 'element-1', 'element-2' ], 'viewSaveObject: die Antwort trägt den Collection-Referenz-Deskriptor (Kollektor-Format)' );
+
+$objRawEntry = BaseObject::getRawObject( 'PersistTestReferenceObject', $strRefId );
+
+check( $objRawEntry->objElement === 'element-1', 'viewSaveObject: die Objekt-Referenz persistiert als id' );
+check( $objRawEntry->objElements === [ 'element-1', 'element-2' ], 'viewSaveObject: die Collection-Referenz persistiert als id-Liste' );
+
+$objReloaded = new PersistTestReferenceObject( $strRefId );
+
+check( $objReloaded->get( 'objElement' )->id() === 'element-1', 'fillObject: die persistierte Objekt-Referenz lädt als Instanz' );
+check( $objReloaded->get( 'objElements' )->idArray() === [ 'element-1', 'element-2' ], 'fillObject: die persistierte Collection-Referenz lädt als Element-Instanzen' );
+
+// --- viewSaveObject: blueprint id in the data contract is ignored at a create ---
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => 'new', 'data' => [ 'mixPayload' => 'Blueprint Id', 'id' => 'new' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id !== 'new' && str_starts_with( $arrEnvelope[ 0 ]->id, 'PersistTestReferenceObject_' ), 'viewSaveObject: die Blueprint-Id im data-Vertrag wird ignoriert (Server-Id bleibt generiert)' );
+
+// --- viewSaveObject: reference descriptor rejections ---
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElement' => 'element-1' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Referenz-Format des Feldes objElement ist ungültig.', 'viewSaveObject: ein flacher Wert statt Deskriptor antwortet mit Format-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElement' => [ 'propertyType' => 'object', 'property' => 'objElement', 'class' => 'PersistTestOtherClass', 'value' => 'element-1' ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElement referenziert eine nicht deklarierte Klasse.', 'viewSaveObject: ein Objekt-Deskriptor mit fremder Klasse antwortet mit Klassen-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElement' => [ 'propertyType' => 'collection', 'property' => 'objElement', 'class' => 'PersistTestElement', 'value' => [ 'element-1' ] ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElement erwartet eine Objekt-Referenz.', 'viewSaveObject: ein Collection-Deskriptor auf einer Objekt-Referenz antwortet mit Typ-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElement' => [ 'propertyType' => 'object', 'property' => 'objElement', 'class' => 'PersistTestElement', 'value' => 'element-9' ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das referenzierte Objekt des Feldes objElement existiert nicht.', 'viewSaveObject: eine Objekt-Referenz auf eine unbekannte Id antwortet mit Existenz-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElements' => [ 'propertyType' => 'collection', 'property' => 'objElements', 'class' => 'PersistTestElement', 'value' => 'element-1' ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Referenz-Format des Feldes objElements ist ungültig.', 'viewSaveObject: eine Collection-Referenz ohne id-Liste antwortet mit Format-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElements' => [ 'propertyType' => 'object', 'property' => 'objElements', 'class' => 'PersistTestElement', 'value' => [ 'element-1' ] ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElements erwartet eine Sammlungs-Referenz.', 'viewSaveObject: ein Objekt-Deskriptor auf einer Collection-Referenz antwortet mit Typ-Fehler' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElements' => [ 'propertyType' => 'collection', 'property' => 'objElements', 'class' => 'PersistTestElement', 'value' => [ 'element-1', 'element-9' ] ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Ein referenziertes Objekt des Feldes objElements existiert nicht.', 'viewSaveObject: eine Collection-Referenz mit unbekanntem Element antwortet mit Existenz-Fehler' );
+
+check( BaseObject::getRawObject( 'PersistTestReferenceObject', $strRefId )->objElement === 'element-1', 'viewSaveObject: abgelehnte Referenz-Updates persistieren nichts (Bestand bleibt)' );
+
+// --- viewSaveObject: empty reference values clear the property ---
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElement' => [ 'propertyType' => 'object', 'property' => 'objElement', 'class' => 'PersistTestElement', 'value' => null ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 3 && $arrEnvelope[ 2 ]->class === 'PersistTestReferenceObject', 'viewSaveObject: ein Objekt-Deskriptor mit leerem value wird akzeptiert' );
+
+$objRawEntry = BaseObject::getRawObject( 'PersistTestReferenceObject', $strRefId );
+
+check( ! isset( $objRawEntry->objElement ), 'viewSaveObject: ein leerer Objekt-Deskriptor entfernt die Referenz aus der Klassendatei' );
+check( $objRawEntry->objElements === [ 'element-1', 'element-2' ], 'viewSaveObject: nicht gelieferte Referenzen bleiben unangetastet (Merge-Semantik)' );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id' => $strRefId, 'data' => [ 'objElements' => [ 'propertyType' => 'collection', 'property' => 'objElements', 'class' => 'PersistTestElement', 'value' => [] ] ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestReferenceObject', 'viewSaveObject: ein Collection-Deskriptor mit leerer id-Liste wird akzeptiert' );
+
+$objRawEntry = BaseObject::getRawObject( 'PersistTestReferenceObject', $strRefId );
+
+check( $objRawEntry->objElements === [], 'viewSaveObject: eine leere Collection-Referenz persistiert als leere id-Liste' );
 
 // --- viewDeleteObject: whitelist silence, unknown id, code-level hook ---
 
