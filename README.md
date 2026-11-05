@@ -153,9 +153,9 @@ Ablauf einer Blaupausen-Anforderung (Asynchron)
 
 ### Die View
 
-Jede darstellbare Seite oder API-Endpunkt ist in `includes/json/data/views.json` registriert.
+Jede darstellbare Seite oder API-Endpunkt ist in `includes/json/data/view.json` registriert.
 
-Aufbau eines Views in der `views.json`:
+Aufbau eines Views in der `view.json`:
 
 |Attribut|Typ|Beschreibung|
 |---|---|---|
@@ -221,7 +221,7 @@ Das Framework unterscheidet zwischen **weichen Fehlern** (Validierungsfehler, ab
 │   ├── images/               # Images, Icons, Brands, Assets
 │   ├── js/                   # Vanilla JS App-Infrastruktur (loader.js, registry.js, etc.)
 │   ├── json/
-│   │   ├── data/             # Systemkonfigurationen (configs.json, views.json, params.json, roles.json)
+│   │   ├── data/             # Systemkonfigurationen (config.json, view.json, params.json, role.json)
 │   │   └── fields/           # Formular- und Validierungsdefinitionen für Klassen
 │   ├── templates/            # HTML5/PHP-Komponenten-Templates (.tmpl)
 │   ├── tests/                # CLI-Regressionssuiten (bootstrap.php + 9 Suiten)

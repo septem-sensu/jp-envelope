@@ -19,8 +19,8 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden **Envelopes (Datenums
 - [Test-Infrastruktur & Besonderheiten (`Test-Suites')](#Test-Infrastruktur%20&%20Besonderheiten%20(%60Test-Suites'))
 - [Architektur & Datenfluss](#Architektur%20&%20Datenfluss)
 	- [Frontend Controller & View-System](#Frontend%20Controller%20&%20View-System)
-		- [Die deklarative View-Konfiguration (`views.json`)](#Die%20deklarative%20View-Konfiguration%20(%60views.json%60))
-		- [Aufbau eines Views in der `views.json`](#Aufbau%20eines%20Views%20in%20der%20%60views.json%60)
+		- [Die deklarative View-Konfiguration (`view.json`)](#Die%20deklarative%20View-Konfiguration%20(%60view.json%60))
+		- [Aufbau eines Views in der `view.json`](#Aufbau%20eines%20Views%20in%20der%20%60view.json%60)
 		- [Action-Routing & Validierung (`view.php`)](#Action-Routing%20&%20Validierung%20(%60view.php%60))
 	- [Authentifizierung & Autorisierung (`Auth`)](#Authentifizierung%20&%20Autorisierung%20(%60Auth%60))
 	- [Workflow: Feature Integration](#Workflow:%20Feature%20Integration)
@@ -104,11 +104,11 @@ Das Framework basiert auf einem deklarativen, JSON-konfigurierten **Frontend Con
 Der vollständige Anwendungszyklus wird über einen Frontend Controller gesteuert.
 Der Einstiegspunkt für jeden Request ist die `index.php`, welche `Controller::execute()` aufruft.
 
-#### Die deklarative View-Konfiguration (`views.json`)
+#### Die deklarative View-Konfiguration (`view.json`)
 
-Jede darstellbare Seite oder API-Endpunkt ist in `includes/json/data/views.json` registriert.
+Jede darstellbare Seite oder API-Endpunkt ist in `includes/json/data/view.json` registriert.
 
-#### Aufbau eines Views in der `views.json`
+#### Aufbau eines Views in der `view.json`
 
 |Attribut|Typ|Beschreibung|
 |---|---|---|
@@ -137,7 +137,7 @@ Die Auflösung, welcher User die App steuert, folgt einer Prioritäten-Kette:
 1. **Explizite ID** (aus dem aktuellen Kontext)
 2. **Cookie-Token** (AES-verschlüsselt)
 3. **Login-Formular** (SHA256-Passwort-Vergleich)
-4. **Fallback:** `defaultUserId` aus der `configs.json` (Gast-Zugang)
+4. **Fallback:** `defaultUserId` aus der `config.json` (Gast-Zugang)
 
 ### Workflow: Feature Integration
 
@@ -146,9 +146,9 @@ Die Auflösung, welcher User die App steuert, folgt einer Prioritäten-Kette:
     - _Wichtig:_ Wird `Request::param()` für einen nicht deklarierten Parameter aufgerufen, wird der Default-Wert zurückgegeben!
 2. **Action-Methode integrieren (PHP-Klasse):**
     Implementierung der Logik in der Zielklasse. Action- / Trigger- Guards werden nicht benötigt. Das übernimmt das Framework.
-3. **Berechtigungen & Routing verknüpfen (`roles.json` & `views.json`):**
-    - Methode im Format `"Klasse::methode"` in die `roles.json` eintragen.
-    - Ergänzung des Action-Eintrags im View-Block der `views.json` via `{ "method": "Klasse::methode", "trigger": "trigger_name" }`.
+3. **Berechtigungen & Routing verknüpfen (`role.json` & `view.json`):**
+    - Methode im Format `"Klasse::methode"` in die `role.json` eintragen.
+    - Ergänzung des Action-Eintrags im View-Block der `view.json` via `{ "method": "Klasse::methode", "trigger": "trigger_name" }`.
 4. **Frontend anpassen:**
     Die View-Methode oder das zugehörige Template final erstellen bzw. erweitern.
 
@@ -298,7 +298,7 @@ Das Frontend nutzt ein minimalistisches, serverseitiges String-Ersetzungs-System
 
 ### Globaler JS-Namespace & Daten-Kapselung
 
-- **Zentraler Namespace:** `window[appAlias]` (wobei der Name dynamisch aus `configs.json` ausgelesen wird).
+- **Zentraler Namespace:** `window[appAlias]` (wobei der Name dynamisch aus `config.json` ausgelesen wird).
 - **Initialisierung (`header.start.tmpl`):** Bereitet die Grundstruktur vor: `registry`, `loader`, `config`, `rawObjects` und `debug`.
 - **Strikter Datenfluss:** Objektdaten fließen  über `rawObjects` in die clientseitige `Registry` (Struktur: `Klasse ➔ ID ➔ Instanz`).
 
@@ -311,7 +311,7 @@ Das Frontend nutzt ein minimalistisches, serverseitiges String-Ersetzungs-System
 
 ### Dynamisches Multi-Device-Rendering (Dynamic UI)
 
-1. **Die Template-Kette:** Das UI-Template liefert ein natives, serverseitiges `<template>`-Element aus. In der `views.json` **sollte** dieses Template  **VOR** dem Haupt-Template  gelistet sein.
+1. **Die Template-Kette:** Das UI-Template liefert ein natives, serverseitiges `<template>`-Element aus. In der `view.json` **sollte** dieses Template  **VOR** dem Haupt-Template  gelistet sein.
 2. **Das Klonen (Client):** Sobald das App-Ready-Event feuert (`registry.onAppReady`), holt sich ein Inline-Skript alle Instanzen (z. B. `registry.getAll('User')`).
 3. **ID-Isolierung:** Das `<template>` wird für jede Instanz geklont. Damit IDs im DOM eindeutig bleiben, wird an jedes `id`- und `for`-Attribut ein eindeutiger Suffix angehängt: `-[Suffix]`  (Details zum Escaping siehe Formular-Handling).
 
@@ -615,13 +615,13 @@ Der Zeitpunkt der Listener-Registrierung relativ zum Event bestimmt die Zustellu
 
 Damit der Client nach einem Update des Frameworks keine veralteten CSS- oder JS-Dateien aus dem lokalen Cache liest, nutzt das System ein Cache-Busting:
 
-An den Skript- und Stylesheet-Referenzen wird das Suffix `?v=[Version]` angehängt (wobei die Versionsnummer in der `configs.json` definiert wird).
+An den Skript- und Stylesheet-Referenzen wird das Suffix `?v=[Version]` angehängt (wobei die Versionsnummer in der `config.json` definiert wird).
 
 - **In statischen HTML-Templates:** Einbindung über `{{config::Translate::version}}`.
 - **In dynamisch nachgeladenen JS-URLs:** Der Loader greift auf `window[appAlias].config.version` zu.
 
 > [!warning] Entwickler-Regel
-> Sobald Änderungen an einer `.js`- oder `.css`-Datei vorgenommen wurden, sollte die `version` in der `configs.json` hochgestuft werden, da die Clients sonst alte, fehlerhafte Code-Stände aus ihrem Cache laden!
+> Sobald Änderungen an einer `.js`- oder `.css`-Datei vorgenommen wurden, sollte die `version` in der `config.json` hochgestuft werden, da die Clients sonst alte, fehlerhafte Code-Stände aus ihrem Cache laden!
 
 ---
 
