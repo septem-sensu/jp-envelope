@@ -3,7 +3,7 @@
 
 ## Projekt
 
-Dokumentationsstand: Version 0.2.16 / 2026-11-01
+Dokumentationsstand: Version 0.2.18 / 2026-11-05
 
 **JPEnvelope** ist ein datengetriebenes, leichtgewichtiges Full-Stack-Framework, das für die nahtlose und asynchrone Zusammenarbeit zwischen **PHP** im Backend und modernem **Vanilla JavaScript** im Frontend entwickelt wurde.
 
@@ -230,7 +230,7 @@ Alle Business-Klassen nutzen dateibasierte,  AES-verschlüsselte JSON-Persistenz
 
 Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 
-- **Speicherort:** Die Daten werden im Pfad `includes/json/data/{klasseKlein}s.json` abgelegt (Beispiel: `users.json`).
+- **Speicherort:** Die Daten werden im Pfad `includes/json/data/{klasse-lcfirst}.json` abgelegt (Beispiel: `user.json`). Der Dateiname folgt exakt der JS-Klassenkonvention: erster Buchstabe klein, kein angehängter Plural-Suffix (`DemoOne` → `demoOne.json`).
 - **Identifikation:** Jedes Objekt wird über eine eindeutige ID (`uniqid()`) als Key im JSON-Objekt identifiziert.
 - **Instanziierung:** Der Konstruktor lädt die Daten und befüllt die Klassen-Properties über die  Methode `fillObject()`.
 
@@ -243,7 +243,7 @@ Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 
 Alle Schreibpfade der Persistenz (`saveObject()`, `deleteObject()`, `insertObject()`) folgen dem Muster *ganze Klassen-Datei lesen → Eintrag ändern → ganze Datei zurückschreiben*. Liest ein Request die Datei, während ein zweiter in der Zwischenzeit schreibt, überschreibt das spätere Zurückschreiben des ersten die Änderungen des zweiten (**Lost Update**).
 
-Deshalb läuft der gesamte Lese-Schreib-Zyklus dieser drei Methoden unter einer **exklusiven flock-Sperre auf einer Nebendatei** neben der jeweiligen Klassendatei (Beispiel: `includes/json/data/users.json.lock`), verwaltet von der internen Methode `BaseObject::withFileLock()`:
+Deshalb läuft der gesamte Lese-Schreib-Zyklus dieser drei Methoden unter einer **exklusiven flock-Sperre auf einer Nebendatei** neben der jeweiligen Klassendatei (Beispiel: `includes/json/data/user.json.lock`), verwaltet von der internen Methode `BaseObject::withFileLock()`:
 
 - **Erwerb:** Non-Blocking (`flock` mit `LOCK_EX` + `LOCK_NB`) in einer Retry-Schleife mit 50-ms-Wartepausen (Konstante `LOCKSLEEP`).
 - **Timeout:** Nach 5 Sekunden (Konstante `LOCKTIMEOUT`) wirft `withFileLock()` eine `RuntimeException` — Fail-loud statt stillen Wartens. Aus einer View-Action aufgerufen landet der Fehler im weichen AppError-Kanal (HTTP 200, zentrales Overlay); anderswo fliegt er auf die HTTP-500-Notfallseite. In beiden Fällen wandern die Details via `Controller::logHardError()` in `includes/logs/messages.log`.
@@ -276,7 +276,7 @@ Das Framework unterscheidet zwei Wege, um neue Datensätze in die JSON-Struktur 
    `BaseObject::insertObject( $klasse, $id, $eintrag )`
 
    - **Sicherheit:** Die Methode prüft vor dem Schreiben ob die ID bereits vergeben ist, um Überschreibungen zu verhindern.
-   - **Dynamik:** Sie leitet den Zieldateipfad per `strtolower()` aus dem übergebenen Klassennamen ab.
+   - **Dynamik:** Sie leitet den Zieldateipfad per `lcfirst()` aus dem übergebenen Klassennamen ab.
 
 #### Verschlüsselung & Key-Management (`AES-256-CBC`)
 
@@ -321,7 +321,7 @@ Das Frontend nutzt ein minimalistisches, serverseitiges String-Ersetzungs-System
 
 ### Formular-Handling & Live-Validierung (`baseObject.js`)
 
-Formulardefinitionen und Validierungsregeln teilen sich Client und Server über die JSON-Dateien in `includes/json/fields/{klasseKlein}.json`.
+Formulardefinitionen und Validierungsregeln teilen sich Client und Server über die JSON-Dateien in `includes/json/fields/{klasse-lcfirst}.json` (Beispiel: `user.json`).
 
 Single-Form-State & Isolierte Validierung
 
@@ -432,7 +432,7 @@ Ablauf einer Blaupausen-Anforderung (Asynchron)
                   ↓
 [Standard-Pipeline] ➔ createInstance ➔ Registrierung in JS-Registry unter ID 'new'
                   ↓
-[Callback] ➔ registry.onReady('Klasse', 'new', (instanz) => { ... })
+[Callback] ➔ registry.onNew('Klasse', 'new', (instanz) => { ... })
 ```
 
 ### Technische Besonderheiten im Backend
@@ -441,12 +441,12 @@ Ablauf einer Blaupausen-Anforderung (Asynchron)
 - **Initialisierung:** Die Befüllung der Standardwerte und Formularfelder (`fields`) erfolgt über die Methode `initObject()`, welche vom regulären Konstruktor genutzt wird.
 
 > [!info] Informationen zu Blaupausen
->- **Rückgabewert:** Da `app.newObject()` asynchron arbeitet, liefert die Methode keinen synchronen Rückgabewert. Das Template sollte auf den Callback `registry.onReady('Klasse', 'new', (instanz) => { ... })` reagieren.
->- **Sichtbarkeit:** Blaupausen besitzen die feste ID `new` definiert als `Registry::BLUEPRINTID`. Sie werden von der Methode `getAll()` **herausgefiltert**. Zugriff erfolgt per `get(klasse, 'new')` oder via `onReady`.
+>- **Rückgabewert:** Da `app.newObject()` asynchron arbeitet, liefert die Methode keinen synchronen Rückgabewert. Das Template sollte auf den Callback `registry.onNew('Klasse', 'new', (instanz) => { ... })` reagieren (der klassische `onReady`-Weg bleibt gültig).
+>- **Sichtbarkeit:** Blaupausen besitzen die feste ID `new` definiert als `Registry::BLUEPRINTID`. Sie werden von der Methode `getAll()` **herausgefiltert**. Zugriff erfolgt per `get(klasse, 'new')` oder via `onNew`.
 >- **Timing beim Aufräumen:** Die JS-Funktion `removeTemplates()` sollten **nach** dem erfolgreichen `onReady`-Callback der Blaupause ausgeführt werden, da `appendTemplate` das HTML-Template-Element zu diesem Zeitpunkt benötigt.
 >- **Pflegekontrakt bei neuen Klassen:** Wenn eine neue Klasse über das Dashboard anlegbar sein soll, sollten zwei Dinge konfiguriert werden:
 >    1. Die Klasse sollte in der `params.json` unter dem Zweig `viewNewObject` in der Whitelist `newClass.values` eingetragen werden.
->    2. Die zugehörige Formular-Definition unter `includes/json/fields/{klasseKlein}.json` sollte existieren.
+>    2. Die zugehörige Formular-Definition unter `includes/json/fields/{klasse-lcfirst}.json` sollte existieren.
 
 ---
 
@@ -503,7 +503,7 @@ Ein globaler `try/catch`-Block umschließt den Konstruktor und die `execute()`-M
 - **IDs:** JS-Fehler erhalten eigene IDs im Format `errorjs{N}`.
   Würden sie das PHP-Muster `error{N}` nutzen, könnten sie während der Registrierungsphase bestehende PHP-Fehler im Speicher überschreiben.
 - **Idempotenz:** Die Methode `AppError::showError()` prüft vor der Anzeige die DOM-ID. Dadurch wird verhindert, dass Fehler, die vor dem `App-Ready`-Event angezeigt und später im Bereinigungs-Sweep erfasst wurden, doppelt im UI auftauchen.
-- **Listener-Isolierung:** `Registry::_dispatchSafely()` kapselt alle vier Listener-Dispatches (`register`, `onReady-Replay`, `setAppReady`, `onAppReady-Replay`). Schlägt ein Callback fehl, bricht er nicht die Ausführung der restlichen, unbeteiligten Listener ab.
+- **Listener-Isolierung:** `Registry::_dispatchSafely()` kapselt alle Listener-Dispatches (Registrierungs-Feuern inkl. Objekt-Events, Replays der `on*`-Methoden, App-Ready). Schlägt ein Callback fehl, bricht er nicht die Ausführung der restlichen, unbeteiligten Listener ab.
 - **CLI-Schutz:** `Presentation::getJsonHeader()` sowie die Cookie-Methoden (`writeCookie`, `deleteCookie`) besitzen einen CLI-Guard. Dies verhindert die PHP-Warnung _"headers already sent"_, wenn die Test-Suite auf der Kommandozeile ausgeführt wird.
 
 ---
@@ -581,19 +581,30 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 - `getAll(klasse)`: Liefert eine Kopie der Map dieser Klasse.
    **Wichtig:** Blaupausen (mit der ID `Registry::BLUEPRINTID = 'new'`) werden hierbei herausgefiltert. Dadurch können Templates in Schleifen (Template-Loops) iterieren, ohne Prüfungen einbauen zu müssen.
 
-Sobald eine Instanz registriert wird, feuert die Registry zwei Events ab:
+### Registry-Events
 
-1. `ready:{klasse}:{id}` (Spezifisch für diese eine Instanz)
-2. `ready:{klasse}` (Global für alle Instanzen dieser Klasse)
+Jede Registrierung feuert Events an zwei Ebenen: pro Instanz (`{event}:{klasse}:{id}`) und klassenweit (`{event}:{klasse}`). Die Events tragen die fünf Typen der Konstante `Registry.EVENTNAMES` — der Auslöser bestimmt den Typ:
 
-Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt!
+|Event|Auslöser|Beschreibung|
+|---|---|---|
+|**`ready`**|Jede Registrierung|Basis-Event: Eine Instanz ist unter ihrer ID in der Registry erreichbar.|
+|**`load`**|Bootstrap & `app.loadObject`|Ein Envelope ist über die Standard-Pipeline (Klasse, Ressourcen, Daten) geladen.|
+|**`new`**|`app.newObject`|Eine Blaupause wurde unter der ID `new` registriert.|
+|**`save`**|`app.saveObject`|Eine Instanz wurde gespeichert — die ID wird bei jedem Save erneut registriert.|
+|**`delete`**|`app.deleteObject`|Eine Instanz wurde gelöscht; die Registry entfernt alle Replay-Spuren der ID unmittelbar danach (`remove()`).|
 
-Die zwei `onReady`-Modi der Registry
+Für jeden Typ existiert eine `on*`-Fassade mit identischer Signatur: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew` (jeweils `(klasse, id, callback)`, `id = null` für das klassenweite Abonnement).
+
+Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt. `registry.remove()` räumt die Replay-Spuren aller Event-Typen ab (Instanz- und Klassenebene) — gelöschte Instanzen werden nicht als Geister replayt. Blaupausen feuern bewusst nur auf Instanz-Ebene (`ready:{klasse}:new` / `new:{klasse}:new`), nie klassenweit.
+
+#### Die zwei Abonnement-Modi
+
+Der Zeitpunkt der Listener-Registrierung relativ zum Event bestimmt die Zustellung:
 
 |Modus|Aufruf-Syntax|Verhalten|Typischer Einsatzzweck|
 |---|---|---|---|
-|**Mit ID**|`onReady(klasse, id, callback)`|**Einmalige Zustellung.** Der Callback wird nach der Ausführung sofort gelöscht und nicht gespeichert.|Gezieltes Warten auf eine ganz bestimmte Instanz.|
-|**Ohne ID**|`onReady(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen und für jede zukünftige Instanz.|Für dynamisch nachgeladene Objekte wie die **Blaupausen-Route**.|
+|**Mit ID**|`onSave(klasse, id, callback)`|**Zeitpunkt-abhängig.** Registriert der Callback, **bevor** das Event feuert, bleibt er aktiv und feuert bei jeder erneuten Registrierung derselben ID — bei `save`/`load` also dauerhaft. Kommt er erst **nach** dem Event, liefert ein einziges Replay den aktuellen Zustand; danach bleibt er stumm (kein Speichern des Callbacks).|Gezieltes Reagieren auf eine bestimmte Instanz (z. B. Save-Bestätigung im Demo-Formular).|
+|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen (Replay) und für jede zukünftige Instanz.|Sammlungen verarbeiten (z. B. Karten-Loops), die dynamisch wachsen.|
 
 > [!info] Wichtig für den View-Code
 > HTML-Template-Code sollte immer auf `registry.onAppReady()` warten. Versuche nicht, Objekte direkt nach dem Instanziieren im DOM zu verarbeiten.

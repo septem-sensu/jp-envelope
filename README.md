@@ -110,19 +110,24 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 - `getAll(klasse)`: Liefert eine Kopie der Map dieser Klasse.
    **Wichtig:** Blaupausen (mit der ID `Registry::BLUEPRINTID = 'new'`) werden hierbei herausgefiltert. Dadurch können Templates in Schleifen (Template-Loops) iterieren, ohne Prüfungen einbauen zu müssen.
 
-Sobald eine Instanz registriert wird, feuert die Registry zwei Events ab:
+Sobald eine Instanz registriert wird, feuert die Registry Events an zwei Ebenen ab (`{event}:{klasse}:{id}` für die Instanz, `{event}:{klasse}` klassenweit) — je nach Auslöser mit einem der fünf Event-Typen:
 
-1. `ready:{klasse}:{id}` (Spezifisch für diese eine Instanz)
-2. `ready:{klasse}` (Global für alle Instanzen dieser Klasse)
+1. `ready` — Jede Registrierung: die Instanz ist unter ihrer ID erreichbar.
+2. `load` — Bootstrap & `app.loadObject`: Ein Envelope ist über die Standard-Pipeline geladen.
+3. `new` — `app.newObject`: Eine Blaupause wurde unter der ID `new` registriert.
+4. `save` — `app.saveObject`: Eine Instanz wurde gespeichert (die ID wird bei jedem Save erneut registriert).
+5. `delete` — `app.deleteObject`: Eine Instanz wurde gelöscht; die Registry entfernt alle Replay-Spuren der ID unmittelbar danach.
+
+Für jeden Typ existiert eine `on*`-Fassade: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew`.
 
 Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt!
 
-Die zwei `onReady`-Modi der Registry
+Die zwei Abonnement-Modi der Registry
 
 |Modus|Aufruf-Syntax|Verhalten|Typischer Einsatzzweck|
 |---|---|---|---|
-|**Mit ID**|`onReady(klasse, id, callback)`|**Einmalige Zustellung.** Der Callback wird nach der Ausführung sofort gelöscht und nicht gespeichert.|Gezieltes Warten auf eine ganz bestimmte Instanz.|
-|**Ohne ID**|`onReady(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen und für jede zukünftige Instanz.|Für dynamisch nachgeladene Objekte wie die **Blaupausen-Route**.|
+|**Mit ID**|`onSave(klasse, id, callback)`|**Zeitpunkt-abhängig.** Registriert der Callback vor dem Event, feuert er bei jeder erneuten Registrierung derselben ID (bei `save`/`load` dauerhaft). Kommt er nach dem Event, liefert ein einziges Replay den aktuellen Zustand — danach bleibt er stumm.|Gezieltes Warten auf eine ganz bestimmte Instanz.|
+|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen und für jede zukünftige Instanz.|Für dynamisch nachgeladene Objekte wie die **Blaupausen-Route**.|
 
 ---
 
@@ -141,7 +146,7 @@ Ablauf einer Blaupausen-Anforderung (Asynchron)
                   ↓
 [Standard-Pipeline] ➔ createInstance ➔ Registrierung in JS-Registry unter ID 'new'
                   ↓
-[Callback] ➔ registry.onReady('Klasse', 'new', (instanz) => { ... })
+[Callback] ➔ registry.onNew('Klasse', 'new', (instanz) => { ... })
 ```
 
 ---
