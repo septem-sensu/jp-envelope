@@ -12,12 +12,12 @@ declare( strict_types = 1 );
  * deleteObject cycle and the viewLoadObject envelope route. The write
  * locking itself is covered by lockTest. The suite writes only into
  * its own class json files derived from the test class names
- * (persisttestobjects.json, persisttestchildren.json) — they are
+ * (persistTestObject.json, persistTestChild.json) — they are
  * removed on every suite end by the shutdown handler, the local
  * production data files are never touched. The missing-file guard of
  * loadFileDeCrypted() is checked before the first insert creates its
  * storage file. The positive viewLoadObject check reads the first local
- * user and therefore carries a SKIP path on machines without users.json.
+ * user and therefore carries a SKIP path on machines without user.json.
  *
  * @author    Markus Götz <info@septem-sensu.de>
  * @version   0.2.17
@@ -29,8 +29,8 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strObjectsFile  = BaseObject::FILEPATHJSON . 'data/persisttestobjects.json';
-$strChildrenFile = BaseObject::FILEPATHJSON . 'data/persisttestchilds.json';
+$strObjectsFile  = BaseObject::FILEPATHJSON . 'data/persistTestObject.json';
+$strChildrenFile = BaseObject::FILEPATHJSON . 'data/persistTestChild.json';
 
 /**
  * This shutdown handler removes the two class json files of the test
@@ -261,7 +261,7 @@ $objEntry->mixPayload = 'Kind Eins';
 
 check( BaseObject::insertObject( 'PersistTestChild', '', $objEntry ) === false, 'insertObject: leere Id legt keinen Eintrag an' );
 check( BaseObject::insertObject( 'PersistTestChild', 'kindEins', $objEntry ) === true, 'insertObject: gültiger Eintrag angelegt' );
-check( file_exists( $strChildrenFile ), 'insertObject: Klassendatei persisttestchilds.json angelegt' );
+check( file_exists( $strChildrenFile ), 'insertObject: Klassendatei persistTestChild.json angelegt' );
 check( ! BaseObject::isJson( file_get_contents( $strChildrenFile ) ), 'insertObject: Inhalt AES-verschlüsselt gespeichert' );
 check( BaseObject::insertObject( 'PersistTestChild', 'kindEins', $objEntry ) === false, 'insertObject: belegte Id wird nicht überschrieben' );
 
@@ -408,7 +408,7 @@ if( count( BaseObject::getObjectsFromClass( 'User' ) ) > 0 ) {
   check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'User' && $arrEnvelope[ 0 ]->id === $objUser->id(), 'viewLoadObject: Envelope der gewhitlisteten Klasse' );
   check( isset( $arrEnvelope[ 0 ]->data->id ), 'viewLoadObject: data-Payload liegt vor' );
 } else {
-  echo 'SKIP: keine lokale users.json — viewLoadObject-Positive-Fall nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — viewLoadObject-Positive-Fall nicht prüfbar.' . PHP_EOL;
 }
 
 Request::reset();

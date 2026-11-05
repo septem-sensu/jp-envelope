@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 require_once ( __DIR__ . '/../classes/baseObject.php' );
 
 /**
- * This class represents a configured view (views.json): it binds a view
+ * This class represents a configured view (view.json): it binds a view
  * method to a business class, carries the result type (empty = HTML,
  * 'json' = JSON response), the template chain and the allowed role ids,
  * and executes the actions and the view method of the view.

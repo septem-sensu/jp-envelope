@@ -6,8 +6,8 @@ require_once ( __DIR__ . '/../classes/baseObject.php' );
 require_once ( __DIR__ . '/../classes/view.php' );
 
 /**
- * This class represents a role with its view permissions (roles.json).
- * Roles guard the views (roleIds in views.json) and the actions
+ * This class represents a role with its view permissions (role.json).
+ * Roles guard the views (roleIds in view.json) and the actions
  * (permissions are the whitelist within View::executeActions()): an
  * action without a role permission is skipped — a request that
  * explicitly triggers exactly such an action over the 'action'

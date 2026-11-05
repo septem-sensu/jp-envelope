@@ -242,7 +242,7 @@ class FieldValidator {
 
   /**
    * This static method validates a password against the password rules
-   * from configs.json: minimum length and the required character groups
+   * from config.json: minimum length and the required character groups
    * (capital letters, lowercase letters, numbers, special characters).
    *
    * @param     string    $strPassword   The password to validate

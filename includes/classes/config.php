@@ -7,7 +7,7 @@ require_once ( __DIR__ . '/../classes/view.php' );
 require_once ( __DIR__ . '/../classes/role.php' );
 
 /**
- * This class represents the app configuration (configs.json).
+ * This class represents the app configuration (config.json).
  * Every access goes through the 'default' scope instance
  * (BaseObject::config()) — filenames, namespace alias, version and
  * the technical rules like the password rules. A version bump here also

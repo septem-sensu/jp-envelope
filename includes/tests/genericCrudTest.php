@@ -17,9 +17,9 @@ declare( strict_types = 1 );
  * (missing/broken request payload, classes without field definitions)
  * answer empty per the json view convention; rejections travel as
  * AppError envelopes. The suite writes only into its own class json
- * files (persisttestobjects.json, persisttestelements.json) including
- * the matching temporary field definitions (fields/persisttestobject.json,
- * fields/persisttestreferenceobject.json) — all removed on every suite
+ * files (persistTestObject.json, persistTestElement.json) including
+ * the matching temporary field definitions (fields/persistTestObject.json,
+ * fields/persistTestReferenceObject.json) — all removed on every suite
  * end by the shutdown handler. The User positive cases use a suite-owned
  * test account (persisttest@local.test) that the handler also removes;
  * the local production accounts are never touched.
@@ -34,17 +34,17 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strDataFile      = BaseObject::FILEPATHJSON . 'data/persisttestobjects.json';
-$strFieldsFile    = BaseObject::FILEPATHFIELDS . 'persisttestobject.json';
-$strRefDataFile   = BaseObject::FILEPATHJSON . 'data/persisttestreferenceobjects.json';
-$strElemDataFile  = BaseObject::FILEPATHJSON . 'data/persisttestelements.json';
-$strRefFieldsFile = BaseObject::FILEPATHFIELDS . 'persisttestreferenceobject.json';
+$strDataFile      = BaseObject::FILEPATHJSON . 'data/persistTestObject.json';
+$strFieldsFile    = BaseObject::FILEPATHFIELDS . 'persistTestObject.json';
+$strRefDataFile   = BaseObject::FILEPATHJSON . 'data/persistTestReferenceObject.json';
+$strElemDataFile  = BaseObject::FILEPATHJSON . 'data/persistTestElement.json';
+$strRefFieldsFile = BaseObject::FILEPATHFIELDS . 'persistTestReferenceObject.json';
 $strTestUserId    = 'persisttest@local.test';
 
 /**
  * This shutdown handler removes the class json file, the lock side file
  * and the temporary field definitions of the test class — and the
- * suite-owned test account in the local users.json if the delete route
+ * suite-owned test account in the local user.json if the delete route
  * did not already. It runs on every suite end, including a FEHLER exit
  * of check().
  *
@@ -88,7 +88,7 @@ class PersistTestObject extends BaseObject {
   const NOSERIALIZE = [ "dataJsonFile", "actionNames", "strSecret" ];
 
   /**
-   * The declared payload field of the test class (fields/persisttestobject.json).
+   * The declared payload field of the test class (fields/persistTestObject.json).
    *
    * @var       string
    *
@@ -146,7 +146,7 @@ class PersistTestObject extends BaseObject {
 /**
  * Local test class: the referenced element of the reference suite cases,
  * a bare BaseObject subclass without own fields (persisted as the
- * suite-owned id/class entry in persisttestelements.json).
+ * suite-owned id/class entry in persistTestElement.json).
  *
  */
 class PersistTestElement extends BaseObject {

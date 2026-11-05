@@ -5,10 +5,10 @@ declare( strict_types = 1 );
 /**
  * This suite is the regression test for the user actions createUser,
  * saveUser, saveUserPassword and deleteUser — create, change, set a
- * password, delete — administrator-only via roles.json. Since the S4
+ * password, delete — administrator-only via role.json. Since the S4
  * whitelist removal the request layer no longer filters role values:
  * unknown roles reach the action and turn into a visible AppError there.
- * users.json is a local copy of production data: the suite start creates
+ * user.json is a local copy of production data: the suite start creates
  * a .bak backup and the shutdown handler always restores the original
  * state — even after a FEHLER exit of check().
  *
@@ -22,22 +22,22 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strUserFile = BaseObject::FILEPATHJSON . 'data/users.json';
+$strUserFile = BaseObject::FILEPATHJSON . 'data/user.json';
 
 if( ! file_exists( $strUserFile ) ) {
-  echo 'SKIP: keine lokale users.json — Save/Delete nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — Save/Delete nicht prüfbar.' . PHP_EOL;
   exit( 0 );
 }
 
 if( count( BaseObject::getObjectsFromClass( 'User' ) ) === 0 ) {
-  echo 'SKIP: users.json enthält keine User.' . PHP_EOL;
+  echo 'SKIP: user.json enthält keine User.' . PHP_EOL;
   exit( 0 );
 }
 
 copy( $strUserFile, $strUserFile . '.bak' );
 
 /**
- * This shutdown handler restores the users.json backup on shutdown — it runs
+ * This shutdown handler restores the user.json backup on shutdown — it runs
  * on every suite end, including a FEHLER exit of check().
  *
  * @return    void
@@ -85,7 +85,7 @@ $_POST[ 'id' ] = $strTargetId;
 $objRoutingView = new View( 'viewUserList' );
 $objRoutingView->executeActions( $objController );
 
-check( md5_file( $strUserFile ) === $strOriginalMd5, 'S1: ohne action-Parameter lässt das Routing users.json unverändert' );
+check( md5_file( $strUserFile ) === $strOriginalMd5, 'S1: ohne action-Parameter lässt das Routing user.json unverändert' );
 check( count( $objController->errors() ) === 0, 'S1: ohne action-Parameter bleibt der Controller ohne Fehler' );
 
 // --- find a target user for foreign access and an administrator ---
@@ -95,7 +95,7 @@ $strAdminId     = null;
 
 // Skip the administrator: the 'other' user must never be the administrator itself — otherwise the
 // foreign-change block below degenerates into self-degradation, which saveUser correctly rejects
-// (happened on 2026-10-20: the first non-guest in users.json was at the same time the only administrator).
+// (happened on 2026-10-20: the first non-guest in user.json was at the same time the only administrator).
 foreach( $arrAllUser as $objUser ) {
   if( $objUser->id() === $strCurrentUserId ) continue;
   if( $objUser->roleId() === 'administrator' ) {
@@ -152,7 +152,7 @@ $arrErrors = $objErrorController->errors();
 
 check( count( $arrErrors ) === 1 && $arrErrors[ 0 ]->message() === 'Passwort und Passwort-Wiederholung stimmen nicht überein.', 'Fehlerkanal: ungleiche Passwort-Wiederholung wird gemeldet' );
 
-// --- saveUserPassword: weak password does not write (validator from configs.json) ---
+// --- saveUserPassword: weak password does not write (validator from config.json) ---
 
 Request::reset();
 Request::setScope( 'viewUserList' );
@@ -240,7 +240,7 @@ if( isset( $strDeleteId ) ) {
 
   User::deleteUser( $objController );
 
-  check( ! BaseObject::existsObject( 'User', $strDeleteId ), 'deleteUser: User aus users.json entfernt' );
+  check( ! BaseObject::existsObject( 'User', $strDeleteId ), 'deleteUser: User aus user.json entfernt' );
 } else {
   echo 'SKIP: kein zweiter nicht-aktueller User — Löschen nicht prüfbar.' . PHP_EOL;
 }
@@ -280,7 +280,7 @@ if( BaseObject::existsObject( 'User', $strCreateId ) ) {
 
   User::createUser( $objController );
 
-  check( BaseObject::existsObject( 'User', $strCreateId ), 'createUser: neuer User in users.json angelegt' );
+  check( BaseObject::existsObject( 'User', $strCreateId ), 'createUser: neuer User in user.json angelegt' );
 
   $objCreatedUser = new User( $strCreateId );
 

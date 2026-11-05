@@ -6,7 +6,7 @@ declare( strict_types = 1 );
  * This suite is the regression test for the user envelopes: users travel
  * as envelopes into the collector instead of assignTemplateVar, the
  * password hash stays filtered by NOSERIALIZE and the view instance no
- * longer pollutes the collector. SKIP paths: without a local users.json
+ * longer pollutes the collector. SKIP paths: without a local user.json
  * the serialization stays unchecked.
  *
  * @author    Markus Götz <info@septem-sensu.de>
@@ -19,17 +19,17 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strUserFile = BaseObject::FILEPATHJSON . 'data/users.json';
+$strUserFile = BaseObject::FILEPATHJSON . 'data/user.json';
 
 if( ! file_exists( $strUserFile ) ) {
-  echo 'SKIP: keine lokale users.json — User-Serialisierung nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — User-Serialisierung nicht prüfbar.' . PHP_EOL;
   exit( 0 );
 }
 
 $arrAllUser = BaseObject::getObjectsFromClass( 'User' );
 
 if( count( $arrAllUser ) === 0 ) {
-  echo 'SKIP: users.json enthält keine User.' . PHP_EOL;
+  echo 'SKIP: user.json enthält keine User.' . PHP_EOL;
   exit( 0 );
 }
 

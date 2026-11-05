@@ -2,8 +2,10 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
-    app.registry.onReady( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
-      console.log( demoOneInstance );
+    app.registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
+      console.log( demoOneInstance.demoTwo ); // nicht das Objekt sondern noch die Envelope von demoTwo :-/
+
+      return;
     } );
 
     app.loadObject( 'DemoOne', 'demoOne_001' );

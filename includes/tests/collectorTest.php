@@ -82,7 +82,7 @@ $objConfig        = BaseObject::config();
 $objAppController = mockController( 'viewUserList' );
 $objApp           = new App( $objAppController );
 
-check( $objApp->id() === $objConfig->appAlias() . '_' . $objConfig->version(), 'App: Id ist appAlias_version aus der configs.json' );
+check( $objApp->id() === $objConfig->appAlias() . '_' . $objConfig->version(), 'App: Id ist appAlias_version aus der config.json' );
 
 $objRawObject = $objApp->rawObject()[ 0 ];
 

@@ -21,10 +21,10 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strUserFile = BaseObject::FILEPATHJSON . 'data/users.json';
+$strUserFile = BaseObject::FILEPATHJSON . 'data/user.json';
 
 if( ! file_exists( $strUserFile ) ) {
-  echo 'SKIP: keine lokale users.json — Fehlerkanal ohne Auth-Kontext nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — Fehlerkanal ohne Auth-Kontext nicht prüfbar.' . PHP_EOL;
   exit( 0 );
 }
 

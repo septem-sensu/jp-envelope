@@ -1,5 +1,6 @@
 *.json.json
 *.log
+*.bak
 .cryptKeys.php
 .fiveserverrc
 .htaccess
@@ -9,7 +10,7 @@ notes.md
 test.html
 test.php
 test.js
-users.json
+user.json
 
 .claude/*
 .vscode/*

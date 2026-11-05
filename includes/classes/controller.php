@@ -19,7 +19,7 @@ require_once ( __DIR__ . '/../classes/demoTwo.php' );
 /**
  * This class is the front controller of the app.
  * index.php instantiates it and calls execute(). The constructor resolves the
- * auth context (user, role), the view (views.json configuration with the
+ * auth context (user, role), the view (view.json configuration with the
  * permission guard) and the request scope; execute() then runs the view
  * actions, collects the soft errors of the actions into the AppError channel,
  * throws the business objects into the frontend collector and returns the
@@ -74,7 +74,7 @@ class Controller extends BaseObject {
   protected string       $objectClass;
 
   /**
-   * The resolved view configuration (views.json).
+   * The resolved view configuration (view.json).
    *
    * @var       View
    *

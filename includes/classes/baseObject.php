@@ -8,7 +8,7 @@ require_once ( __DIR__ . '/../classes/fieldValidator.php' );
 
 /**
  * This class is the base class of all business objects and provides their persistence.
- * The object state is serialized into includes/json/data/{className}s.json (key = object id);
+ * The object state is serialized into includes/json/data/{className}.json (key = object id);
  * the constructor fills the instance properties automatically from that file via fillObject().
  * Technical properties are filtered by the two filter constants: NOSERIALIZE removes properties
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
@@ -31,7 +31,7 @@ class BaseObject {
   const FILEPATHBASE      = __DIR__ . '/../';
 
   /**
-   * File path of the json configuration directory (params.json, roles.json, etc.).
+   * File path of the json configuration directory (params.json, role.json, etc.).
    *
    * @var       string
    *
@@ -179,7 +179,7 @@ class BaseObject {
     $this->class        = get_class( $this );
     $this->id           = isset( $strObjectId ) ? $strObjectId : $this->newId( $this->class );
     $this->fields       = BaseObject::getFieldsOfClass( $this->class );
-    $this->dataJsonFile = $this::FILEPATHJSON . 'data/' . strtolower( $this->class ) . 's.json';
+    $this->dataJsonFile = $this::FILEPATHJSON . 'data/' . lcfirst( $this->class ) . '.json';
 
     $this->fillObject();
 
@@ -291,7 +291,7 @@ class BaseObject {
    *
    */
   public static function getFieldsOfClass( string $strClassName ) : object {
-    $strFieldFile = BaseObject::FILEPATHFIELDS . strtolower( $strClassName ) . '.json';
+    $strFieldFile = BaseObject::FILEPATHFIELDS . lcfirst( $strClassName ) . '.json';
 
     if( ! file_exists( $strFieldFile ) ) return new stdClass();
 
@@ -1035,7 +1035,7 @@ class BaseObject {
   /**
    * This method inserts a new entry under a self-chosen id into the class json file.
    * The class name is passed as a parameter, the file path is derived from it
-   * internally via strtolower. It returns false when the id is already taken.
+   * internally via lcfirst. It returns false when the id is already taken.
    * The method deliberately bypasses the constructor — this way user instances
    * for example cannot be created "empty-new" (getUser fallback). The whole
    * read-modify-write cycle including the already-taken check runs under an
@@ -1054,7 +1054,7 @@ class BaseObject {
   public static function insertObject( string $strClassName, string $strId, object $objEntry ) : bool {
     if( $strId == '' ) return false;
 
-    $strFile = BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json';
+    $strFile = BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json';
 
     return BaseObject::withFileLock( $strFile, function() use ( $strFile, $strId, $objEntry ) : bool {
       $objObjects = BaseObject::loadFileDeCrypted( $strFile );
@@ -1124,9 +1124,9 @@ class BaseObject {
    */
   public static function getRawObjectsFromClass( string $strClassName ) : object | null {
     if( ! isset( $strClassName ) || $strClassName == '' ) return null;
-    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' ) ) return null;
+    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json' ) ) return null;
 
-    $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' );
+    $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json' );
 
     return $objRawObjects;
   }
@@ -1145,9 +1145,9 @@ class BaseObject {
   public static function getRawObject( string $strClassName, string $strId ) : object | null {
     if( ! isset( $strClassName ) || $strClassName == '' ) return null;
     if( ! isset( $strId ) || $strId == '' ) return null;
-    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' ) ) return null;
+    if( ! file_exists( BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json' ) ) return null;
 
-    $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . strtolower( $strClassName ) . 's.json' );
+    $objRawObjects = BaseObject::loadFileDeCrypted( BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json' );
 
     return isset( $objRawObjects->$strId ) ? $objRawObjects->$strId : null;
   }
@@ -1179,7 +1179,7 @@ class BaseObject {
   }
 
   /**
-   * This method returns the default app configuration (configs.json).
+   * This method returns the default app configuration (config.json).
    *
    * @return    Config   The config instance of the 'default' scope
    *

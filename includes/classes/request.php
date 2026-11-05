@@ -88,7 +88,7 @@ class Request {
    * The value cache is cleared because the scope change alters the resolution.
    * A missing view branch in params.json throws a RuntimeException (fail-loud).
    *
-   * @param     string    $strViewName   The view name (config key in views.json)
+   * @param     string    $strViewName   The view name (config key in view.json)
    * @return    void
    *
    * @throws    RuntimeException   When params.json has no branch for the view

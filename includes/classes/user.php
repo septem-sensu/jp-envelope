@@ -11,7 +11,7 @@ require_once ( __DIR__ . '/../classes/request.php' );
  * The constructor resolves the user following the auth resolution order: explicit id
  * (GET/POST parameter id), then the AES-encrypted cookie token, then the login
  * (user + password, SHA256 comparison) and finally the defaultUserId (guest) from
- * configs.json. All user list actions run as viewUserList actions and guard with the
+ * config.json. All user list actions run as viewUserList actions and guard with the
  * 'action' parameter trigger.
  *
  * @author    Markus Götz <info@septem-sensu.de>
@@ -134,7 +134,7 @@ class User extends BaseObject {
   /**
    * This method resolves the user following the auth resolution order:
    * explicit id, then cookie token, then login parameters, then the
-   * default guest user from configs.json. The first hit wins and sets
+   * default guest user from config.json. The first hit wins and sets
    * isUserSet.
    *
    * @param     string|null   $strId   The explicit user id or null
@@ -215,7 +215,7 @@ class User extends BaseObject {
   /**
    * This action creates a new user account from the user list form.
    * The viewUserList routes this action on the 'createUser' trigger
-   * (see views.json), the central routing lives in View::executeActions.
+   * (see view.json), the central routing lives in View::executeActions.
    * All field rules (mandatory, password companion and security, select
    * options) run centralized in FieldValidator first — every failed field
    * turns visible at once; the action itself keeps only the domain guards:
@@ -265,7 +265,7 @@ class User extends BaseObject {
   /**
    * This action saves changes to an existing user (password and/or role)
    * from the user list form. The viewUserList routes this action on the
-   * 'changeUser' trigger (see views.json), the central routing lives in
+   * 'changeUser' trigger (see view.json), the central routing lives in
    * View::executeActions. The field rules of both fields run centralized
    * in FieldValidator beforehand (the fieldset downgrades both to
    * optional: absent means unchanged); the action itself keeps the
@@ -330,11 +330,11 @@ class User extends BaseObject {
   /**
    * This action changes the password of the logged-in user from the
    * user list form. The viewUserList routes this action on the
-   * 'changeUserPassword' trigger (see views.json), the central routing
+   * 'changeUserPassword' trigger (see view.json), the central routing
    * lives in View::executeActions. Only the own password can be changed;
    * the field rules (password companion, match, security) run centralized
    * in FieldValidator behind the domain guards. Password rules come from
-   * configs.json.
+   * config.json.
    *
    * @param     Controller    $objController   The controller instance of the request
    * @return    void
@@ -372,7 +372,7 @@ class User extends BaseObject {
   /**
    * This action deletes an existing user account from the user list form.
    * The viewUserList routes this action on the 'deleteUser' trigger
-   * (see views.json), the central routing lives in View::executeActions.
+   * (see view.json), the central routing lives in View::executeActions.
    * Self-deletion guard: the logged-in user must not delete their own account.
    *
    * @param     Controller    $objController   The controller instance of the request

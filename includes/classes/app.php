@@ -50,7 +50,7 @@ class App extends BaseObject {
   /**
    * This method is the constructor of the class and takes over the request
    * context from the controller. The object id is the app alias plus the
-   * app version from configs.json (e.g. 'JPEnvelope_0.2.10') — a version
+   * app version from config.json (e.g. 'JPEnvelope_0.2.10') — a version
    * bump also moves the registry id of the app instance this way.
    *
    * @param     Controller    $objController   The controller instance of the request

@@ -7,7 +7,7 @@ declare( strict_types = 1 );
  * envelope decoupling: execute() throws the app context first and then
  * the current user (the guest on the login page) centrally into the
  * collector — otherwise the login page would have no JS user instance
- * and therefore no fieldValidator. SKIP paths: without a local users.json
+ * and therefore no fieldValidator. SKIP paths: without a local user.json
  * the login chain stays unchecked.
  *
  * @author    Markus Götz <info@septem-sensu.de>
@@ -20,15 +20,15 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strUserFile = BaseObject::FILEPATHJSON . 'data/users.json';
+$strUserFile = BaseObject::FILEPATHJSON . 'data/user.json';
 
 if( ! file_exists( $strUserFile ) ) {
-  echo 'SKIP: keine lokale users.json — Login-Kette nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — Login-Kette nicht prüfbar.' . PHP_EOL;
   exit( 0 );
 }
 
 if( count( BaseObject::getObjectsFromClass( 'User' ) ) === 0 ) {
-  echo 'SKIP: users.json enthält keine User.' . PHP_EOL;
+  echo 'SKIP: user.json enthält keine User.' . PHP_EOL;
   exit( 0 );
 }
 
@@ -41,7 +41,7 @@ check( $strHtml !== '', 'execute(): Login-Seite rendert die Template-Kette' );
 check( count( $arrRawObjects ) === 2, 'execute(): App-Kontext und aktueller User (Guest) in den Kollektor geworfen' );
 check( $arrRawObjects[ 0 ]->class === 'App', 'Envelope: class App an Position 1 (Kontext-Griff für onAppReady)' );
 check( $arrRawObjects[ 1 ]->class === 'User', 'Envelope: class User (löst loadClass von user.js aus)' );
-check( $arrRawObjects[ 1 ]->id === $objController->user()->id(), 'Envelope: id = aktueller User (defaultUserId aus configs.json)' );
+check( $arrRawObjects[ 1 ]->id === $objController->user()->id(), 'Envelope: id = aktueller User (defaultUserId aus config.json)' );
 check( ! isset( $arrRawObjects[ 1 ]->data->password ), 'Envelope: kein Passwort-Hash (NOSERIALIZE)' );
 
 $arrRawObjectsJson = json_decode( getTemplateVar( $objController->presentation(), 'default::rawObjects' ) );

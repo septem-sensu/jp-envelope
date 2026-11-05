@@ -6,10 +6,10 @@ declare( strict_types = 1 );
  * This suite is the regression test for the central action routing of
  * the views (S1 redesign 0.2.11):
  * - S2: the config validation fails loud on drift — every actionNames
- *   entry in views.json must be an object with an existing "Class::method"
+ *   entry in view.json must be an object with an existing "Class::method"
  *   plus exactly one routing field (string "trigger" or true "always" —
  *   a missing, doubled or wrongly typed routing field throws), every
- *   permission in roles.json must point to an existing two-segment
+ *   permission in role.json must point to an existing two-segment
  *   method (RuntimeException, caught in execute() as generic soft
  *   error + log).
  * - S1: the router calls triggered actions only on a matching 'action'
@@ -37,10 +37,10 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/bootstrap.php' );
 
-$strUserFile = BaseObject::FILEPATHJSON . 'data/users.json';
+$strUserFile = BaseObject::FILEPATHJSON . 'data/user.json';
 
 if( ! file_exists( $strUserFile ) ) {
-  echo 'SKIP: keine lokale users.json — Action-Prinzip ohne Auth-Kontext nicht prüfbar.' . PHP_EOL;
+  echo 'SKIP: keine lokale user.json — Action-Prinzip ohne Auth-Kontext nicht prüfbar.' . PHP_EOL;
   exit( 0 );
 }
 
@@ -85,7 +85,7 @@ try {
   $strExceptionMessage = $objException->getMessage();
 }
 
-check( $boolThrown, 'S2: unbekannte Action im views.json-Eintrag wirft RuntimeException' );
+check( $boolThrown, 'S2: unbekannte Action im view.json-Eintrag wirft RuntimeException' );
 check( str_contains( $strExceptionMessage, 'User::doesNotExist' ), 'S2: Exception-Meldung nennt die ungültige Action' );
 
 // --- S2: method without class segment throws fail-loud ---
