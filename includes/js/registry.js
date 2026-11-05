@@ -6,12 +6,17 @@
  * once, plus the object event types load/save/delete/new which the
  * Loader routes fire beside ready) — already fired events replay for
  * late listeners, class-wide listeners subscribe permanently, the
- * timing stays decoupled from the load order.
+ * timing stays decoupled from the load order. The event delivery is
+ * deferred: register() only queues the registration in pendingEvents,
+ * fireEvents() drains the queue — the Loader flushes after the batch
+ * fill (fillObjects), so an object event fires only when every
+ * reference of the batch is resolved (a save in the queue window
+ * cannot wipe the references anymore).
  *
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.18
+ * @version   0.2.19
  * @since     2026-10-17
  *
  * @example   const user = window[ appAlias ].registry.get( 'user' );
@@ -65,9 +70,10 @@ class Registry {
 
 /**
  * This method is the constructor of the class: it carries the registry
- * map (class name → instance map), the event listeners and the fired
+ * map (class name → instance map), the event listeners, the fired
  * event store (replay base — class-wide events hold an instance map
- * instead of a single value).
+ * instead of a single value) and the pending event queue of the
+ * deferred dispatch (drained by fireEvents).
  *
  * @public
  *
@@ -77,22 +83,24 @@ class Registry {
  *
  */
   constructor() {
-    this._registry   = new Map();
-    this.listeners   = {};
-    this.firedEvents = {};
+    this._registry      = new Map();
+    this.listeners      = {};
+    this.firedEvents    = {};
+    this.pendingEvents  = [];
 
     return;
   }
 
 /**
- * This method registers an instance under class name and id and fires
- * the events in order: the ready events always (instance
- * ready:{class}:{id} first, afterwards class-wide ready:{class} for
- * every class-wide listener), the event type events (load/save/delete/
- * new, instance level first) only when eventName is set (blueprints
- * keep silent class-wide — the blueprint onReady path stays the
- * dedicated route). Earlier registered listeners dispatch directly,
- * later ones are served from the replay over firedEvents.
+ * This method registers an instance under class name and id and queues
+ * the event delivery in pendingEvents — no listener dispatch happens
+ * here (deferred dispatch): the events fire in fireEvents() when the
+ * caller flushes the queue (the Loader after the batch fill), so a
+ * callback can never see a half-processed envelope batch. The queued
+ * entry carries the normalized class key, the id, the instance and the
+ * event type (load/save/delete/new) or null for ready only — the
+ * blueprint id keeps silent class-wide (the blueprint onReady path
+ * stays the dedicated route).
  *
  * @public
  *
@@ -112,28 +120,57 @@ class Registry {
 
     this._registry.get( classKey ).set( id, instance );
 
-    const eventNameReadyInstance          = this.getEventName( classKey, id, 'ready' );
-    const eventNameInstance               = eventName !== null ? this.getEventName( classKey, id, eventName ) : null;
+    this.pendingEvents.push( { classKey: classKey, id: id, instance: instance, eventName: eventName } );
 
-    this.firedEvents[ eventNameReadyInstance ] = instance;
+    return;
+  }
 
-    if( eventNameInstance !== null ) this.firedEvents[ eventNameInstance ] = instance;
-    if( this.listeners[ eventNameReadyInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameReadyInstance ] );
-    if( eventNameInstance !== null && this.listeners[ eventNameInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameInstance ] );
+/**
+ * This method drains the pending event queue and delivers every
+ * queued registration in registration order: the ready events always
+ * (instance ready:{class}:{id} first, afterwards class-wide
+ * ready:{class} for every class-wide listener), the event type events
+ * (load/save/delete/new, instance level first) only when the queued
+ * eventName is set (blueprints keep silent class-wide). The replay
+ * base over firedEvents fills here, earlier registered listeners
+ * dispatch directly, later ones are served from the replay. Callbacks
+ * that register synchronously during the drain append to the queue
+ * and are delivered within the same run.
+ *
+ * @public
+ *
+ * @return    {void}
+ *
+ * @example   registry.fireEvents();
+ *
+ */
+  fireEvents() {
+    while( this.pendingEvents.length > 0 ) {
+      const pendingEvent = this.pendingEvents.shift();
 
-    if( id === this.constructor.BLUEPRINTID ) return;
+      const eventNameReadyInstance          = this.getEventName( pendingEvent.classKey, pendingEvent.id, 'ready' );
+      const eventNameInstance               = pendingEvent.eventName !== null ? this.getEventName( pendingEvent.classKey, pendingEvent.id, pendingEvent.eventName ) : null;
 
-    const eventNameReadyClass = this.getEventName( classKey, null, 'ready' );
-    const eventNameClass      = eventName !== null ? this.getEventName( classKey, null, eventName ) : null;
+      this.firedEvents[ eventNameReadyInstance ] = pendingEvent.instance;
 
-    if( ! this.firedEvents[ eventNameReadyClass ] ) this.firedEvents[ eventNameReadyClass ] = new Map();
-    if( eventNameClass !== null && ! this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ] = new Map();
+      if( eventNameInstance !== null ) this.firedEvents[ eventNameInstance ] = pendingEvent.instance;
+      if( this.listeners[ eventNameReadyInstance ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameReadyInstance ] );
+      if( eventNameInstance !== null && this.listeners[ eventNameInstance ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameInstance ] );
 
-    this.firedEvents[ eventNameReadyClass ].set( id, instance );
+      if( pendingEvent.id === this.constructor.BLUEPRINTID ) continue;
 
-    if( eventNameClass !== null ) this.firedEvents[ eventNameClass ].set( id, instance );
-    if( this.listeners[ eventNameReadyClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameReadyClass ] );
-    if( eventNameClass !== null && this.listeners[ eventNameClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameClass ] );
+      const eventNameReadyClass = this.getEventName( pendingEvent.classKey, null, 'ready' );
+      const eventNameClass      = pendingEvent.eventName !== null ? this.getEventName( pendingEvent.classKey, null, pendingEvent.eventName ) : null;
+
+      if( ! this.firedEvents[ eventNameReadyClass ] ) this.firedEvents[ eventNameReadyClass ] = new Map();
+      if( eventNameClass !== null && ! this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ] = new Map();
+
+      this.firedEvents[ eventNameReadyClass ].set( pendingEvent.id, pendingEvent.instance );
+
+      if( eventNameClass !== null ) this.firedEvents[ eventNameClass ].set( pendingEvent.id, pendingEvent.instance );
+      if( this.listeners[ eventNameReadyClass ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameReadyClass ] );
+      if( eventNameClass !== null && this.listeners[ eventNameClass ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameClass ] );
+    }
 
     return;
   }
@@ -217,9 +254,11 @@ class Registry {
 
 /**
  * This method removes an instance from the registry: the instance map
- * entry and every replay trace of all event types (ready, load, save,
- * delete, new — instance level and class-wide replay map) — delete and
- * blueprint replacement leave no ghost instances behind. Missing
+ * entry, every replay trace of all event types (ready, load, save,
+ * delete, new — instance level and class-wide replay map) and a
+ * pending event of the deferred dispatch that has not fired yet —
+ * delete and blueprint replacement leave no ghost instances behind
+ * (an event of a removed instance is never delivered). Missing
  * classes or ids pass silently.
  *
  * @public
@@ -251,6 +290,8 @@ class Registry {
 
       if( this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ].delete( id );
     }
+
+    this.pendingEvents = this.pendingEvents.filter( ( pendingEvent ) => pendingEvent.classKey !== classKey || pendingEvent.id !== id );
 
     return;
   }

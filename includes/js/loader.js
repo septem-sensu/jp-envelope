@@ -6,17 +6,20 @@
  * per file, file name = first letter lower case CamelCase).
  * registerObjects() builds the complete bootstrap from the injected
  * collector: per envelope one instance, then all resources awaited,
- * then the registry entries, then app-ready — all-or-nothing; only
+ * then the registry entries, then the batch fill (fillObjects), then
+ * the deferred event flush and app-ready — all-or-nothing; only
  * without debug the rawObjects leave the namespace, a failed
  * resource load keeps them (fail-loud). Every route registers with
  * its event type (registerObjects: load, loadNewObject: new,
  * loadObject: load, saveObject: save, deleteObject: delete) — the
- * registry fires the matching object events beside ready.
+ * registry delivers the matching object events beside ready, deferred
+ * via fireEvents() after the fill so every reference of the batch is
+ * resolved before a listener sees the instance.
  *
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.18
+ * @version   0.2.19
  * @since     2026-10-16
  *
  * @example   const loader = new Loader();
@@ -48,9 +51,10 @@ class Loader extends EventTarget {
  * This method builds the complete app bootstrap: it instantiates
  * every envelope of the collector in parallel, awaits afterwards all
  * loadResources() calls, registers the finished instances in the
- * registry and fires app-ready only then. Without debug it deletes
- * the rawObjects from the namespace afterwards — a failed resource
- * load keeps them (fail-loud).
+ * registry, fills the batch references, flushes the deferred event
+ * queue (fireEvents) and fires app-ready only then. Without debug it
+ * deletes the rawObjects from the namespace afterwards — a failed
+ * resource load keeps them (fail-loud).
  *
  * @public
  *
@@ -84,6 +88,8 @@ class Loader extends EventTarget {
         for( let i = 0; i < instances.length; i++ ) {
           instances[ i ].fillObjects();
         }
+
+        window[ appAlias ].registry.fireEvents();
 
         if( ! window[ appAlias ].config.debug ) delete window[ appAlias ].rawObjects;
 
@@ -129,11 +135,11 @@ class Loader extends EventTarget {
   }
 
 /**
- * This method runs the complete envelope pipeline for on-demand
- * loaded objects (blueprints): instantiate, load resources,
- * register in the registry — the ready event incl. replay fires the
- * registry itself, the optional event type fires the matching object
- * event beside it.
+ * This method runs the envelope pipeline for a single on-demand
+ * loaded object: instantiate, load resources, register in the
+ * registry. The event delivery is deferred — the registration only
+ * queues in the registry (pendingEvents), the caller flushes via
+ * fireEvents() when the batch is complete (instantiateRawObjects).
  *
  * @public
  *
@@ -142,6 +148,8 @@ class Loader extends EventTarget {
  * @return    {Promise}       instance     The registered instance
  *
  * @example   const blueprint = await loader.instantiateRawObject( rawObject, 'new' );
+ *
+ * @see Loader#instantiateRawObjects
  *
  */
   async instantiateRawObject( rawObject, eventName = null ) {
@@ -160,8 +168,11 @@ class Loader extends EventTarget {
  * This method runs the complete envelope pipeline for a whole envelope
  * array in collector order: every envelope is instantiated and registered
  * via instantiateRawObject, then the sub object references of all
- * instances are resolved via fillObjects(). Use this variant for the json
- * views that deliver an array of envelopes (blueprint, viewLoadObject).
+ * instances are resolved via fillObjects(), then the deferred event
+ * queue flushes via fireEvents() — the object events fire only when
+ * every reference of the batch is resolved. Use this variant for the
+ * json views that deliver an array of envelopes (blueprint,
+ * viewLoadObject).
  *
  * @public
  *
@@ -188,6 +199,8 @@ class Loader extends EventTarget {
     for( let i = 0; i < instances.length; i++ ) {
       instances[ i ].fillObjects();
     }
+
+    window[ appAlias ].registry.fireEvents();
 
     return instances;
 

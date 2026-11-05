@@ -1,9 +1,12 @@
 /**
  * This suite is the regression test for the registry core with its
- * event semantics (redesign of the ready events 0.2.11). It loads
- * registry.js over new Function() (the class file is browser style
- * without module export) and checks:
+ * event semantics (redesign of the ready events 0.2.11, deferred
+ * dispatch 0.2.19). It loads registry.js over new Function() (the
+ * class file is browser style without module export) and checks:
  * - the map of maps keys (lower case class names, BLUEPRINTID const)
+ * - the deferred dispatch: register() only queues, fireEvents()
+ *   delivers (early listeners, late listeners in the queue window,
+ *   remove drops pending events)
  * - the instance events: onReady with id = one-time delivery incl.
  *   replay, the callback fires exactly once per event
  * - the class-wide events (id null): permanent subscription with
@@ -18,7 +21,7 @@
  * the PHP suites: OK line per check, exit code 1 on the first error.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.11
+ * @version   0.2.12
  * @since     2026-10-24
  *
  * @example   node includes/tests/registryTest.js
@@ -61,12 +64,46 @@ const objRegistry = new Registry();
 check( Registry.BLUEPRINTID === 'new', 'Konstante: BLUEPRINTID ist new' );
 check( Registry.EVENTNAMEAPPREADY === '__app_ready__', 'Konstante: EVENTNAMEAPPREADY ist gesetzt' );
 
+// --- Deferred Dispatch: register queued, fireEvents liefert ---
+
+const objRegistryDeferred  = new Registry();
+const arrDeferredEarly     = [];
+
+objRegistryDeferred.onSave( 'Task', 'taskA', ( objInstance ) => arrDeferredEarly.push( objInstance.name ) );
+
+objRegistryDeferred.register( 'Task', 'taskA', { name: 'queued' }, 'save' );
+
+check( arrDeferredEarly.length === 0, 'Deferred: register queue das Event, es feuert noch nicht' );
+
+const arrDeferredWindow = [];
+
+objRegistryDeferred.onSave( 'Task', 'taskA', ( objInstance ) => arrDeferredWindow.push( objInstance.name ) );
+
+check( arrDeferredWindow.length === 0, 'Deferred: Listener im Queue-Fenster bekommt vor dem Flush keinen Replay' );
+
+objRegistryDeferred.fireEvents();
+
+check( arrDeferredEarly.length === 1 && arrDeferredEarly[ 0 ] === 'queued', 'Deferred: fireEvents liefert das frühe Event nach' );
+check( arrDeferredWindow.length === 1 && arrDeferredWindow[ 0 ] === 'queued', 'Deferred: fireEvents bedient auch den Listener aus dem Queue-Fenster' );
+
+const objRegistryPending = new Registry();
+const arrPendingTrack    = [];
+
+objRegistryPending.onDelete( 'Task', 'taskB', ( objInstance ) => arrPendingTrack.push( objInstance.name ) );
+
+objRegistryPending.register( 'Task', 'taskB', { name: 'pending' }, 'delete' );
+objRegistryPending.remove( 'Task', 'taskB' );
+objRegistryPending.fireEvents();
+
+check( arrPendingTrack.length === 0, 'Deferred: remove wirft das ausstehende Event weg (kein feuern nach dem Entfernen)' );
+
 // --- register, get, getAll, has (Map of Maps, Blueprint-Filter) ---
 
 const objFirst  = { name: 'first' };
 const objSecond = { name: 'second' };
 
 objRegistry.register( 'User', Registry.BLUEPRINTID, { name: 'blueprint' } );
+objRegistry.fireEvents();
 
 check( objRegistry.getAll( 'User' ).size === 0 && objRegistry.get( 'User', 'new' ) !== undefined, 'getAll: Blueprint gefiltert, direkter Zugang über get bleibt' );
 
@@ -76,8 +113,9 @@ const arrOnceBefore = [];
 
 objRegistry.onReady( 'Role', 'roleA', ( objInstance ) => arrOnceBefore.push( objInstance.name ) );
 objRegistry.register( 'Role', 'roleA', { name: 'alpha' } );
+objRegistry.fireEvents();
 
-check( arrOnceBefore.length === 1 && arrOnceBefore[ 0 ] === 'alpha', 'onReady mit Id: Listener vor der Registration feuert bei register' );
+check( arrOnceBefore.length === 1 && arrOnceBefore[ 0 ] === 'alpha', 'onReady mit Id: Listener vor der Registration feuert beim Flush' );
 
 const arrOnceReplay = [];
 
@@ -86,6 +124,7 @@ objRegistry.onReady( 'Role', 'roleA', ( objInstance ) => arrOnceReplay.push( obj
 check( arrOnceReplay.length === 1 && arrOnceReplay[ 0 ] === 'alpha', 'onReady mit Id: Listener nach der Registration bekommt den Replay sofort' );
 
 objRegistry.register( 'Role', 'roleB', { name: 'beta' } );
+objRegistry.fireEvents();
 
 check( arrOnceBefore.length === 1 && arrOnceReplay.length === 1, 'onReady mit Id: Once-Callback feuert genau einmal pro Event (fremde Id feuert nicht nach)' );
 
@@ -98,6 +137,7 @@ objRegistry.onReady( 'Weed', null, ( objInstance ) => arrClassEarly.push( objIns
 objRegistry.register( 'Weed', 'weedA', { name: 'one' } );
 objRegistry.register( 'Weed', 'weedB', { name: 'two' } );
 objRegistry.register( 'Weed', Registry.BLUEPRINTID, { name: 'blueprint' } );
+objRegistry.fireEvents();
 
 check( arrClassEarly.length === 2 && arrClassEarly[ 0 ] === 'one' && arrClassEarly[ 1 ] === 'two', 'Klassenweit: einmal registriert feuert die Subscription pro neuer Instanz' );
 
@@ -108,12 +148,14 @@ objRegistry.onReady( 'Weed', null, ( objInstance ) => arrClassLate.push( objInst
 check( arrClassLate.length === 2 && arrClassLate[ 0 ] === 'one' && arrClassLate[ 1 ] === 'two', 'Klassenweit: Late-Listener bekommt den vollen Replay (Blueprint ausgespart)' );
 
 objRegistry.register( 'Weed', 'weedC', { name: 'three' } );
+objRegistry.fireEvents();
 
 check( arrClassEarly.length === 3 && arrClassLate.length === 3, 'Klassenweit: Subscription bleibt für spätere Instanzen permanent' );
 
 // --- App-Ready-Kanal: Speicherung, Dispatch mit App-Instanz, Replay ---
 
 objRegistry.register( 'App', 'JPEnvelope_test', { name: 'app' } );
+objRegistry.fireEvents();
 
 const arrAppBefore = [];
 
@@ -139,6 +181,7 @@ objRegistryRemove.onReady( 'Item', null, ( objInstance ) => arrRemoveTrack.push(
 
 objRegistryRemove.register( 'Item', 'itemA', { name: 'A' } );
 objRegistryRemove.register( 'Item', 'itemB', { name: 'B' } );
+objRegistryRemove.fireEvents();
 
 objRegistryRemove.remove( 'Item', 'itemA' );
 
@@ -147,6 +190,7 @@ check( objRegistryRemove.has( 'Item', 'itemA' ) === false && objRegistryRemove.h
 arrRemoveTrack.length = 0;
 
 objRegistryRemove.register( 'Item', 'itemC', { name: 'C' } );
+objRegistryRemove.fireEvents();
 
 check( arrRemoveTrack.length === 1 && arrRemoveTrack[ 0 ] === 'C', 'remove: entfernte Instanz feuert in der permanenten Subscription nicht nach' );
 

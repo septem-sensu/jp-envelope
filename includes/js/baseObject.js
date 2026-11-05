@@ -12,7 +12,7 @@
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.12
+ * @version   0.2.13
  * @since     2026-10-15
  *
  * @example   const baseObject = new BaseObject();
@@ -114,9 +114,13 @@ class BaseObject extends EventTarget {
 /**
  * This method resolves the loose sub object references of the instance:
  * every property marked with propertyType 'object' is replaced by the
- * matching instance from the registry. It runs after the registry
+ * matching instance from the registry, every 'collection' property by
+ * the instance list of its element ids. It runs after the registry
  * registration, so referenced objects of the same envelope batch are
- * already resolvable.
+ * already resolvable — a reference that the registry cannot resolve
+ * (dangling id) travels as undefined and is reported over the error
+ * channel (_warnDanglingReference): an undefined reference would
+ * silently wipe on the next save (toData sends null).
  *
  * @public
  *
@@ -125,6 +129,7 @@ class BaseObject extends EventTarget {
  * @example   instance.fillObjects();
  *
  * @see BaseObject#fillObject
+ * @see BaseObject#_warnDanglingReference
  *
  */
   fillObjects() {
@@ -133,19 +138,58 @@ class BaseObject extends EventTarget {
       if( typeof this[ property ].propertyType !== 'string' || this[ property ].propertyType === '' ) continue;
 
       if( this[ property ].propertyType === 'object' ) {
-        this[ property ] = window[ appAlias ].registry.get( this[ property ].class, this[ property ].value );
+        const instance = window[ appAlias ].registry.get( this[ property ].class, this[ property ].value );
+
+        if( ! instance && this[ property ].value ) this._warnDanglingReference( this[ property ].class, this[ property ].value );
+
+        this[ property ] = instance;
       }
 
       if( this[ property ].propertyType === 'collection' ) {
         const value = [];
 
         for( let i = 0; i < this[ property ].value.length; i++ ) {
-          value.push( window[ appAlias ].registry.get( this[ property ].class, this[ property ].value[ i ] ) );
+          const element = window[ appAlias ].registry.get( this[ property ].class, this[ property ].value[ i ] );
+
+          if( ! element ) this._warnDanglingReference( this[ property ].class, this[ property ].value[ i ] );
+
+          value.push( element );
         }
 
         this[ property ] = value;
       }
     }
+
+    return;
+  }
+
+/**
+ * This method reports a dangling reference of the instance (source:
+ * fillObjects): the console carries the full coordinates always, the
+ * app error channel delivers an overlay card when the app instance is
+ * already registered — with deferred flush (boolFlush false): a flush
+ * here would fire the queued batch events before the fill of the
+ * batch is complete.
+ *
+ * @private
+ *
+ * @param     {string}   className   The declared class of the reference
+ * @param     {string}   id          The referenced instance id that the registry cannot resolve
+ * @return    {void}
+ *
+ * @example   this._warnDanglingReference( 'User', 'max@musterman.de' );
+ *
+ * @see BaseObject#fillObjects
+ *
+ */
+  _warnDanglingReference( className, id ) {
+    const strMessage = 'Referenz nicht aufgelöst: ' + className + '::' + id + ' (in ' + this.class + '::' + this.id + ')';
+
+    console.error( '[Fehlerkanal JS] ' + strMessage );
+
+    const app = window[ appAlias ].registry.get( 'app' );
+
+    if( app ) app.reportError( new Error( strMessage ), 'fillObjects: ' + this.class + '::' + this.id, false );
 
     return;
   }

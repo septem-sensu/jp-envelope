@@ -11,7 +11,7 @@
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.12
+ * @version   0.2.13
  * @since     2026-10-20
  *
  * @example   const app = window[ appAlias ].registry.get( 'app' );
@@ -85,18 +85,24 @@ class App extends BaseObject {
  * so an exception in the error channel (e.g. from showError) stops
  * the recursion. Own id space errorjs{N}: the PHP envelope ids
  * error{N} would otherwise overwrite a JS error silently in the
- * register phase.
+ * register phase. With boolFlush the registration flushes the
+ * deferred event queue (default true) — a reporter inside a running
+ * batch fill (e.g. the dangling reference warning of fillObjects)
+ * passes false: a flush there would fire the queued batch events
+ * before the fill is complete.
  *
  * @public
  *
- * @param     {*}        error    The occurred error (Error object or message text)
- * @param     {string}   source   The origin description of the error
+ * @param     {*}        error       The occurred error (Error object or message text)
+ * @param     {string}   source      The origin description of the error
+ * @param     {boolean}  boolFlush   True flushes the pending event queue after the registration (default), false keeps the events queued
  * @return    {void}
  *
  * @example   app.reportError( error, 'newObject: User' );
+ * @example   app.reportError( error, 'fillObjects: DemoOne', false );
  *
  */
-  reportError( error, source ) {
+  reportError( error, source, boolFlush = true ) {
     try {
       console.error( '[Fehlerkanal JS] ' + source, error );
 
@@ -111,6 +117,8 @@ class App extends BaseObject {
       this.registry.register( 'AppError', strErrorId, appErrorInstance );
 
       appErrorInstance.showError();
+
+      if( boolFlush ) this.registry.fireEvents();
     } catch( reportErrorProblem ) {
       console.error( '[Fehlerkanal JS] Anzeige gescheitert:', reportErrorProblem );
     }
