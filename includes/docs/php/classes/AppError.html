@@ -190,6 +190,16 @@ same reason.</p>
 </h4>
 <dl class="phpdocumentor-table-of-contents">
             <dt class="phpdocumentor-table-of-contents__entry -constant -public">
+    <a class="" href="classes/BaseObject.html#constant_BLUEPRINTID">BLUEPRINTID</a>
+    <span>
+        &nbsp;= &#039;new&#039;                            </span>
+</dt>
+<dd>The blueprint id of the generic json routes (viewNewObject carries it
+in the response envelope, viewSaveObject treats it as the create
+trigger and replaces it with a generated id) — the same contract
+value the client Registry.BLUEPRINTID holds.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -constant -public">
     <a class="" href="classes/BaseObject.html#constant_FILEPATHBASE">FILEPATHBASE</a>
     <span>
         &nbsp;= __DIR__ . &#039;/../&#039;                            </span>
@@ -208,7 +218,7 @@ same reason.</p>
     <span>
         &nbsp;= __DIR__ . &#039;/../json/&#039;                            </span>
 </dt>
-<dd>File path of the json configuration directory (params.json, roles.json, etc.).</dd>
+<dd>File path of the json configuration directory (params.json, role.json, etc.).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -constant -public">
     <a class="" href="classes/BaseObject.html#constant_FILEPATHTEMPLATES">FILEPATHTEMPLATES</a>
@@ -216,6 +226,23 @@ same reason.</p>
         &nbsp;= __DIR__ . &#039;/../templates/&#039;                            </span>
 </dt>
 <dd>File path of the template directory.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -constant -public">
+    <a class="" href="classes/BaseObject.html#constant_LOCKSLEEP">LOCKSLEEP</a>
+    <span>
+        &nbsp;= 50000                            </span>
+</dt>
+<dd>The sleep time in microseconds between non-blocking lock retries
+(withFileLock).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -constant -public">
+    <a class="" href="classes/BaseObject.html#constant_LOCKTIMEOUT">LOCKTIMEOUT</a>
+    <span>
+        &nbsp;= 5.0                            </span>
+</dt>
+<dd>The timeout in seconds when acquiring the exclusive file lock of a
+class json file (withFileLock). Exceeded, a RuntimeException is
+thrown — fail loud instead of an endless wait.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -constant -public">
     <a class="" href="classes/BaseObject.html#constant_NOSAVE">NOSAVE</a>
@@ -242,6 +269,16 @@ e.g. the password hash of a user. Objects and arrays are json encoded by the Pre
 
 </h4>
 <dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/BaseObject.html#property_intErrorEnvelopeCount">$intErrorEnvelopeCount</a>
+    <span>
+                        &nbsp;: int            </span>
+</dt>
+<dd>The running number for the ids of the AppError envelopes the generic
+json routes (viewSaveObject, viewDeleteObject) return on rejection —
+every failed response gets unique display ids without a controller
+error counter.</dd>
+
             <dt class="phpdocumentor-table-of-contents__entry -property -protected">
     <a class="" href="classes/BaseObject.html#property_class">$class</a>
     <span>
@@ -319,7 +356,7 @@ empty stdClass when the class has no field file.</dd>
     <span>
                                 &nbsp;: <a href="classes/Config.html"><abbr title="\Config">Config</abbr></a>    </span>
 </dt>
-<dd>This method returns the default app configuration (configs.json).</dd>
+<dd>This method returns the default app configuration (config.json).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_createBlueprint">createBlueprint()</a>
@@ -382,10 +419,13 @@ in the class json file.</dd>
                                 &nbsp;: void    </span>
 </dt>
 <dd>This method fills the instance properties from the persisted entry
-of the object in the class json file. Properties that do not exist
-on the class are skipped, as are unset properties (fillObject never
-overwrites already set properties). It is a no-op when the id, the
-class name or the file is missing.</dd>
+of the object in the class json file. It reads the complete stored
+state: builtin properties are set directly, &#039;class&#039; references are
+instantiated from the stored id and &#039;collection&#039; properties are
+rebuilt from the stored id list — already set instance properties
+are overwritten (consistent reload semantics). Values that are
+missing or empty in the file leave the corresponding property
+untouched, properties that do not exist on the class are skipped.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_get">get()</a>
@@ -427,6 +467,13 @@ initObject() fills the fields property through it.</dd>
 <dd>This method returns an instance of every entry in the class json file.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_getRawObject">getRawObject()</a>
+    <span>
+                                &nbsp;: object|null    </span>
+</dt>
+<dd>This static method returns a raw object (stdClass).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_getRawObjectsFromClass">getRawObjectsFromClass()</a>
     <span>
                                 &nbsp;: object|null    </span>
@@ -458,12 +505,15 @@ or null when the class name is empty.</dd>
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_loadFileDeCrypted">loadFileDeCrypted()</a>
     <span>
-                                &nbsp;: object|array&lt;string|int, mixed&gt;    </span>
+                                &nbsp;: object|array&lt;string|int, mixed&gt;|null    </span>
 </dt>
-<dd>This method reads and decodes a json file. It auto-detects whether the
-content is plain JSON (local/dev) or encrypted (production) before
-decrypting. Line breaks are stripped upfront so that encrypted content
-can be detected safely.</dd>
+<dd>This method reads and decodes a json file. It returns null when the
+file does not exist — the persistence callers (saveObject, insertObject,
+deleteObject) interpret this as the empty storage state of a class that
+has never been persisted. It auto-detects whether the content is plain
+JSON (local/dev) or encrypted (production) before decrypting. Line
+breaks are stripped upfront so that encrypted content can be detected
+safely.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/AppError.html#method_message">message()</a>
@@ -481,13 +531,39 @@ can be detected safely.</dd>
 and additional entropy).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_onDelete">onDelete()</a>
+    <span>
+                                &nbsp;: string|null    </span>
+</dt>
+<dd>This method is the lifecycle hook of the generic delete route
+(viewDeleteObject). Business classes override it to enforce ownership
+and domain guards and to prepare cascades before the entry is removed.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_onSave">onSave()</a>
+    <span>
+                                &nbsp;: string|null    </span>
+</dt>
+<dd>This method is the lifecycle hook of the generic save route
+(viewSaveObject). Business classes override it to enforce ownership
+and domain guards before the merged object persists. Returning a
+string aborts the save — the message travels to the frontend as an
+AppError envelope; returning null allows the save. The controller
+follows the request context of the save (a null value means the
+save runs outside a request, e.g. in tests).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_rawObject">rawObject()</a>
     <span>
-                                &nbsp;: object    </span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
 </dt>
-<dd>This method builds the collector envelope { class, id, data } of the object
-for the frontend. The class name can be overridden for the rare case that
-the frontend class differs from the PHP class name.</dd>
+<dd>This method builds the collector envelope [ { class, id, data } ... ]
+of the object array for the frontend. Every referenced business
+object (&#039;class&#039; typed) and collection property is embedded into the
+own data payload as a descriptor (with its id respectively its
+element id list), replacing the raw instance value from
+serializeObject() — for multiple reference properties all of their
+descriptors are embedded.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_saveFileEnCrypted">saveFileEnCrypted()</a>
@@ -505,7 +581,8 @@ and writes it to the file with an exclusive lock.</dd>
 <dd>This method persists the object: it writes only the own entry back into
 the class json file. The NOSAVE constant filters technical runtime properties
 from the payload; NOSERIALIZE deliberately does NOT apply here — a user&#039;s
-password hash must be persisted after all.</dd>
+password hash must be persisted after all. The whole read-modify-write cycle
+runs under an exclusive file lock on &lt;file&gt;.lock (see withFileLock).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_serializeObject">serializeObject()</a>
@@ -519,7 +596,13 @@ password hash must be persisted after all.</dd>
     <span>
                                 &nbsp;: object    </span>
 </dt>
-<dd>This method serializes the object for persistence.</dd>
+<dd>This method serializes the object for persistence. Unset properties
+and properties filtered by the NOSAVE constant are removed. Referenced
+business objects (&#039;class&#039; typed properties) are serialized as their id
+and collection properties (&#039;collection&#039; typed) as the id list of their
+elements — fillObject() reads both forms back as instances. Builtin
+properties keep their value. NOSERIALIZE deliberately does NOT apply
+here — a user&#039;s password hash must be persisted after all.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/AppError.html#method_setMessage">setMessage()</a>
@@ -555,6 +638,17 @@ template chain (templateNames() of the View object). The concatenated
 template output is returned.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_viewDeleteObject">viewDeleteObject()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This method serves the generic json delete route behind
+index.php?view=viewDeleteObject (POST): the request parameters class
+and id address the envelope to remove. The route accepts only
+CRUD-capable classes (a BaseObject subclass with a field definition,
+see viewSaveObject) — every other class name is silently filtered.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_viewJson">viewJson()</a>
     <span>
                                 &nbsp;: object    </span>
@@ -562,9 +656,22 @@ template output is returned.</dd>
 <dd>This method is the default json view stub and returns an empty stdClass.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_viewLoadObject">viewLoadObject()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This method serves the json view behind index.php?view=viewLoadObject&amp;class=...
+and returns a object instance in the collector envelope format for
+on-demand object loading in the frontend. Invalid class values or
+invalid id values or the object dont exists arrive
+from the request layer already filtered as null — the response is then
+deliberately empty instead of an AppError, because json views do not
+carry an AppError channel.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_viewNewObject">viewNewObject()</a>
     <span>
-                                &nbsp;: object    </span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
 </dt>
 <dd>This method serves the json view behind index.php?view=viewNewObject&amp;newClass=...
 and returns a blueprint instance in the collector envelope format for
@@ -572,6 +679,26 @@ on-demand object creation in the frontend. Invalid newClass values arrive
 from the request layer already filtered as null — the response is then
 deliberately empty instead of an AppError, because json views do not
 carry an AppError channel.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_viewSaveObject">viewSaveObject()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This method serves the generic json save route behind
+index.php?view=viewSaveObject (POST): the request parameter &#039;object&#039;
+carries the envelope { class, id, data } the client wants to persist —
+with the blueprint id the route creates (server generated id), without
+it the client addresses an existing object (merge update). The route
+accepts only CRUD-capable classes: a BaseObject subclass with a field
+definition — every other class name is silently filtered (like
+viewLoadObject, json views carry no information channel for foreign
+classes). The merged values follow the field contract: only declared
+fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
+password fields are never merged, fields with a roleIds attribute only
+for roles the definition allows and the own id is immutable — at a
+create the delivered id is taken over the declared id field contract,
+the blueprint id itself is ignored (the server generates the id).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -protected">
     <a class="" href="classes/BaseObject.html#method_initObject">initObject()</a>
@@ -596,6 +723,41 @@ the same source.</dd>
 
         </h3>
                     <article class="phpdocumentor-element -constant -public ">
+    <h4 class="phpdocumentor-element__name" id="constant_BLUEPRINTID">
+        BLUEPRINTID
+        <a href="classes/BaseObject.html#constant_BLUEPRINTID" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">85</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The blueprint id of the generic json routes (viewNewObject carries it
+in the response envelope, viewSaveObject treats it as the create
+trigger and replaces it with a generated id) — the same contract
+value the client Registry.BLUEPRINTID holds.</p>
+
+    
+    <code class="phpdocumentor-signature phpdocumentor-code ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+        <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">BLUEPRINTID</span>
+    = <span class="phpdocumentor-signature__default-value">&#039;new&#039;</span>
+</code>
+
+
+    
+    
+    
+
+    
+
+</article>
+                    <article class="phpdocumentor-element -constant -public ">
     <h4 class="phpdocumentor-element__name" id="constant_FILEPATHBASE">
         FILEPATHBASE
         <a href="classes/BaseObject.html#constant_FILEPATHBASE" class="headerlink"><i class="fas fa-link"></i></a>
@@ -605,7 +767,7 @@ the same source.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">29</span>
+    <span class="phpdocumentor-element-found-in__line">31</span>
 
     </aside>
 
@@ -637,7 +799,7 @@ the same source.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">45</span>
+    <span class="phpdocumentor-element-found-in__line">47</span>
 
     </aside>
 
@@ -669,11 +831,11 @@ the same source.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">37</span>
+    <span class="phpdocumentor-element-found-in__line">39</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">File path of the json configuration directory (params.json, roles.json, etc.).</p>
+        <p class="phpdocumentor-summary">File path of the json configuration directory (params.json, role.json, etc.).</p>
 
     
     <code class="phpdocumentor-signature phpdocumentor-code ">
@@ -701,7 +863,7 @@ the same source.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">53</span>
+    <span class="phpdocumentor-element-found-in__line">55</span>
 
     </aside>
 
@@ -724,6 +886,73 @@ the same source.</dd>
 
 </article>
                     <article class="phpdocumentor-element -constant -public ">
+    <h4 class="phpdocumentor-element__name" id="constant_LOCKSLEEP">
+        LOCKSLEEP
+        <a href="classes/BaseObject.html#constant_LOCKSLEEP" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">74</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The sleep time in microseconds between non-blocking lock retries
+(withFileLock).</p>
+
+    
+    <code class="phpdocumentor-signature phpdocumentor-code ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+        <span class="phpdocumentor-signature__type">int</span>
+    <span class="phpdocumentor-signature__name">LOCKSLEEP</span>
+    = <span class="phpdocumentor-signature__default-value">50000</span>
+</code>
+
+
+    
+    
+    
+
+    
+
+</article>
+                    <article class="phpdocumentor-element -constant -public ">
+    <h4 class="phpdocumentor-element__name" id="constant_LOCKTIMEOUT">
+        LOCKTIMEOUT
+        <a href="classes/BaseObject.html#constant_LOCKTIMEOUT" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">65</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The timeout in seconds when acquiring the exclusive file lock of a
+class json file (withFileLock). Exceeded, a RuntimeException is
+thrown — fail loud instead of an endless wait.</p>
+
+    
+    <code class="phpdocumentor-signature phpdocumentor-code ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+        <span class="phpdocumentor-signature__type">float</span>
+    <span class="phpdocumentor-signature__name">LOCKTIMEOUT</span>
+    = <span class="phpdocumentor-signature__default-value">5.0</span>
+</code>
+
+
+    
+    
+    
+
+    
+
+</article>
+                    <article class="phpdocumentor-element -constant -public ">
     <h4 class="phpdocumentor-element__name" id="constant_NOSAVE">
         NOSAVE
         <a href="classes/BaseObject.html#constant_NOSAVE" class="headerlink"><i class="fas fa-link"></i></a>
@@ -733,7 +962,7 @@ the same source.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">71</span>
+    <span class="phpdocumentor-element-found-in__line">114</span>
 
     </aside>
 
@@ -766,7 +995,7 @@ e.g. technical runtime properties like the loaded form fields.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">62</span>
+    <span class="phpdocumentor-element-found-in__line">105</span>
 
     </aside>
 
@@ -802,6 +1031,48 @@ e.g. the password hash of a user. Objects and arrays are json encoded by the Pre
         class="
             phpdocumentor-element
             -property
+            -public
+            -static                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="property_intErrorEnvelopeCount">
+        $intErrorEnvelopeCount
+        <a href="classes/BaseObject.html#property_intErrorEnvelopeCount" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">96</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The running number for the ids of the AppError envelopes the generic
+json routes (viewSaveObject, viewDeleteObject) return on rejection —
+every failed response gets unique display ids without a controller
+error counter.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+        <span class="phpdocumentor-signature__static">static</span>    <span class="phpdocumentor-signature__type">int</span>
+    <span class="phpdocumentor-signature__name">$intErrorEnvelopeCount</span>
+     = <span class="phpdocumentor-signature__default-value">0</span></code>
+
+    
+    
+    
+
+    
+
+    
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
             -protected
                                                                     "
 >
@@ -815,7 +1086,7 @@ e.g. the password hash of a user. Objects and arrays are json encoded by the Pre
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">87</span>
+    <span class="phpdocumentor-element-found-in__line">130</span>
 
     </aside>
 
@@ -854,7 +1125,7 @@ e.g. the password hash of a user. Objects and arrays are json encoded by the Pre
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">95</span>
+    <span class="phpdocumentor-element-found-in__line">138</span>
 
     </aside>
 
@@ -893,7 +1164,7 @@ e.g. the password hash of a user. Objects and arrays are json encoded by the Pre
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">104</span>
+    <span class="phpdocumentor-element-found-in__line">147</span>
 
     </aside>
 
@@ -933,7 +1204,7 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">79</span>
+    <span class="phpdocumentor-element-found-in__line">122</span>
 
     </aside>
 
@@ -1094,7 +1365,7 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">116</span>
+    <span class="phpdocumentor-element-found-in__line">159</span>
 
     </aside>
 
@@ -1159,7 +1430,7 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">183</span>
+    <span class="phpdocumentor-element-found-in__line">226</span>
 
     </aside>
 
@@ -1218,11 +1489,11 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">598</span>
+    <span class="phpdocumentor-element-found-in__line">1189</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method returns the default app configuration (configs.json).</p>
+        <p class="phpdocumentor-summary">This method returns the default app configuration (config.json).</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -1277,7 +1548,7 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">248</span>
+    <span class="phpdocumentor-element-found-in__line">329</span>
 
     </aside>
 
@@ -1334,7 +1605,7 @@ route.</p>
         <h5 class="phpdocumentor-return-value__heading">Return values</h5>
         <span class="phpdocumentor-signature__response_type"><a href="classes/BaseObject.html"><abbr title="\BaseObject">BaseObject</abbr></a></span>
                     &mdash;
-                <section class="phpdocumentor-description"><p>The blueprint instance with the id 'new'</p>
+                <section class="phpdocumentor-description"><p>The blueprint instance with the blueprint id</p>
 </section>
 
             </section>
@@ -1354,7 +1625,7 @@ route.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">650</span>
+    <span class="phpdocumentor-element-found-in__line">1241</span>
 
     </aside>
 
@@ -1427,7 +1698,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">461</span>
+    <span class="phpdocumentor-element-found-in__line">1019</span>
 
     </aside>
 
@@ -1440,7 +1711,9 @@ crypt keys.</p>
     <div class="phpdocumentor-label-line">
         </div>
     
-        <section class="phpdocumentor-description"><p>It returns false when the file or the entry does not exist.</p>
+        <section class="phpdocumentor-description"><p>It returns false when the file or the entry does not exist.
+The whole read-modify-write cycle runs under an exclusive file
+lock on <file>.lock (see withFileLock).</p>
 </section>
 
     
@@ -1488,7 +1761,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">672</span>
+    <span class="phpdocumentor-element-found-in__line">1263</span>
 
     </aside>
 
@@ -1561,7 +1834,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">635</span>
+    <span class="phpdocumentor-element-found-in__line">1226</span>
 
     </aside>
 
@@ -1632,7 +1905,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">537</span>
+    <span class="phpdocumentor-element-found-in__line">1104</span>
 
     </aside>
 
@@ -1713,7 +1986,7 @@ in the class json file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">195</span>
+    <span class="phpdocumentor-element-found-in__line">238</span>
 
     </aside>
 
@@ -1772,15 +2045,18 @@ in the class json file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">282</span>
+    <span class="phpdocumentor-element-found-in__line">367</span>
 
     </aside>
 
         <p class="phpdocumentor-summary">This method fills the instance properties from the persisted entry
-of the object in the class json file. Properties that do not exist
-on the class are skipped, as are unset properties (fillObject never
-overwrites already set properties). It is a no-op when the id, the
-class name or the file is missing.</p>
+of the object in the class json file. It reads the complete stored
+state: builtin properties are set directly, &#039;class&#039; references are
+instantiated from the stored id and &#039;collection&#039; properties are
+rebuilt from the stored id list — already set instance properties
+are overwritten (consistent reload semantics). Values that are
+missing or empty in the file leave the corresponding property
+untouched, properties that do not exist on the class are skipped.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -1789,7 +2065,9 @@ class name or the file is missing.</p>
     <div class="phpdocumentor-label-line">
         </div>
     
-    
+        <section class="phpdocumentor-description"><p>It is a no-op when the id, the class name or the file is missing.</p>
+</section>
+
     
     
     <h5 class="phpdocumentor-tag-list__heading" id="tags">
@@ -1827,7 +2105,7 @@ class name or the file is missing.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">156</span>
+    <span class="phpdocumentor-element-found-in__line">199</span>
 
     </aside>
 
@@ -1900,7 +2178,7 @@ class name or the file is missing.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">612</span>
+    <span class="phpdocumentor-element-found-in__line">1203</span>
 
     </aside>
 
@@ -1962,7 +2240,7 @@ cryptKeys.php (repo placeholder) and memoizes the result statically.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">212</span>
+    <span class="phpdocumentor-element-found-in__line">293</span>
 
     </aside>
 
@@ -2037,7 +2315,7 @@ initObject() fills the fields property through it.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">518</span>
+    <span class="phpdocumentor-element-found-in__line">1085</span>
 
     </aside>
 
@@ -2120,7 +2398,7 @@ empty or missing.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">577</span>
+    <span class="phpdocumentor-element-found-in__line">1166</span>
 
     </aside>
 
@@ -2186,6 +2464,88 @@ has no entries.</p>
             -public
                                     -static                    "
 >
+    <h4 class="phpdocumentor-element__name" id="method_getRawObject">
+        getRawObject()
+        <a href="classes/BaseObject.html#method_getRawObject" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">1145</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This static method returns a raw object (stdClass).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">getRawObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strClassName</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strId</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">object|null</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>or null if the class name or id is empty.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strClassName</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The name of the business class</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strId</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The id of the business object</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_getRawObject#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$objRawObject = BaseObject::getRawObject( 'User', 'max@musterman.de' );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">object|null</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The raw object from the business class or null</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                    -static                    "
+>
     <h4 class="phpdocumentor-element__name" id="method_getRawObjectsFromClass">
         getRawObjectsFromClass()
         <a href="classes/BaseObject.html#method_getRawObjectsFromClass" class="headerlink"><i class="fas fa-link"></i></a>
@@ -2194,7 +2554,7 @@ has no entries.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">558</span>
+    <span class="phpdocumentor-element-found-in__line">1125</span>
 
     </aside>
 
@@ -2266,7 +2626,7 @@ or null when the class name is empty.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">171</span>
+    <span class="phpdocumentor-element-found-in__line">214</span>
 
     </aside>
 
@@ -2325,7 +2685,7 @@ or null when the class name is empty.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">490</span>
+    <span class="phpdocumentor-element-found-in__line">1054</span>
 
     </aside>
 
@@ -2339,9 +2699,13 @@ or null when the class name is empty.</p>
         </div>
     
         <section class="phpdocumentor-description"><p>The class name is passed as a parameter, the file path is derived from it
-internally via strtolower. It returns false when the id is already taken.
+internally via lcfirst. It returns false when the id is already taken.
 The method deliberately bypasses the constructor — this way user instances
-for example cannot be created &quot;empty-new&quot; (getUser fallback).</p>
+for example cannot be created &quot;empty-new&quot; (getUser fallback). The whole
+read-modify-write cycle including the already-taken check runs under an
+exclusive file lock on <file>.lock (see withFileLock): two concurrent
+inserts of the same id resolve deterministically — one returns true,
+the other false.</p>
 </section>
 
         <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
@@ -2419,7 +2783,7 @@ for example cannot be created &quot;empty-new&quot; (getUser fallback).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">264</span>
+    <span class="phpdocumentor-element-found-in__line">345</span>
 
     </aside>
 
@@ -2490,18 +2854,21 @@ for example cannot be created &quot;empty-new&quot; (getUser fallback).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">695</span>
+    <span class="phpdocumentor-element-found-in__line">1289</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method reads and decodes a json file. It auto-detects whether the
-content is plain JSON (local/dev) or encrypted (production) before
-decrypting. Line breaks are stripped upfront so that encrypted content
-can be detected safely.</p>
+        <p class="phpdocumentor-summary">This method reads and decodes a json file. It returns null when the
+file does not exist — the persistence callers (saveObject, insertObject,
+deleteObject) interpret this as the empty storage state of a class that
+has never been persisted. It auto-detects whether the content is plain
+JSON (local/dev) or encrypted (production) before decrypting. Line
+breaks are stripped upfront so that encrypted content can be detected
+safely.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">loadFileDeCrypted</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFile</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">object|array&lt;string|int, mixed&gt;</span></code>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">loadFileDeCrypted</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFile</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">object|array&lt;string|int, mixed&gt;|null</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -2542,9 +2909,9 @@ can be detected safely.</p>
 
             <section>
         <h5 class="phpdocumentor-return-value__heading">Return values</h5>
-        <span class="phpdocumentor-signature__response_type">object|array&lt;string|int, mixed&gt;</span>
+        <span class="phpdocumentor-signature__response_type">object|array&lt;string|int, mixed&gt;|null</span>
                     &mdash;
-                <section class="phpdocumentor-description"><p>The decoded file content</p>
+                <section class="phpdocumentor-description"><p>The decoded file content or null when the file does not exist</p>
 </section>
 
             </section>
@@ -2623,7 +2990,7 @@ can be detected safely.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">230</span>
+    <span class="phpdocumentor-element-found-in__line">311</span>
 
     </aside>
 
@@ -2687,25 +3054,107 @@ and additional entropy).</p>
             -public
                                                         "
 >
-    <h4 class="phpdocumentor-element__name" id="method_rawObject">
-        rawObject()
-        <a href="classes/BaseObject.html#method_rawObject" class="headerlink"><i class="fas fa-link"></i></a>
+    <h4 class="phpdocumentor-element__name" id="method_onDelete">
+        onDelete()
+        <a href="classes/BaseObject.html#method_onDelete" class="headerlink"><i class="fas fa-link"></i></a>
 
     </h4>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">397</span>
+    <span class="phpdocumentor-element-found-in__line">276</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method builds the collector envelope { class, id, data } of the object
-for the frontend. The class name can be overridden for the rare case that
-the frontend class differs from the PHP class name.</p>
+        <p class="phpdocumentor-summary">This method is the lifecycle hook of the generic delete route
+(viewDeleteObject). Business classes override it to enforce ownership
+and domain guards and to prepare cascades before the entry is removed.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-                    <span class="phpdocumentor-signature__name">rawObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strJsClassName</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">object</span></code>
+                    <span class="phpdocumentor-signature__name">onDelete</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>Returning a string aborts the delete — the message travels to the
+frontend as an AppError envelope; returning null allows the delete.
+The controller follows the request context of the delete (a null
+value means the delete runs outside a request, e.g. in tests).</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request or null</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_onDelete#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>protected function onDelete( ?Controller $objController = null ) : ?string { ... }</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string|null</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The rejection message or null to allow the delete</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_onSave">
+        onSave()
+        <a href="classes/BaseObject.html#method_onSave" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">257</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method is the lifecycle hook of the generic save route
+(viewSaveObject). Business classes override it to enforce ownership
+and domain guards before the merged object persists. Returning a
+string aborts the save — the message travels to the frontend as an
+AppError envelope; returning null allows the save. The controller
+follows the request context of the save (a null value means the
+save runs outside a request, e.g. in tests).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">onSave</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -2714,13 +3163,97 @@ the frontend class differs from the PHP class name.</p>
         <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
     <dl class="phpdocumentor-argument-list">
                     <dt class="phpdocumentor-argument-list__entry">
-                <span class="phpdocumentor-signature__argument__name">$strJsClassName</span>
-                : <span class="phpdocumentor-signature__argument__return-type">string|null</span>
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null</span>
                  = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
             <dd class="phpdocumentor-argument-list__definition">
-                    <section class="phpdocumentor-description"><p>The frontend class name override or null</p>
+                    <section class="phpdocumentor-description"><p>The controller instance of the request or null</p>
 </section>
 
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_onSave#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>protected function onSave( ?Controller $objController = null ) : ?string { ... }</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string|null</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The rejection message or null to allow the save</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_rawObject">
+        rawObject()
+        <a href="classes/BaseObject.html#method_rawObject" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">893</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method builds the collector envelope [ { class, id, data } ... ]
+of the object array for the frontend. Every referenced business
+object (&#039;class&#039; typed) and collection property is embedded into the
+own data payload as a descriptor (with its id respectively its
+element id list), replacing the raw instance value from
+serializeObject() — for multiple reference properties all of their
+descriptors are embedded.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">rawObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;|null&nbsp;</span><span class="phpdocumentor-signature__argument__reference-operator">&amp;</span><span class="phpdocumentor-signature__argument__name">$arrResult</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">[]</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller object or null</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$arrResult</span>
+                : <span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">[]</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
             </dd>
             </dl>
 
@@ -2736,7 +3269,7 @@ the frontend class differs from the PHP class name.</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>$objEnvelope = $objBaseObject-&gt;rawObject();</p>
+                                                 <section class="phpdocumentor-description"><p>$objEnvelope = $objBaseObject-&gt;rawObject( $objController );</p>
 </section>
 
                                     </dd>
@@ -2746,9 +3279,9 @@ the frontend class differs from the PHP class name.</p>
 
             <section>
         <h5 class="phpdocumentor-return-value__heading">Return values</h5>
-        <span class="phpdocumentor-signature__response_type">object</span>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
                     &mdash;
-                <section class="phpdocumentor-description"><p>The collector envelope of the object</p>
+                <section class="phpdocumentor-description"><p>The collector envelope of the object array</p>
 </section>
 
             </section>
@@ -2768,7 +3301,7 @@ the frontend class differs from the PHP class name.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">717</span>
+    <span class="phpdocumentor-element-found-in__line">1313</span>
 
     </aside>
 
@@ -2841,14 +3374,15 @@ and writes it to the file with an exclusive lock.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">417</span>
+    <span class="phpdocumentor-element-found-in__line">953</span>
 
     </aside>
 
         <p class="phpdocumentor-summary">This method persists the object: it writes only the own entry back into
 the class json file. The NOSAVE constant filters technical runtime properties
 from the payload; NOSERIALIZE deliberately does NOT apply here — a user&#039;s
-password hash must be persisted after all.</p>
+password hash must be persisted after all. The whole read-modify-write cycle
+runs under an exclusive file lock on &lt;file&gt;.lock (see withFileLock).</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -2895,7 +3429,7 @@ password hash must be persisted after all.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">372</span>
+    <span class="phpdocumentor-element-found-in__line">864</span>
 
     </aside>
 
@@ -2957,11 +3491,17 @@ constant are removed (e.g. the password hash of a user).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">439</span>
+    <span class="phpdocumentor-element-found-in__line">981</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method serializes the object for persistence.</p>
+        <p class="phpdocumentor-summary">This method serializes the object for persistence. Unset properties
+and properties filtered by the NOSAVE constant are removed. Referenced
+business objects (&#039;class&#039; typed properties) are serialized as their id
+and collection properties (&#039;collection&#039; typed) as the id list of their
+elements — fillObject() reads both forms back as instances. Builtin
+properties keep their value. NOSERIALIZE deliberately does NOT apply
+here — a user&#039;s password hash must be persisted after all.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -2970,10 +3510,7 @@ constant are removed (e.g. the password hash of a user).</p>
     <div class="phpdocumentor-label-line">
         </div>
     
-        <section class="phpdocumentor-description"><p>Unset properties and properties filtered by the NOSAVE
-constant are removed.</p>
-</section>
-
+    
     
     
     <h5 class="phpdocumentor-tag-list__heading" id="tags">
@@ -3220,7 +3757,7 @@ or &#039;warning&#039;).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">313</span>
+    <span class="phpdocumentor-element-found-in__line">493</span>
 
     </aside>
 
@@ -3286,6 +3823,86 @@ template output is returned.</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_viewDeleteObject">
+        viewDeleteObject()
+        <a href="classes/BaseObject.html#method_viewDeleteObject" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">789</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method serves the generic json delete route behind
+index.php?view=viewDeleteObject (POST): the request parameters class
+and id address the envelope to remove. The route accepts only
+CRUD-capable classes (a BaseObject subclass with a field definition,
+see viewSaveObject) — every other class name is silently filtered.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">viewDeleteObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>The onDelete hook runs before the persistence and can abort the delete
+with its message as an AppError envelope. A successful response is
+empty (the envelope no longer exists — the client removes its registry
+instance), a lost delete race reports the AppError envelope.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_viewDeleteObject#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$arrEnvelopes = $objBaseObject-&gt;viewDeleteObject( $objController );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>Empty on success or the rejection AppError envelopes</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_viewJson">
         viewJson()
         <a href="classes/BaseObject.html#method_viewJson" class="headerlink"><i class="fas fa-link"></i></a>
@@ -3294,7 +3911,7 @@ template output is returned.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">336</span>
+    <span class="phpdocumentor-element-found-in__line">510</span>
 
     </aside>
 
@@ -3359,6 +3976,83 @@ template output is returned.</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_viewLoadObject">
+        viewLoadObject()
+        <a href="classes/BaseObject.html#method_viewLoadObject" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">554</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method serves the json view behind index.php?view=viewLoadObject&amp;class=...
+and returns a object instance in the collector envelope format for
+on-demand object loading in the frontend. Invalid class values or
+invalid id values or the object dont exists arrive
+from the request layer already filtered as null — the response is then
+deliberately empty instead of an AppError, because json views do not
+carry an AppError channel.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">viewLoadObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_viewLoadObject#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$objEnvelope = $objBaseObject-&gt;viewLoadObject( $objController );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The object envelope or an empty stdClass</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_viewNewObject">
         viewNewObject()
         <a href="classes/BaseObject.html#method_viewNewObject" class="headerlink"><i class="fas fa-link"></i></a>
@@ -3367,7 +4061,7 @@ template output is returned.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">354</span>
+    <span class="phpdocumentor-element-found-in__line">528</span>
 
     </aside>
 
@@ -3380,7 +4074,7 @@ carry an AppError channel.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-                    <span class="phpdocumentor-signature__name">viewNewObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">object</span></code>
+                    <span class="phpdocumentor-signature__name">viewNewObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -3421,9 +4115,103 @@ carry an AppError channel.</p>
 
             <section>
         <h5 class="phpdocumentor-return-value__heading">Return values</h5>
-        <span class="phpdocumentor-signature__response_type">object</span>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
                     &mdash;
                 <section class="phpdocumentor-description"><p>The blueprint envelope or an empty stdClass</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_viewSaveObject">
+        viewSaveObject()
+        <a href="classes/BaseObject.html#method_viewSaveObject" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">597</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method serves the generic json save route behind
+index.php?view=viewSaveObject (POST): the request parameter &#039;object&#039;
+carries the envelope { class, id, data } the client wants to persist —
+with the blueprint id the route creates (server generated id), without
+it the client addresses an existing object (merge update). The route
+accepts only CRUD-capable classes: a BaseObject subclass with a field
+definition — every other class name is silently filtered (like
+viewLoadObject, json views carry no information channel for foreign
+classes). The merged values follow the field contract: only declared
+fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
+password fields are never merged, fields with a roleIds attribute only
+for roles the definition allows and the own id is immutable — at a
+create the delivered id is taken over the declared id field contract,
+the blueprint id itself is ignored (the server generates the id).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">viewSaveObject</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>Reference properties (class/collection typed) arrive as the mirrored
+collector descriptors (propertyType, class, value) and are merged
+through mergeReferenceProperty(): the declared class comes from the
+property reflection, every delivered id is existence-checked, empty
+values clear the reference. Rejections travel as AppError envelopes
+(validation field errors and reference errors one envelope per field,
+the onSave hook and the guards one envelope per rejection); on
+success the response is the rawObject (envelope array) of the saved
+instance.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_viewSaveObject#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$arrEnvelopes = $objBaseObject-&gt;viewSaveObject( $objController );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The envelope array of the saved object or the rejection AppError envelopes</p>
 </section>
 
             </section>
@@ -3443,7 +4231,7 @@ carry an AppError channel.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">135</span>
+    <span class="phpdocumentor-element-found-in__line">178</span>
 
     </aside>
 
@@ -3611,10 +4399,13 @@ the same source.</p>
                             <li class="phpdocumentor-on-this-page-section__title">Constants</li>
                 <li>
                     <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="classes/BaseObject.html#constant_BLUEPRINTID">BLUEPRINTID</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_FILEPATHBASE">FILEPATHBASE</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_FILEPATHFIELDS">FILEPATHFIELDS</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_FILEPATHJSON">FILEPATHJSON</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_FILEPATHTEMPLATES">FILEPATHTEMPLATES</a></li>
+                                                    <li class=""><a href="classes/BaseObject.html#constant_LOCKSLEEP">LOCKSLEEP</a></li>
+                                                    <li class=""><a href="classes/BaseObject.html#constant_LOCKTIMEOUT">LOCKTIMEOUT</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_NOSAVE">NOSAVE</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#constant_NOSERIALIZE">NOSERIALIZE</a></li>
                                             </ul>
@@ -3623,6 +4414,7 @@ the same source.</p>
                             <li class="phpdocumentor-on-this-page-section__title">Properties</li>
                 <li>
                     <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="classes/BaseObject.html#property_intErrorEnvelopeCount">$intErrorEnvelopeCount</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#property_class">$class</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#property_dataJsonFile">$dataJsonFile</a></li>
                                                     <li class=""><a href="classes/BaseObject.html#property_fields">$fields</a></li>
@@ -3652,6 +4444,7 @@ the same source.</p>
                                             <li class=""><a href="classes/BaseObject.html#method_getFieldsOfClass">getFieldsOfClass()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_getObject">getObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_getObjectsFromClass">getObjectsFromClass()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_getRawObject">getRawObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_getRawObjectsFromClass">getRawObjectsFromClass()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_id">id()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_insertObject">insertObject()</a></li>
@@ -3659,6 +4452,8 @@ the same source.</p>
                                             <li class=""><a href="classes/BaseObject.html#method_loadFileDeCrypted">loadFileDeCrypted()</a></li>
                                             <li class=""><a href="classes/AppError.html#method_message">message()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_newId">newId()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_onDelete">onDelete()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_onSave">onSave()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_rawObject">rawObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_saveFileEnCrypted">saveFileEnCrypted()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_saveObject">saveObject()</a></li>
@@ -3668,8 +4463,11 @@ the same source.</p>
                                             <li class=""><a href="classes/AppError.html#method_severity">severity()</a></li>
                                             <li class=""><a href="classes/AppError.html#method_source">source()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_view">view()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_viewDeleteObject">viewDeleteObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewJson">viewJson()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_viewLoadObject">viewLoadObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewNewObject">viewNewObject()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_viewSaveObject">viewSaveObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_initObject">initObject()</a></li>
                                     </ul>
             </li>

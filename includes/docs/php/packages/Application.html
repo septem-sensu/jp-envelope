@@ -100,7 +100,11 @@
 
     </h4>
     <dl class="phpdocumentor-table-of-contents">
-                    <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/App.html"><abbr title="\App">App</abbr></a></dt><dd>This class is the app context envelope for the frontend.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/AppError.html"><abbr title="\AppError">AppError</abbr></a></dt><dd>This class represents a soft error for the storefront.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/BaseObject.html"><abbr title="\BaseObject">BaseObject</abbr></a></dt><dd>This class is the base class of all business objects and provides their persistence.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Config.html"><abbr title="\Config">Config</abbr></a></dt><dd>This class represents the app configuration (configs.json).</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></dt><dd>This class is the front controller of the app.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Diagnostics.html"><abbr title="\Diagnostics">Diagnostics</abbr></a></dt><dd>This class represents the Diagnostics, which is a test run of all PHP test suites
+                    <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/App.html"><abbr title="\App">App</abbr></a></dt><dd>This class is the app context envelope for the frontend.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/AppError.html"><abbr title="\AppError">AppError</abbr></a></dt><dd>This class represents a soft error for the storefront.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/BaseCollection.html"><abbr title="\BaseCollection">BaseCollection</abbr></a></dt><dd>This class is the abstract base class of the typed collections: an
+iterable container (IteratorAggregate, Countable) over instances of
+one allowed business class, declared per subclass through
+getAllowedType(). Every add access validates each element against
+that type and throws an InvalidArgumentException on a mismatch.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/BaseObject.html"><abbr title="\BaseObject">BaseObject</abbr></a></dt><dd>This class is the base class of all business objects and provides their persistence.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Config.html"><abbr title="\Config">Config</abbr></a></dt><dd>This class represents the app configuration (config.json).</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></dt><dd>This class is the front controller of the app.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DemoOne.html"><abbr title="\DemoOne">DemoOne</abbr></a></dt><dd>This class is the base class of all business objects and provides their persistence.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DemoTwo.html"><abbr title="\DemoTwo">DemoTwo</abbr></a></dt><dd>This class is the base class of all business objects and provides their persistence.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Diagnostics.html"><abbr title="\Diagnostics">Diagnostics</abbr></a></dt><dd>This class represents the Diagnostics, which is a test run of all PHP test suites
 which contains the results of the individual system unit tests in the constant TESTSUITES.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/FieldValidator.html"><abbr title="\FieldValidator">FieldValidator</abbr></a></dt><dd>This class is the server side counterpart of the frontend fieldValidator.js:
 it validates request values against the form field definitions of a
 business class (includes/json/fields/{klasseKlein}.json) — the same
@@ -117,11 +121,38 @@ and processes the templates (simple {{class::property}} replacement —
 objects and arrays are json encoded, unreplaced placeholders are removed
 from the output). In addition it provides static helpers around cookies,
 logging, mail delivery and formatting that the presentation and the auth
-share. Most methods guard CLI runs of the regression suites.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Request.html"><abbr title="\Request">Request</abbr></a></dt><dd>This class is the single access point for GET and POST parameters.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Role.html"><abbr title="\Role">Role</abbr></a></dt><dd>This class represents a role with its view permissions (roles.json).</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/User.html"><abbr title="\User">User</abbr></a></dt><dd>This class represents a user account with its authentication and user management actions.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/View.html"><abbr title="\View">View</abbr></a></dt><dd>This class represents a configured view (views.json): it binds a view
+share. Most methods guard CLI runs of the regression suites.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Request.html"><abbr title="\Request">Request</abbr></a></dt><dd>This class is the single access point for GET and POST parameters.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/Role.html"><abbr title="\Role">Role</abbr></a></dt><dd>This class represents a role with its view permissions (role.json).</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/User.html"><abbr title="\User">User</abbr></a></dt><dd>This class represents a user account with its authentication and user management actions.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/UserCollection.html"><abbr title="\UserCollection">UserCollection</abbr></a></dt><dd>This class is the typed collection over User business objects: it
+declares User as the allowed element type of BaseCollection and
+inherits the container behavior from it.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/View.html"><abbr title="\View">View</abbr></a></dt><dd>This class represents a configured view (view.json): it binds a view
 method to a business class, carries the result type (empty = HTML,
 &#039;json&#039; = JSON response), the template chain and the allowed role ids,
-and executes the actions and the view method of the view.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/TestObject.html"><abbr title="\TestObject">TestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass with one
-serializable property for the collector checks.</dd>    </dl>
+and executes the actions and the view method of the view.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/CollectionTestItem.html"><abbr title="\CollectionTestItem">CollectionTestItem</abbr></a></dt><dd>Local test element: a minimal BaseObject subclass with one payload
+property and accessor. The base class provides id(), so the element
+is fully usable for the idArray() checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/CollectionTestCollection.html"><abbr title="\CollectionTestCollection">CollectionTestCollection</abbr></a></dt><dd>Local test collection: declares CollectionTestItem as the allowed
+element type.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestChild.html"><abbr title="\PersistTestChild">PersistTestChild</abbr></a></dt><dd>Local test child: a minimal BaseObject subclass with one payload
+property — the allowed element type of the test collection and the
+target class of the &#039;class&#039; reference of PersistTestObject.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestCollection.html"><abbr title="\PersistTestCollection">PersistTestCollection</abbr></a></dt><dd>Local test collection: declares PersistTestChild as the allowed
+element type.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestObject.html"><abbr title="\PersistTestObject">PersistTestObject</abbr></a></dt><dd>Local test parent: a BaseObject with one property of every property
+type of the persistence contract (builtin, class reference,
+collection) and a runtime property filtered by the own NOSAVE
+override. The nullable property declarations deliberately use the
+&#039;?Class&#039; form — getPropertyType()/getPropertyClass() read the bare
+type name via ReflectionNamedType.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/TestObject.html"><abbr title="\TestObject">TestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass with one
+serializable property for the collector checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestObject.html"><abbr title="\PersistTestObject">PersistTestObject</abbr></a></dt><dd>Local test class: a minimal CRUD-capable BaseObject subclass with the
+declared field mixPayload (mandatory) and strSecret (NOSERIALIZE
+guard against forged envelope writes) plus the hook logic: a payload
+&#039;BLOCK&#039; aborts the save route, a payload &#039;KEEP&#039; reports on delete.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestElement.html"><abbr title="\PersistTestElement">PersistTestElement</abbr></a></dt><dd>Local test class: the referenced element of the reference suite cases,
+a bare BaseObject subclass without own fields (persisted as the
+suite-owned id/class entry in persistTestElement.json).</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestElementCollection.html"><abbr title="\PersistTestElementCollection">PersistTestElementCollection</abbr></a></dt><dd>Local test collection: the typed container of the reference suite
+cases, allowed element type PersistTestElement.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestReferenceObject.html"><abbr title="\PersistTestReferenceObject">PersistTestReferenceObject</abbr></a></dt><dd>Local test class: a CRUD-capable BaseObject subclass with the
+declared reference mix (one object reference and one collection
+reference, both onto PersistTestElement) beside the mandatory
+mixPayload field — the subject of the reference descriptor merge.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/LockTestObject.html"><abbr title="\LockTestObject">LockTestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass that swaps the
+persistence file to the temp directory after construction (the
+constructor itself derives the never existing production path
+includes/json/data/locktestobjects.json, so fillObject stays a
+no-op) and inflates the serialization step to widen the
+read-modify-write conflict window of concurrent saves.</dd>    </dl>
 
 
 
@@ -183,6 +214,35 @@ in a controlled way in the desired branch — without view id, permission
 check or real view call: only executeActions/executeView are replaced
 (reflection swap on the mock).</dd>
 
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_runWorker">runWorker()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>This function is the child process entry: it runs one of the worker
+modes (&#039;a&#039;/&#039;b&#039; parallel race writers, &#039;h&#039; lock holder as foreign
+process, &#039;t&#039; timeout writer), signals its readiness via a barrier
+file in the test directory and prints a short result token on
+stdout (&#039;WORKER-OK&#039;, &#039;TIMEOUT-OK&#039;, &#039;KEIN-TIMEOUT&#039;). Errors are
+reported as &quot;WORKER-FEHLER: ...&quot; with exit code 2, so the parent
+never hangs. The check() helper is never used here — OK/FEHLER
+lines belong to the parent only.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_waitForFile">waitForFile()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>This helper waits until a file exists or the timeout is reached.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_waitGoFile">waitGoFile()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>This helper waits until the go signal file appears (worker-side
+call of waitForFile with a generous timeout).</dd>
+
     </dl>
 
         
@@ -202,7 +262,7 @@ check or real view call: only executeActions/executeView are replaced
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/bootstrap.php"><a href="files/tests-bootstrap.html"><abbr title="tests/bootstrap.php">bootstrap.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">34</span>
+    <span class="phpdocumentor-element-found-in__line">35</span>
 
     </aside>
 
@@ -275,7 +335,7 @@ templateVars property of a presentation instance via reflection
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/bootstrap.php"><a href="files/tests-bootstrap.html"><abbr title="tests/bootstrap.php">bootstrap.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">54</span>
+    <span class="phpdocumentor-element-found-in__line">55</span>
 
     </aside>
 
@@ -340,7 +400,7 @@ line and stops the suite with exit code 1.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/bootstrap.php"><a href="files/tests-bootstrap.html"><abbr title="tests/bootstrap.php">bootstrap.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">78</span>
+    <span class="phpdocumentor-element-found-in__line">79</span>
 
     </aside>
 
@@ -406,7 +466,7 @@ object is created and the request scope is set accordingly.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/fieldValidatorTest.php"><a href="files/tests-fieldvalidatortest.html"><abbr title="tests/fieldValidatorTest.php">fieldValidatorTest.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">38</span>
+    <span class="phpdocumentor-element-found-in__line">42</span>
 
     </aside>
 
@@ -522,6 +582,156 @@ check or real view call: only executeActions/executeView are replaced
         <span class="phpdocumentor-signature__response_type"><a href="classes/View.html"><abbr title="\View">View</abbr></a></span>
                     &mdash;
                 <section class="phpdocumentor-description"><p>The anonymous crash view instance</p>
+</section>
+
+            </section>
+
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_runWorker">
+        runWorker()
+        <a href="namespaces/default.html#function_runWorker" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/lockTest.php"><a href="files/tests-locktest.html"><abbr title="tests/lockTest.php">lockTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">112</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This function is the child process entry: it runs one of the worker
+modes (&#039;a&#039;/&#039;b&#039; parallel race writers, &#039;h&#039; lock holder as foreign
+process, &#039;t&#039; timeout writer), signals its readiness via a barrier
+file in the test directory and prints a short result token on
+stdout (&#039;WORKER-OK&#039;, &#039;TIMEOUT-OK&#039;, &#039;KEIN-TIMEOUT&#039;). Errors are
+reported as &quot;WORKER-FEHLER: ...&quot; with exit code 2, so the parent
+never hangs. The check() helper is never used here — OK/FEHLER
+lines belong to the parent only.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">runWorker</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;&nbsp;</span><span class="phpdocumentor-signature__argument__name">$arrArguments</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$arrArguments</span>
+                : <span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The raw $argv of the child process</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+    
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_waitForFile">
+        waitForFile()
+        <a href="namespaces/default.html#function_waitForFile" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/lockTest.php"><a href="files/tests-locktest.html"><abbr title="tests/lockTest.php">lockTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">187</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This helper waits until a file exists or the timeout is reached.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">waitForFile</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFile</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">int&nbsp;</span><span class="phpdocumentor-signature__argument__name">$intTimeoutSeconds</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+        <section class="phpdocumentor-description"><p>Used by the parent for the ready barriers and by the workers for
+the go signal.</p>
+</section>
+
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strFile</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The file path to wait for</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$intTimeoutSeconds</span>
+                : <span class="phpdocumentor-signature__argument__return-type">int</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The maximum wait time in seconds</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True when the file exists, false on timeout</p>
+</section>
+
+            </section>
+
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_waitGoFile">
+        waitGoFile()
+        <a href="namespaces/default.html#function_waitGoFile" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/lockTest.php"><a href="files/tests-locktest.html"><abbr title="tests/lockTest.php">lockTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">207</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This helper waits until the go signal file appears (worker-side
+call of waitForFile with a generous timeout).</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">waitGoFile</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFile</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strFile</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The go signal file path</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True when the signal appeared, false on timeout</p>
 </section>
 
             </section>
@@ -647,7 +857,10 @@ check or real view call: only executeActions/executeView are replaced
                                                     <li class=""><a href="namespaces/default.html#function_crashView">crashView()</a></li>
                                                     <li class=""><a href="namespaces/default.html#function_getTemplateVar">getTemplateVar()</a></li>
                                                     <li class=""><a href="namespaces/default.html#function_mockController">mockController()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_runWorker">runWorker()</a></li>
                                                     <li class=""><a href="namespaces/default.html#function_setParams">setParams()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_waitForFile">waitForFile()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_waitGoFile">waitGoFile()</a></li>
                                             </ul>
                 </li>
                     </ul>

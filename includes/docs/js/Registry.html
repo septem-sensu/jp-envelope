@@ -74,7 +74,7 @@
         Registry
         </h2>
         
-            <div class="class-description">This class is the instance layer of the frontend: a map of maps —class name (lower case) → (id → instance). The Loader registers thefinished instances, templates never read them directly but wait forthe registry events (ready per id, class-wide per instance, appReadyonce) — already fired events replay for late listeners, class-widelisteners subscribe permanently, the timing stays decoupled fromthe load order.</div>
+            <div class="class-description">This class is the instance layer of the frontend: a map of maps —class name (lower case) → (id → instance). The Loader registers thefinished instances, templates never read them directly but wait forthe registry events (ready per id, class-wide per instance, appReadyonce, plus the object event types load/save/delete/new which theLoader routes fire beside ready) — already fired events replay forlate listeners, class-wide listeners subscribe permanently, thetiming stays decoupled from the load order.</div>
         
     
 </header>
@@ -94,7 +94,7 @@
 
     
     <div class="description">
-        This method is the constructor of the class: it carries the registrymap (class name → instance map), the ready listeners and the firedevent store (replay base — class-wide ready events hold an instancemap instead of a single value).
+        This method is the constructor of the class: it carries the registrymap (class name → instance map), the event listeners and the firedevent store (replay base — class-wide events hold an instance mapinstead of a single value).
     </div>
     
 
@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.11</li>
+			<li>0.2.18</li>
 		</ul>
 	</dd>
 	
@@ -377,107 +377,32 @@
     
 </dd>
 
-        </dl>
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        <dl>
+        
             
 <hr>
-<dt>
-    <h4 class="name" id="eventNameReady"><span class="type-signature"></span>eventNameReady(className, id)</h4>
-    
+<dt class="name" id="EVENTNAMES">
+    <h4 id="EVENTNAMES"><span class="type-signature"></span>EVENTNAMES<span class="type-signature"> :Array.&lt;string></span></h4>
+
     
 </dt>
 <dd>
-
     
     <div class="description">
-        This method builds the ready event name: ready:{class} orready:{class}:{id} — the class part is lower case.
+        The event types of the registry: ready fires on every registration,the object types travel from the Loader routes (load, save, delete,new). remove() cleans the replay traces of every type, onEventaddresses them by name.
     </div>
     
 
     
-
-    
-
-    
-    
-        <h5>Parameters:</h5>
-        
-
-<table class="params table table-striped">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>className</code></td>
-            
-
-            <td class="type">
-            
+        <h5>Type:</h5>
+        <ul>
+            <li>
                 
-<span class="param-type">string</span>
+<span class="param-type">Array.&lt;string></span>
 
 
 
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The PHP class name</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The instance id</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
+            </li>
+        </ul>
     
 
     
@@ -521,51 +446,21 @@
 
 
     
-
-    
-
-    
-
-    
-
-    
-
-    
-    <h5>Returns:</h5>
-    
-            
-<div class="param-desc">
-    eventName   The event name
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">string</span>
-
-
-
-    </dd>
-</dl>
-
-
-        
-
-    
         <h5>Example</h5>
         
-    <pre class="sunlight-highlight-javascript">const eventName = registry.eventNameReady( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
+    <pre class="sunlight-highlight-javascript">for( let i = 0; i &lt; Registry.EVENTNAMES.length; i++ ) { ... }</pre>
 
 
     
 </dd>
 
-        
+        </dl>
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        <dl>
             
 <hr>
 <dt>
@@ -1232,6 +1127,228 @@
             
 <hr>
 <dt>
+    <h4 class="name" id="getEventName"><span class="type-signature"></span>getEventName(className, id, eventName)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method builds the event name: {event}:{class} or{event}:{class}:{id} — the class part is lower case, the event typedefaults to ready.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The instance id</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    ready
+                
+                </td>
+            
+
+            <td class="description last">The event type ('ready', 'load', 'save', 'delete' or 'new')</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    eventNameFull   The event name
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const eventName = registry.getEventName( &#x27;User&#x27;, &#x27;max@musterman.de&#x27;, &#x27;save&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
     <h4 class="name" id="has"><span class="type-signature"></span>has(className, id)</h4>
     
     
@@ -1568,6 +1685,920 @@
             
 <hr>
 <dt>
+    <h4 class="name" id="onDelete"><span class="type-signature"></span>onDelete(className, id, callback)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method registers a delete listener (delegate to onEvent):delete fires on app.deleteObject — the registry removes the deletedinstance directly afterwards (remove cleans every replay trace).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The instance id or null for the class-wide subscription</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The callback with the instance as parameter</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.onDelete( &#x27;User&#x27;, &#x27;max@musterman.de&#x27;, ( user ) =&gt; { ... } );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="onEvent"><span class="type-signature"></span>onEvent(className, id, callback, eventNameType)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method registers an event listener in two modes: with id anid-specific subscription — an already fired event dispatches thecallback directly (replay), the callback is not stored; a listenerregistered before the event stays armed and dispatches again onevery re-registration of the same id (the early listener firespermanently, the late replay arrives once — save/load re-registertheir id on every route call, so the difference matters). With idnull a permanent per-instance subscription of the class — thereplay dispatches the callback for every already registeredinstance, the callback stays armed for later registrations (e. g.on-demand envelopes after appReady). Blueprints never arriveclass-wide: templates which need them listen on the instance id'new' (e. g. onNew( className, 'new' )).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The instance id or null for the class-wide subscription</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The callback with the instance as parameter</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventNameType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The event type: 'ready', 'load', 'save', 'delete' or 'new'</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Examples</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.onEvent( &#x27;User&#x27;, &#x27;new&#x27;, ( blueprint ) =&gt; { ... }, &#x27;new&#x27; );</pre>
+
+    <pre class="sunlight-highlight-javascript">registry.onEvent( &#x27;User&#x27;, null, ( instance ) =&gt; { ... }, &#x27;ready&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="onLoad"><span class="type-signature"></span>onLoad(className, id, callback)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method registers a load listener (delegate to onEvent): loadfires on the bootstrap registration of every collector envelope andon app.loadObject — see onEvent for the early/late listenersemantics.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The instance id or null for the class-wide subscription</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The callback with the instance as parameter</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.onLoad( &#x27;DemoOne&#x27;, &#x27;demoOne_001&#x27;, ( demoOne ) =&gt; { ... } );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="onNew"><span class="type-signature"></span>onNew(className, id, callback)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method registers a new listener (delegate to onEvent): newfires on app.newObject — the blueprint registers under the instanceid 'new', templates listen on onNew( className, 'new' ).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The instance id or null for the class-wide subscription</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The callback with the instance as parameter</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.onNew( &#x27;User&#x27;, &#x27;new&#x27;, ( newUser ) =&gt; { ... } );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
     <h4 class="name" id="onReady"><span class="type-signature"></span>onReady(className, id, callback)</h4>
     
     
@@ -1576,7 +2607,7 @@
 
     
     <div class="description">
-        This method registers a ready listener in two modes: with id anone-time delivery — an already fired event dispatches the callbackdirectly (replay), the callback is not stored; with id null apermanent per-instance subscription of the class — the replaydispatches the callback for every already registered instance, thecallback stays armed for later registrations (e. g. on-demandenvelopes after appReady). Blueprints never arrive class-wide:templates which need them listen on onReady( className, 'new' ).
+        This method registers a ready listener (delegate to onEvent): readyfires on every registration — see onEvent for the early/latelistener semantics.
     </div>
     
 
@@ -1779,9 +2810,9 @@
     
         <h5>Examples</h5>
         
-    <pre class="sunlight-highlight-javascript">registry.onReady( &#x27;User&#x27;, &#x27;new&#x27;, ( blueprint ) =&gt; { ... } );</pre>
+    <pre class="sunlight-highlight-javascript">registry.onReady( &#x27;User&#x27;, &#x27;max@musterman.de&#x27;, ( user ) =&gt; { ... } );</pre>
 
-    <pre class="sunlight-highlight-javascript">registry.onReady( &#x27;User&#x27;, null, ( instance ) =&gt; { ... } );</pre>
+    <pre class="sunlight-highlight-javascript">registry.onReady( &#x27;User&#x27;, null, ( user ) =&gt; { ... } );</pre>
 
 
     
@@ -1791,7 +2822,7 @@
             
 <hr>
 <dt>
-    <h4 class="name" id="register"><span class="type-signature"></span>register(className, id, instance)</h4>
+    <h4 class="name" id="onSave"><span class="type-signature"></span>onSave(className, id, callback)</h4>
     
     
 </dt>
@@ -1799,7 +2830,7 @@
 
     
     <div class="description">
-        This method registers an instance under class name and id and firesthe ready events in order: the instance event ready:{class}:{id}first, afterwards the class-wide event ready:{class} for everyclass-wide listener (blueprints keep silent class-wide — theblueprint onReady path stays the dedicated route). Earlierregistered listeners dispatch directly, later ones are served fromthe replay over firedEvents.
+        This method registers a save listener (delegate to onEvent): savefires on app.saveObject — the id re-registers on every save, anearly listener fires on every save (see onEvent).
     </div>
     
 
@@ -1823,6 +2854,8 @@
 
         
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -1850,8 +2883,12 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The PHP class name of the envelope</td>
+            <td class="description last">The PHP class name</td>
         </tr>
 
     
@@ -1865,6 +2902,9 @@
             
                 
 <span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
 
 
 
@@ -1874,21 +2914,27 @@
             
 
             
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
 
-            <td class="description last">The instance id (registry key)</td>
+            <td class="description last">The instance id or null for the class-wide subscription</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>instance</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">object</span>
+<span class="param-type">function</span>
 
 
 
@@ -1898,8 +2944,12 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The finished instance</td>
+            <td class="description last">The callback with the instance as parameter</td>
         </tr>
 
     
@@ -1983,7 +3033,434 @@
     
         <h5>Example</h5>
         
-    <pre class="sunlight-highlight-javascript">registry.register( &#x27;User&#x27;, &#x27;max@musterman.de&#x27;, instance );</pre>
+    <pre class="sunlight-highlight-javascript">registry.onSave( &#x27;DemoOne&#x27;, &#x27;demoOne_001&#x27;, ( demoOne ) =&gt; { ... } );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="register"><span class="type-signature"></span>register(className, id, instance, eventName)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method registers an instance under class name and id and firesthe events in order: the ready events always (instanceready:{class}:{id} first, afterwards class-wide ready:{class} forevery class-wide listener), the event type events (load/save/delete/new, instance level first) only when eventName is set (blueprintskeep silent class-wide — the blueprint onReady path stays thededicated route). Earlier registered listeners dispatch directly,later ones are served from the replay over firedEvents.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The PHP class name of the envelope</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The instance id (registry key)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>instance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The finished instance</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The event type of the registration ('load', 'save', 'delete', 'new') or null for ready only</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.register( &#x27;User&#x27;, &#x27;max@musterman.de&#x27;, instance, &#x27;save&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="remove"><span class="type-signature"></span>remove(className, id)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method removes an instance from the registry: the instance mapentry and every replay trace of all event types (ready, load, save,delete, new — instance level and class-wide replay map) — delete andblueprint replacement leave no ghost instances behind. Missingclasses or ids pass silently.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The instance id</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">registry.remove( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
 
 
     
@@ -2143,7 +3620,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-10-27T13:17:13+01:00
+		on 2026-11-05T15:17:21+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>

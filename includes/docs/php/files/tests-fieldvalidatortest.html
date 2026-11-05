@@ -92,7 +92,11 @@ minlength, password security and select options, in the cascade order
 above. It also pins the fieldset contract: without a fieldset every
 field runs with its own mandatory flag, bare fieldset entries stay
 mandatory, boolean entries downgrade to optional, fields without a
-definition are skipped silently. The suite needs no production data —
+definition are skipped silently. The generic data contract
+(validateData, envelope payload of the generic save route) runs in
+the D scenarios: only present declared fields, mandatory fields in
+the create case, password and roleIds-restricted fields skipped. The
+suite needs no production data —
 every case sets its own request state (Request::reset() + setScope
 between the scenarios, the cache survives $_GET/$_POST otherwise).</p>
 
@@ -194,7 +198,7 @@ parameters as POST values — the common prelude of every scenario.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/fieldValidatorTest.php"><a href="files/tests-fieldvalidatortest.html"><abbr title="tests/fieldValidatorTest.php">fieldValidatorTest.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">38</span>
+    <span class="phpdocumentor-element-found-in__line">42</span>
 
     </aside>
 

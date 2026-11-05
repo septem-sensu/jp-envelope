@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.11</li>
+			<li>0.2.12</li>
 		</ul>
 	</dd>
 	
@@ -374,6 +374,204 @@
         <h5>Example</h5>
         
     <pre class="sunlight-highlight-javascript">instance.activateInstallAppButton( installEvent );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="addBrandOrName"><span class="type-signature"></span>addBrandOrName(tagId, cssClass)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method adds the brand logo image to an html tag if configuredotherwise the app name is added. The first parameter is not passedthe method tries to find an html tag with the id: name-or-brand.If a css class is specified as the second parameter, the brand logo image is sentthis css class attached.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tagId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">Html tag id should be added in the place of the app name or the brand logo image</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cssClass</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">Css class which should be attached to the brand logo image</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">instance.addBrandOrName( &#x27;name-or-brand&#x27;, &#x27;user-login-container-brand-image&#x27; );</pre>
 
 
     
@@ -1289,6 +1487,117 @@
         <h5>Example</h5>
         
     <pre class="sunlight-highlight-javascript">instance.fillObject();</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="fillObjects"><span class="type-signature"></span>fillObjects()</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method resolves the loose sub object references of the instance:every property marked with propertyType 'object' is replaced by thematching instance from the registry. It runs after the registryregistration, so referenced objects of the same envelope batch arealready resolvable.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+	<dt class="tag-see method-doc-label method-doc-details-label">See:</dt>
+	<dd class="tag-see">
+		<ul>
+			<li><a href="BaseObject.html#fillObject">BaseObject#fillObject</a></li>
+			</ul>
+	</dd>
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">instance.fillObjects();</pre>
 
 
     
@@ -2358,6 +2667,121 @@
             
 <hr>
 <dt>
+    <h4 class="name" id="toData"><span class="type-signature"></span>toData()</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method mirrors fillObjects(): it serializes the instance backinto the data payload of the save envelope — declared builtin fieldstravel flat, every resolved reference instance returns as thecollector descriptor (propertyType, property, class, value) with itsid respectively its element id list. Technical runtime propertiesstay out (only declared fields leave the instance), an empty objectreference travels as null and an empty collection as empty list.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+	<dt class="tag-see method-doc-label method-doc-details-label">See:</dt>
+	<dd class="tag-see">
+		<ul>
+			<li><a href="BaseObject.html#fillObjects">BaseObject#fillObjects</a></li>
+			</ul>
+	</dd>
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    data   The data payload for the save envelope
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const data = instance.toData();</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
     <h4 class="name" id="validateForm"><span class="type-signature"></span>validateForm(formId, setId)</h4>
     
     
@@ -2752,7 +3176,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-10-27T13:17:13+01:00
+		on 2026-11-05T15:17:21+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>

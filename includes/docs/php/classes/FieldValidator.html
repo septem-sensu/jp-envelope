@@ -144,7 +144,7 @@ addError() and keep their partial save semantics. Domain guards
                     <span class="phpdocumentor-tag__name">version</span>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
-                                            <span class="phpdocumentor-tag-link">0.2.12</span>
+                                            <span class="phpdocumentor-tag-link">0.2.17</span>
                                                                                 
                                              
                                     </dd>
@@ -225,6 +225,23 @@ without a definition are skipped silently. It returns the first error
 message per failed field (field name =&gt; message), an empty array
 means every value is valid.</dd>
 
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/FieldValidator.html#method_validateData">validateData()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This method validates the data payload of an envelope against the form
+field definitions — the server side of the generic save route
+(viewSaveObject). Unlike validate() the values come from the given
+data object instead of the request parameters. Only declared fields
+run; password fields are skipped entirely (the hashing and the
+companion rules belong to the specialized actions). A field missing
+or empty in the data pass untouched except the create case: declared
+mandatory fields must arrive. Present values run the normal rule
+cascade (minLength, select options, mail). It returns the first
+error message per failed field (field name =&gt; message), an empty
+array means the payload is valid.</dd>
+
             <dt class="phpdocumentor-table-of-contents__entry -method -private">
     <a class="" href="classes/FieldValidator.html#method_message">message()</a>
     <span>
@@ -254,7 +271,7 @@ request carries the field or its companion.</dd>
                                 &nbsp;: bool    </span>
 </dt>
 <dd>This static method validates a password against the password rules
-from configs.json: minimum length and the required character groups
+from config.json: minimum length and the required character groups
 (capital letters, lowercase letters, numbers, special characters).</dd>
 
     </dl>
@@ -404,6 +421,114 @@ means every value is valid.</p>
                     <article
         class="phpdocumentor-element
             -method
+            -public
+                                    -static                    "
+>
+    <h4 class="phpdocumentor-element__name" id="method_validateData">
+        validateData()
+        <a href="classes/FieldValidator.html#method_validateData" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/fieldValidator.php"><a href="files/classes-fieldvalidator.html"><abbr title="classes/fieldValidator.php">fieldValidator.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">132</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method validates the data payload of an envelope against the form
+field definitions — the server side of the generic save route
+(viewSaveObject). Unlike validate() the values come from the given
+data object instead of the request parameters. Only declared fields
+run; password fields are skipped entirely (the hashing and the
+companion rules belong to the specialized actions). A field missing
+or empty in the data pass untouched except the create case: declared
+mandatory fields must arrive. Present values run the normal rule
+cascade (minLength, select options, mail). It returns the first
+error message per failed field (field name =&gt; message), an empty
+array means the payload is valid.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">validateData</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strClassName</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">object&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objData</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">bool&nbsp;</span><span class="phpdocumentor-signature__argument__name">$boolCreate</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strClassName</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The business class to validate for</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objData</span>
+                : <span class="phpdocumentor-signature__argument__return-type">object</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The envelope data payload to validate</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$boolCreate</span>
+                : <span class="phpdocumentor-signature__argument__return-type">bool</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>True for the create case (mandatory fields must arrive)</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request or null</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/FieldValidator.html#method_validateData#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$arrFieldErrors = FieldValidator::validateData( 'User', $objData, true, $objController );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The error messages keyed by field name</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
             -private
                                     -static                    "
 >
@@ -415,7 +540,7 @@ means every value is valid.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/fieldValidator.php"><a href="files/classes-fieldvalidator.html"><abbr title="classes/fieldValidator.php">fieldValidator.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">166</span>
+    <span class="phpdocumentor-element-found-in__line">228</span>
 
     </aside>
 
@@ -517,7 +642,7 @@ parameters (e.g. {minLength}).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/fieldValidator.php"><a href="files/classes-fieldvalidator.html"><abbr title="classes/fieldValidator.php">fieldValidator.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">115</span>
+    <span class="phpdocumentor-element-found-in__line">179</span>
 
     </aside>
 
@@ -530,7 +655,7 @@ request carries the field or its companion.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">private</span>
-            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">validateField</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">object&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objFieldDefinition</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFieldName</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">bool&nbsp;</span><span class="phpdocumentor-signature__argument__name">$boolMandatory</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">validateField</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">object&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objFieldDefinition</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strFieldName</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">bool&nbsp;</span><span class="phpdocumentor-signature__argument__name">$boolMandatory</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strValue</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strValueRepeat</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -552,7 +677,7 @@ request carries the field or its companion.</p>
                 : <span class="phpdocumentor-signature__argument__return-type">string</span>
                             </dt>
             <dd class="phpdocumentor-argument-list__definition">
-                    <section class="phpdocumentor-description"><p>The name of the field (request parameter)</p>
+                    <section class="phpdocumentor-description"><p>The name of the field</p>
 </section>
 
             </dd>
@@ -562,6 +687,24 @@ request carries the field or its companion.</p>
                             </dt>
             <dd class="phpdocumentor-argument-list__definition">
                     <section class="phpdocumentor-description"><p>True when the field must be present</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strValue</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string|null</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The value to validate (request or envelope data)</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strValueRepeat</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string|null</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The companion value of a password field or null</p>
 </section>
 
             </dd>
@@ -579,7 +722,7 @@ request carries the field or its companion.</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>$strError = FieldValidator::validateField( $objFieldDefinition, 'password', true );</p>
+                                                 <section class="phpdocumentor-description"><p>$strError = FieldValidator::validateField( $objFieldDefinition, 'password', true, $strValue, $strValueRepeat );</p>
 </section>
 
                                     </dd>
@@ -611,12 +754,12 @@ request carries the field or its companion.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/fieldValidator.php"><a href="files/classes-fieldvalidator.html"><abbr title="classes/fieldValidator.php">fieldValidator.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">192</span>
+    <span class="phpdocumentor-element-found-in__line">254</span>
 
     </aside>
 
         <p class="phpdocumentor-summary">This static method validates a password against the password rules
-from configs.json: minimum length and the required character groups
+from config.json: minimum length and the required character groups
 (capital letters, lowercase letters, numbers, special characters).</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
@@ -793,6 +936,7 @@ from configs.json: minimum length and the required character groups
             <li>
                 <ul class="phpdocumentor-list -clean">
                                             <li class=""><a href="classes/FieldValidator.html#method_validate">validate()</a></li>
+                                            <li class=""><a href="classes/FieldValidator.html#method_validateData">validateData()</a></li>
                                             <li class=""><a href="classes/FieldValidator.html#method_message">message()</a></li>
                                             <li class=""><a href="classes/FieldValidator.html#method_validateField">validateField()</a></li>
                                             <li class=""><a href="classes/FieldValidator.html#method_validatePassword">validatePassword()</a></li>

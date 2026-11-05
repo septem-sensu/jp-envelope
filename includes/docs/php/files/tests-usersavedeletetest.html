@@ -87,12 +87,12 @@
 
             <p class="phpdocumentor-summary">This suite is the regression test for the user actions createUser,
 saveUser, saveUserPassword and deleteUser — create, change, set a
-password, delete — administrator-only via roles.json. Since the S4
+password, delete — administrator-only via role.json. Since the S4
 whitelist removal the request layer no longer filters role values:
 unknown roles reach the action and turn into a visible AppError there.</p>
 
         
-            <section class="phpdocumentor-description"><p>users.json is a local copy of production data: the suite start creates
+            <section class="phpdocumentor-description"><p>user.json is a local copy of production data: the suite start creates
 a .bak backup and the shutdown handler always restores the original
 state — even after a FEHLER exit of check().</p>
 </section>

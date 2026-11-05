@@ -74,7 +74,7 @@
         Loader
         </h2>
         
-            <div class="class-description">This class is the dynamic half of the frontend bootstrap: theheader loads only the base scripts statically (utils, loader,registry, fieldValidator, BaseObject) — every view class, Chart.js andevery stylesheet is requested by the Loader on demand (one classper file, file name = first letter lower case CamelCase).registerObjects() builds the complete bootstrap from the injectedcollector: per envelope one instance, then all resources awaited,then the registry entries, then app-ready — all-or-nothing; onlywithout debug the rawObjects leave the namespace, a failedresource load keeps them (fail-loud).</div>
+            <div class="class-description">This class is the dynamic half of the frontend bootstrap: theheader loads only the base scripts statically (utils, loader,registry, fieldValidator, BaseObject) — every view class, Chart.js andevery stylesheet is requested by the Loader on demand (one classper file, file name = first letter lower case CamelCase).registerObjects() builds the complete bootstrap from the injectedcollector: per envelope one instance, then all resources awaited,then the registry entries, then app-ready — all-or-nothing; onlywithout debug the rawObjects leave the namespace, a failedresource load keeps them (fail-loud). Every route registers withits event type (registerObjects: load, loadNewObject: new,loadObject: load, saveObject: save, deleteObject: delete) — theregistry fires the matching object events beside ready.</div>
         
     
 </header>
@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.10</li>
+			<li>0.2.18</li>
 		</ul>
 	</dd>
 	
@@ -387,7 +387,7 @@
             
 <hr>
 <dt>
-    <h4 class="name" id="instantiateRawObject"><span class="type-signature">&lt;async> </span>instantiateRawObject(rawObject)</h4>
+    <h4 class="name" id="deleteObject"><span class="type-signature">&lt;async> </span>deleteObject(className, id)</h4>
     
     
 </dt>
@@ -395,7 +395,7 @@
 
     
     <div class="description">
-        This method runs the complete envelope pipeline for on-demandloaded objects (blueprints): instantiate, load resources,register in the registry — the onReady event incl. replay firesthe registry itself.
+        This method deletes an addressed object over the generic json deleteroute (viewDeleteObject, POST): the parameters class and id travel asurlencoded body. The response envelopes register with the 'delete'event type (onDelete beside ready); the empty success responseremoves the registry instance — remove cleans every replay trace ofthe id. AppError envelopes display in the overlay afterwards.Errors (HTML answer at a wrong role, empty 500 body, network) tearthe promise up, the catch sits in the app wrapper (overlay).
     </div>
     
 
@@ -430,13 +430,13 @@
 
         <tr>
             
-                <td class="name"><code>rawObject</code></td>
+                <td class="name"><code>className</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">object</span>
+<span class="param-type">string</span>
 
 
 
@@ -447,7 +447,31 @@
 
             
 
-            <td class="description last">The envelope (class, id, data)</td>
+            <td class="description last">The PHP class name of the object</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The id of the object</td>
         </tr>
 
     
@@ -511,7 +535,7 @@
     
             
 <div class="param-desc">
-    instance    The registered instance
+    instances   The registered instances of the response (AppError cards on rejection, empty on success)
 </div>
 
 
@@ -535,7 +559,408 @@
     
         <h5>Example</h5>
         
-    <pre class="sunlight-highlight-javascript">const blueprint = await loader.instantiateRawObject( rawObject );</pre>
+    <pre class="sunlight-highlight-javascript">await loader.deleteObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="instantiateRawObject"><span class="type-signature">&lt;async> </span>instantiateRawObject(rawObject, eventName)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method runs the complete envelope pipeline for on-demandloaded objects (blueprints): instantiate, load resources,register in the registry — the ready event incl. replay fires theregistry itself, the optional event type fires the matching objectevent beside it.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>rawObject</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The envelope (class, id, data)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The event type of the registration ('load', 'new', 'save', 'delete') or null for ready only</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instance     The registered instance
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const blueprint = await loader.instantiateRawObject( rawObject, &#x27;new&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="instantiateRawObjects"><span class="type-signature">&lt;async> </span>instantiateRawObjects(rawObjects, eventName)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method runs the complete envelope pipeline for a whole envelopearray in collector order: every envelope is instantiated and registeredvia instantiateRawObject, then the sub object references of allinstances are resolved via fillObjects(). Use this variant for the jsonviews that deliver an array of envelopes (blueprint, viewLoadObject).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>rawObjects</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The envelope array (class, id, data) from the collector</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eventName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The event type of the registrations ('load', 'new', 'save', 'delete') or null for ready only</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+	<dt class="tag-see method-doc-label method-doc-details-label">See:</dt>
+	<dd class="tag-see">
+		<ul>
+			<li><a href="Loader.html#instantiateRawObject">Loader#instantiateRawObject</a></li>
+			</ul>
+	</dd>
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances    The registered instances in collector order
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const instances = await loader.instantiateRawObjects( rawObjects, &#x27;save&#x27; );</pre>
 
 
     
@@ -711,7 +1136,7 @@
 
     
     <div class="description">
-        This method loads a blueprint on demand (called by app.newObject):fetch on the JSON view viewNewObject, the envelope runs through thestandard pipeline — the class file can load for the first time onthis way. Errors (HTML answer at a wrong role, empty 500 body,network) tear the promise up, the catch sits in the app wrapper(overlay).
+        This method loads a blueprint on demand (called by app.newObject):fetch on the JSON view viewNewObject, the envelope runs through thestandard pipeline and registers with the 'new' event type (onNewbeside ready) — the class file can load for the first time onthis way. Errors (HTML answer at a wrong role, empty 500 body,network) tear the promise up, the catch sits in the app wrapper(overlay).
     </div>
     
 
@@ -852,6 +1277,188 @@
         <h5>Example</h5>
         
     <pre class="sunlight-highlight-javascript">const blueprint = await loader.loadNewObject( &#x27;User&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="loadObject"><span class="type-signature">&lt;async> </span>loadObject(className, id)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method loads a object on demand (called by app.loadObject):fetch on the JSON view viewLoadObject, the envelope runs through thestandard pipeline and registers with the 'load' event type (onLoadbeside ready) — the class file can load for the first time onthis way. Errors (HTML answer at a wrong role, empty 500 body,network) tear the promise up, the catch sits in the app wrapper(overlay).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP class name of the object</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP od of the object</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instance    The registered object instance
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const user = await loader.loadObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
 
 
     
@@ -1277,6 +1884,164 @@
     
 </dd>
 
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="saveObject"><span class="type-signature">&lt;async> </span>saveObject(rawObject)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method saves an envelope over the generic json save route(viewSaveObject, POST): the envelope (class, id, data) travels as theurlencoded 'object' parameter — with the blueprint id the servercreates the object under a generated id. The response envelopes runthrough the standard pipeline (instantiateRawObjects) and registerwith the 'save' event type (onSave beside ready): object envelopesregister/refresh their registry instances, AppErrorenvelopes display in the overlay afterwards. On a successfulblueprint save the stale blueprint instance leaves the registry —the server id replaced it. Errors (HTML answer at a wrong role,empty 500 body, network) tear the promise up, the catch sits in theapp wrapper (overlay).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>rawObject</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The envelope (class, id, data) to save</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances        The registered instances of the response (saved object or AppError cards)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">await loader.saveObject( { class: &#x27;User&#x27;, id: &#x27;new&#x27;, data: { ... } } );</pre>
+
+
+    
+</dd>
+
         </dl>
     
 
@@ -1327,7 +2092,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-10-27T13:17:13+01:00
+		on 2026-11-05T15:17:21+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>

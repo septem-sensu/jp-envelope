@@ -74,7 +74,7 @@
         App
         </h2>
         
-            <div class="class-description">This class is the central app context: it travels as envelope(class 'App', id {appAlias}_{version}) at position 1 of thecollector and carries currentUserId, currentUserRoleId and theserialized view in its data payload — the replacement of theformer header variables. As the only class on every view it ownsthe central error display (showAppErrors), the JS error channel(reportError incl. window.onerror) and the blueprint route(newObject).</div>
+            <div class="class-description">This class is the central app context: it travels as envelope(class 'App', id {appAlias}_{version}) at position 1 of thecollector and carries currentUserId, currentUserRoleId and theserialized view in its data payload — the replacement of theformer header variables. As the only class on every view it ownsthe central error display (showAppErrors), the JS error channel(reportError incl. window.onerror) and the on-demand object routes(newObject blueprint, loadObject, saveObject, deleteObject).</div>
         
     
 </header>
@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.11</li>
+			<li>0.2.12</li>
 		</ul>
 	</dd>
 	
@@ -328,6 +328,390 @@
         <h5>Example</h5>
         
     <pre class="sunlight-highlight-javascript">const user = app.currentUser();</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="deleteObject"><span class="type-signature">&lt;async> </span>deleteObject(value, id)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method deletes an addressed object over the generic json deleteroute (loader.deleteObject, POST): the class and id come either asenvelope (object with class and id properties) or as two arguments —a successful empty response removes the registry instance (loader).Every disturbance runs over the JS error channel as overlay insteadof as silent silence.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+|
+
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The instance envelope (class, id) or the PHP class name</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The id of the object (only in the string variant)</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances   The registered instances of the response (AppError cards on rejection, empty on success)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Examples</h5>
+        
+    <pre class="sunlight-highlight-javascript">await app.deleteObject( userInstance );</pre>
+
+    <pre class="sunlight-highlight-javascript">await app.deleteObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="loadObject"><span class="type-signature">&lt;async> </span>loadObject(className, id)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method demands a object on demand: it loads theinstance of the class over the view viewLoadObject and registersit under the id — templates access the finished instanceover registry.onReady( className, id, ... ) (with replay,timing irrelevant). Every disturbance runs over the JS errorchannel as overlay instead of as silent silence.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP class name of the object</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP id of the object</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instance     The registered object instance
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const user = await app.newObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
 
 
     
@@ -777,6 +1161,164 @@
             
 <hr>
 <dt>
+    <h4 class="name" id="saveObject"><span class="type-signature">&lt;async> </span>saveObject(object)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method saves an object over the generic json save route: itserializes the instance data (toData) into the envelope and letsthe Loader deliver it (viewSaveObject, POST) — the responseenvelopes register/refresh their registry instances (save eventsincl. replay). Every disturbance runs over the JS error channelas overlay instead of as silent silence.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>object</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The instance to save (class, id, toData)</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances   The registered instances of the response (saved object or AppError cards)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">await app.saveObject( userInstance );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
     <h4 class="name" id="showAppErrors"><span class="type-signature"></span>showAppErrors()</h4>
     
     
@@ -927,7 +1469,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-10-27T13:17:13+01:00
+		on 2026-11-05T15:17:21+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>
