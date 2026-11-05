@@ -5,13 +5,13 @@
  * serialized view in its data payload — the replacement of the
  * former header variables. As the only class on every view it owns
  * the central error display (showAppErrors), the JS error channel
- * (reportError incl. window.onerror) and the blueprint route
- * (newObject).
+ * (reportError incl. window.onerror) and the on-demand object routes
+ * (newObject blueprint, loadObject, saveObject, deleteObject).
  *
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.11
+ * @version   0.2.12
  * @since     2026-10-20
  *
  * @example   const app = window[ appAlias ].registry.get( 'app' );
@@ -187,6 +187,22 @@ class App extends BaseObject {
     return;
   }
 
+/**
+ * This method saves an object over the generic json save route: it
+ * serializes the instance data (toData) into the envelope and lets
+ * the Loader deliver it (viewSaveObject, POST) — the response
+ * envelopes register/refresh their registry instances (save events
+ * incl. replay). Every disturbance runs over the JS error channel
+ * as overlay instead of as silent silence.
+ *
+ * @public
+ *
+ * @param     {object}   object      The instance to save (class, id, toData)
+ * @return    {Promise}  instances   The registered instances of the response (saved object or AppError cards)
+ *
+ * @example   await app.saveObject( userInstance );
+ *
+ */
   async saveObject( object ) {
     try {
       return await this.loader.saveObject( { 'class': object.class, 'id': object.id, 'data': object.toData() } );
@@ -197,12 +213,30 @@ class App extends BaseObject {
     return;
   }
 
+/**
+ * This method deletes an addressed object over the generic json delete
+ * route (loader.deleteObject, POST): the class and id come either as
+ * envelope (object with class and id properties) or as two arguments —
+ * a successful empty response removes the registry instance (loader).
+ * Every disturbance runs over the JS error channel as overlay instead
+ * of as silent silence.
+ *
+ * @public
+ *
+ * @param     {object|string}   value       The instance envelope (class, id) or the PHP class name
+ * @param     {string|null}     id          The id of the object (only in the string variant)
+ * @return    {Promise}         instances   The registered instances of the response (AppError cards on rejection, empty on success)
+ *
+ * @example   await app.deleteObject( userInstance );
+ * @example   await app.deleteObject( 'User', 'max@musterman.de' );
+ *
+ */
   async deleteObject( value, id = null ) {
     const className = typeof value === 'object' && value !== null ? value.class : value;
     id              = typeof value === 'object' && value !== null ? value.id : id;
 
     try {
-      return await this.loader.saveObject( { 'class': className, 'id': id } );
+      return await this.loader.deleteObject( className, id );
     } catch( deleteObjectError ) {
       this.reportError( deleteObjectError, 'Class: ' + className + ' Id: ' + id );
     }

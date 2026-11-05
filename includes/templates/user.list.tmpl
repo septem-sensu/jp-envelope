@@ -16,7 +16,7 @@
       if( headline !== null ) headline.classList.add( 'border-role-' + userInstance.roleId );
     } );
 
-    app.registry.onReady( 'User', 'new', ( newUser ) => {
+    app.registry.onNew( 'User', 'new', ( newUser ) => {
       newUser.appendTemplate( 'user-new-template', 'user-new-container', false );
       newUser.setSelectsOptions( 'form-new-user', false );
       newUser.validateForm( 'form-new-user', false );

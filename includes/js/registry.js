@@ -3,14 +3,15 @@
  * class name (lower case) → (id → instance). The Loader registers the
  * finished instances, templates never read them directly but wait for
  * the registry events (ready per id, class-wide per instance, appReady
- * once) — already fired events replay for late listeners, class-wide
- * listeners subscribe permanently, the timing stays decoupled from
- * the load order.
+ * once, plus the object event types load/save/delete/new which the
+ * Loader routes fire beside ready) — already fired events replay for
+ * late listeners, class-wide listeners subscribe permanently, the
+ * timing stays decoupled from the load order.
  *
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-10-17
  *
  * @example   const user = window[ appAlias ].registry.get( 'user' );
@@ -48,10 +49,25 @@ class Registry {
   static BLUEPRINTID = 'new';
 
 /**
+ * The event types of the registry: ready fires on every registration,
+ * the object types travel from the Loader routes (load, save, delete,
+ * new). remove() cleans the replay traces of every type, onEvent
+ * addresses them by name.
+ *
+ * @static
+ *
+ * @type      {string[]}
+ *
+ * @example   for( let i = 0; i < Registry.EVENTNAMES.length; i++ ) { ... }
+ *
+ */
+  static EVENTNAMES = [ 'ready', 'load', 'save', 'delete', 'new' ];
+
+/**
  * This method is the constructor of the class: it carries the registry
- * map (class name → instance map), the ready listeners and the fired
- * event store (replay base — class-wide ready events hold an instance
- * map instead of a single value).
+ * map (class name → instance map), the event listeners and the fired
+ * event store (replay base — class-wide events hold an instance map
+ * instead of a single value).
  *
  * @public
  *
@@ -70,44 +86,54 @@ class Registry {
 
 /**
  * This method registers an instance under class name and id and fires
- * the ready events in order: the instance event ready:{class}:{id}
- * first, afterwards the class-wide event ready:{class} for every
- * class-wide listener (blueprints keep silent class-wide — the
- * blueprint onReady path stays the dedicated route). Earlier
- * registered listeners dispatch directly, later ones are served from
- * the replay over firedEvents.
+ * the events in order: the ready events always (instance
+ * ready:{class}:{id} first, afterwards class-wide ready:{class} for
+ * every class-wide listener), the event type events (load/save/delete/
+ * new, instance level first) only when eventName is set (blueprints
+ * keep silent class-wide — the blueprint onReady path stays the
+ * dedicated route). Earlier registered listeners dispatch directly,
+ * later ones are served from the replay over firedEvents.
  *
  * @public
  *
- * @param     {string}   className    The PHP class name of the envelope
- * @param     {string}   id            The instance id (registry key)
- * @param     {object}   instance      The finished instance
+ * @param     {string}         className    The PHP class name of the envelope
+ * @param     {string}         id           The instance id (registry key)
+ * @param     {object}         instance     The finished instance
+ * @param     {string|null}    eventName    The event type of the registration ('load', 'save', 'delete', 'new') or null for ready only
  * @return    {void}
  *
- * @example   registry.register( 'User', 'max@musterman.de', instance );
+ * @example   registry.register( 'User', 'max@musterman.de', instance, 'save' );
  *
  */
-  register( className, id, instance ) {
+  register( className, id, instance, eventName = null ) {
     const classKey = this._key( className );
 
     if( ! this._registry.has( classKey ) ) this._registry.set( classKey, new Map() );
 
     this._registry.get( classKey ).set( id, instance );
 
-    const eventNameInstance               = this.eventNameReady( classKey, id );
+    const eventNameReadyInstance          = this.getEventName( classKey, id, 'ready' );
+    const eventNameInstance               = eventName !== null ? this.getEventName( classKey, id, eventName ) : null;
 
-    this.firedEvents[ eventNameInstance ] = instance;
+    this.firedEvents[ eventNameReadyInstance ] = instance;
 
-    if( this.listeners[ eventNameInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameInstance ] );
+    if( eventNameInstance !== null ) this.firedEvents[ eventNameInstance ] = instance;
+    if( this.listeners[ eventNameReadyInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameReadyInstance ] );
+    if( eventNameInstance !== null && this.listeners[ eventNameInstance ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameInstance ] );
+
     if( id === this.constructor.BLUEPRINTID ) return;
 
-    const eventNameClass = this.eventNameReady( classKey, null );
+    const eventNameReadyClass = this.getEventName( classKey, null, 'ready' );
+    const eventNameClass      = eventName !== null ? this.getEventName( classKey, null, eventName ) : null;
 
-    if( ! this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ] = new Map();
+    if( ! this.firedEvents[ eventNameReadyClass ] ) this.firedEvents[ eventNameReadyClass ] = new Map();
+    if( eventNameClass !== null && ! this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ] = new Map();
 
-    this.firedEvents[ eventNameClass ].set( id, instance );
+    this.firedEvents[ eventNameReadyClass ].set( id, instance );
 
-    if( this.listeners[ eventNameClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameClass ] );
+    if( eventNameClass !== null ) this.firedEvents[ eventNameClass ].set( id, instance );
+    if( this.listeners[ eventNameReadyClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameReadyClass ] );
+    if( eventNameClass !== null && this.listeners[ eventNameClass ] ) this._dispatchSafely( instance, ...this.listeners[ eventNameClass ] );
 
     return;
   }
@@ -191,9 +217,10 @@ class Registry {
 
 /**
  * This method removes an instance from the registry: the instance map
- * entry, the one-time replay of ready:{class}:{id} and the entry in the
- * class-wide replay map — delete and blueprint replacement leave no
- * ghost instances behind. Missing classes or ids pass silently.
+ * entry and every replay trace of all event types (ready, load, save,
+ * delete, new — instance level and class-wide replay map) — delete and
+ * blueprint replacement leave no ghost instances behind. Missing
+ * classes or ids pass silently.
  *
  * @public
  *
@@ -215,11 +242,15 @@ class Registry {
 
     if( classMap.size === 0 ) this._registry.delete( classKey );
 
-    delete this.firedEvents[ this.eventNameReady( classKey, id ) ];
+    for( let i = 0; i < this.constructor.EVENTNAMES.length; i++ ) {
+      const eventName = this.constructor.EVENTNAMES[ i ];
 
-    const eventNameClass = this.eventNameReady( classKey, null );
+      delete this.firedEvents[ this.getEventName( classKey, id, eventName ) ];
 
-    if( this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ].delete( id );
+      const eventNameClass = this.getEventName( classKey, null, eventName );
+
+      if( this.firedEvents[ eventNameClass ] ) this.firedEvents[ eventNameClass ].delete( id );
+    }
 
     return;
   }
@@ -266,28 +297,34 @@ class Registry {
   }
 
 /**
- * This method registers a ready listener in two modes: with id an
- * one-time delivery — an already fired event dispatches the callback
- * directly (replay), the callback is not stored; with id null a
- * permanent per-instance subscription of the class — the replay
- * dispatches the callback for every already registered instance, the
- * callback stays armed for later registrations (e. g. on-demand
- * envelopes after appReady). Blueprints never arrive class-wide:
- * templates which need them listen on onReady( className, 'new' ).
+ * This method registers an event listener in two modes: with id an
+ * id-specific subscription — an already fired event dispatches the
+ * callback directly (replay), the callback is not stored; a listener
+ * registered before the event stays armed and dispatches again on
+ * every re-registration of the same id (the early listener fires
+ * permanently, the late replay arrives once — save/load re-register
+ * their id on every route call, so the difference matters). With id
+ * null a permanent per-instance subscription of the class — the
+ * replay dispatches the callback for every already registered
+ * instance, the callback stays armed for later registrations (e. g.
+ * on-demand envelopes after appReady). Blueprints never arrive
+ * class-wide: templates which need them listen on the instance id
+ * 'new' (e. g. onNew( className, 'new' )).
  *
  * @public
  *
- * @param     {string}        className   The PHP class name
- * @param     {string|null}   id          The instance id or null for the class-wide subscription
- * @param     {function}      callback    The callback with the instance as parameter
+ * @param     {string}        className       The PHP class name
+ * @param     {string|null}   id              The instance id or null for the class-wide subscription
+ * @param     {function}      callback        The callback with the instance as parameter
+ * @param     {string}        eventNameType   The event type: 'ready', 'load', 'save', 'delete' or 'new'
  * @return    {void}
  *
- * @example   registry.onReady( 'User', 'new', ( blueprint ) => { ... } );
- * @example   registry.onReady( 'User', null, ( instance ) => { ... } );
+ * @example   registry.onEvent( 'User', 'new', ( blueprint ) => { ... }, 'new' );
+ * @example   registry.onEvent( 'User', null, ( instance ) => { ... }, 'ready' );
  *
  */
-  onReady( className, id = null, callback ) {
-    const eventName = this.eventNameReady( className, id );
+  onEvent( className, id = null, callback, eventNameType ) {
+    const eventName = this.getEventName( className, id, eventNameType );
 
     if( id === null ) {
       if( this.firedEvents[ eventName ] ) this.firedEvents[ eventName ].forEach( ( instance ) => this._dispatchSafely( instance, callback ) );
@@ -312,22 +349,131 @@ class Registry {
   }
 
 /**
- * This method builds the ready event name: ready:{class} or
- * ready:{class}:{id} — the class part is lower case.
+ * This method registers a ready listener (delegate to onEvent): ready
+ * fires on every registration — see onEvent for the early/late
+ * listener semantics.
  *
  * @public
  *
- * @param     {string}   className   The PHP class name
- * @param     {string}   id          The instance id
- * @return    {string}   eventName   The event name
+ * @param     {string}        className   The PHP class name
+ * @param     {string|null}   id          The instance id or null for the class-wide subscription
+ * @param     {function}      callback    The callback with the instance as parameter
+ * @return    {void}
  *
- * @example   const eventName = registry.eventNameReady( 'User', 'max@musterman.de' );
+ * @example   registry.onReady( 'User', 'max@musterman.de', ( user ) => { ... } );
+ * @example   registry.onReady( 'User', null, ( user ) => { ... } );
  *
  */
-  eventNameReady( className, id ) {
+  onReady( className, id = null, callback ) {
+    this.onEvent( className, id, callback, 'ready' );
+
+    return;
+  }
+
+/**
+ * This method registers a load listener (delegate to onEvent): load
+ * fires on the bootstrap registration of every collector envelope and
+ * on app.loadObject — see onEvent for the early/late listener
+ * semantics.
+ *
+ * @public
+ *
+ * @param     {string}        className   The PHP class name
+ * @param     {string|null}   id          The instance id or null for the class-wide subscription
+ * @param     {function}      callback    The callback with the instance as parameter
+ * @return    {void}
+ *
+ * @example   registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOne ) => { ... } );
+ *
+ */
+  onLoad( className, id = null, callback ) {
+    this.onEvent( className, id, callback, 'load' );
+
+    return;
+  }
+
+/**
+ * This method registers a save listener (delegate to onEvent): save
+ * fires on app.saveObject — the id re-registers on every save, an
+ * early listener fires on every save (see onEvent).
+ *
+ * @public
+ *
+ * @param     {string}        className   The PHP class name
+ * @param     {string|null}   id          The instance id or null for the class-wide subscription
+ * @param     {function}      callback    The callback with the instance as parameter
+ * @return    {void}
+ *
+ * @example   registry.onSave( 'DemoOne', 'demoOne_001', ( demoOne ) => { ... } );
+ *
+ */
+  onSave( className, id = null, callback ) {
+    this.onEvent( className, id, callback, 'save' );
+
+    return;
+  }
+
+/**
+ * This method registers a delete listener (delegate to onEvent):
+ * delete fires on app.deleteObject — the registry removes the deleted
+ * instance directly afterwards (remove cleans every replay trace).
+ *
+ * @public
+ *
+ * @param     {string}        className   The PHP class name
+ * @param     {string|null}   id          The instance id or null for the class-wide subscription
+ * @param     {function}      callback    The callback with the instance as parameter
+ * @return    {void}
+ *
+ * @example   registry.onDelete( 'User', 'max@musterman.de', ( user ) => { ... } );
+ *
+ */
+  onDelete( className, id = null, callback ) {
+    this.onEvent( className, id, callback, 'delete' );
+
+    return;
+  }
+
+/**
+ * This method registers a new listener (delegate to onEvent): new
+ * fires on app.newObject — the blueprint registers under the instance
+ * id 'new', templates listen on onNew( className, 'new' ).
+ *
+ * @public
+ *
+ * @param     {string}        className   The PHP class name
+ * @param     {string|null}   id          The instance id or null for the class-wide subscription
+ * @param     {function}      callback    The callback with the instance as parameter
+ * @return    {void}
+ *
+ * @example   registry.onNew( 'User', 'new', ( newUser ) => { ... } );
+ *
+ */
+  onNew( className, id = null, callback ) {
+    this.onEvent( className, id, callback, 'new' );
+
+    return;
+  }
+
+/**
+ * This method builds the event name: {event}:{class} or
+ * {event}:{class}:{id} — the class part is lower case, the event type
+ * defaults to ready.
+ *
+ * @public
+ *
+ * @param     {string}   className       The PHP class name
+ * @param     {string}   id              The instance id
+ * @param     {string}   eventName       The event type ('ready', 'load', 'save', 'delete' or 'new')
+ * @return    {string}   eventNameFull   The event name
+ *
+ * @example   const eventName = registry.getEventName( 'User', 'max@musterman.de', 'save' );
+ *
+ */
+  getEventName( className, id, eventName = 'ready' ) {
     const classKey = this._key( className );
 
-    return id ? 'ready:' + classKey + ':' + id : 'ready:' + classKey;
+    return id ? eventName + ':' + classKey + ':' + id : eventName + ':' + classKey;
   }
 
 /**

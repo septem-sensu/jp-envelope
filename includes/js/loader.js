@@ -8,12 +8,15 @@
  * collector: per envelope one instance, then all resources awaited,
  * then the registry entries, then app-ready — all-or-nothing; only
  * without debug the rawObjects leave the namespace, a failed
- * resource load keeps them (fail-loud).
+ * resource load keeps them (fail-loud). Every route registers with
+ * its event type (registerObjects: load, loadNewObject: new,
+ * loadObject: load, saveObject: save, deleteObject: delete) — the
+ * registry fires the matching object events beside ready.
  *
  * @class
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-10-16
  *
  * @example   const loader = new Loader();
@@ -75,7 +78,7 @@ class Loader extends EventTarget {
         await Promise.all( resourcePromises );
 
         for( let i = 0; i < instances.length; i++ ) {
-          window[ appAlias ].registry.register( rawObjects[ i ].class, rawObjects[ i ].id, instances[ i ] );
+          window[ appAlias ].registry.register( rawObjects[ i ].class, rawObjects[ i ].id, instances[ i ], 'load' );
         }
 
         for( let i = 0; i < instances.length; i++ ) {
@@ -128,25 +131,27 @@ class Loader extends EventTarget {
 /**
  * This method runs the complete envelope pipeline for on-demand
  * loaded objects (blueprints): instantiate, load resources,
- * register in the registry — the onReady event incl. replay fires
- * the registry itself.
+ * register in the registry — the ready event incl. replay fires the
+ * registry itself, the optional event type fires the matching object
+ * event beside it.
  *
  * @public
  *
- * @param     {object}    rawObject   The envelope (class, id, data)
- * @return    {Promise}   instance    The registered instance
+ * @param     {object}        rawObject    The envelope (class, id, data)
+ * @param     {string|null}   eventName    The event type of the registration ('load', 'new', 'save', 'delete') or null for ready only
+ * @return    {Promise}       instance     The registered instance
  *
- * @example   const blueprint = await loader.instantiateRawObject( rawObject );
+ * @example   const blueprint = await loader.instantiateRawObject( rawObject, 'new' );
  *
  */
-  async instantiateRawObject( rawObject ) {
+  async instantiateRawObject( rawObject, eventName = null ) {
     if( ! rawObject.class || ! rawObject.id ) throw new Error( 'Envelope ohne Instanz-Daten: ' + JSON.stringify( rawObject ) );
 
     const instance = await this.createInstance( rawObject );
 
     await instance.loadResources();
 
-    window[ appAlias ].registry.register( rawObject.class, rawObject.id, instance );
+    window[ appAlias ].registry.register( rawObject.class, rawObject.id, instance, eventName );
 
     return instance;
   }
@@ -160,21 +165,22 @@ class Loader extends EventTarget {
  *
  * @public
  *
- * @param     {object}     rawObjects   The envelope array (class, id, data) from the collector
- * @return    {Promise}    instances    The registered instances in collector order
+ * @param     {object}         rawObjects   The envelope array (class, id, data) from the collector
+ * @param     {string|null}    eventName    The event type of the registrations ('load', 'new', 'save', 'delete') or null for ready only
+ * @return    {Promise}        instances    The registered instances in collector order
  *
- * @example   const instances = await loader.instantiateRawObjects( rawObjects );
+ * @example   const instances = await loader.instantiateRawObjects( rawObjects, 'save' );
  *
  * @see Loader#instantiateRawObject
  *
  */
-  async instantiateRawObjects( rawObjects ) {
+  async instantiateRawObjects( rawObjects, eventName = null ) {
     const instances = [];
 
     for( let i = 0; i < rawObjects.length; i++ ) {
       if( ! rawObjects[ i ].class || ! rawObjects[ i ].id ) throw new Error( 'Envelope ohne Instanz-Daten: ' + JSON.stringify( rawObjects[ i ] ) );
 
-      const instance = await this.instantiateRawObject( rawObjects[ i ] );
+      const instance = await this.instantiateRawObject( rawObjects[ i ], eventName );
 
       instances.push( instance );
     }
@@ -190,7 +196,8 @@ class Loader extends EventTarget {
 /**
  * This method loads a blueprint on demand (called by app.newObject):
  * fetch on the JSON view viewNewObject, the envelope runs through the
- * standard pipeline — the class file can load for the first time on
+ * standard pipeline and registers with the 'new' event type (onNew
+ * beside ready) — the class file can load for the first time on
  * this way. Errors (HTML answer at a wrong role, empty 500 body,
  * network) tear the promise up, the catch sits in the app wrapper
  * (overlay).
@@ -208,13 +215,14 @@ class Loader extends EventTarget {
     const url      = document.location.pathname + '?view=viewNewObject&newClass=' + encodeURIComponent( newClass );
     const response = await fetch( url );
 
-    return await this.instantiateRawObjects( await response.json() );
+    return await this.instantiateRawObjects( await response.json(), 'new' );
   }
 
 /**
  * This method loads a object on demand (called by app.loadObject):
  * fetch on the JSON view viewLoadObject, the envelope runs through the
- * standard pipeline — the class file can load for the first time on
+ * standard pipeline and registers with the 'load' event type (onLoad
+ * beside ready) — the class file can load for the first time on
  * this way. Errors (HTML answer at a wrong role, empty 500 body,
  * network) tear the promise up, the catch sits in the app wrapper
  * (overlay).
@@ -232,7 +240,7 @@ class Loader extends EventTarget {
     const url      = document.location.pathname + '?view=viewLoadObject&class=' + encodeURIComponent( className ) + '&id=' + encodeURIComponent( id );
     const response = await fetch( url );
 
-    return await this.instantiateRawObjects( await response.json() );
+    return await this.instantiateRawObjects( await response.json(), 'load' );
   }
 
 /**
@@ -240,8 +248,9 @@ class Loader extends EventTarget {
  * (viewSaveObject, POST): the envelope (class, id, data) travels as the
  * urlencoded 'object' parameter — with the blueprint id the server
  * creates the object under a generated id. The response envelopes run
- * through the standard pipeline (instantiateRawObjects): object
- * envelopes register/refresh their registry instances, AppError
+ * through the standard pipeline (instantiateRawObjects) and register
+ * with the 'save' event type (onSave beside ready): object envelopes
+ * register/refresh their registry instances, AppError
  * envelopes display in the overlay afterwards. On a successful
  * blueprint save the stale blueprint instance leaves the registry —
  * the server id replaced it. Errors (HTML answer at a wrong role,
@@ -268,7 +277,7 @@ class Loader extends EventTarget {
       body:    body
     } );
 
-    const instances = await this.instantiateRawObjects( await response.json() );
+    const instances = await this.instantiateRawObjects( await response.json(), 'save' );
 
     let boolHasErrors = false;
 
@@ -290,8 +299,10 @@ class Loader extends EventTarget {
 /**
  * This method deletes an addressed object over the generic json delete
  * route (viewDeleteObject, POST): the parameters class and id travel as
- * urlencoded body. The empty success response removes the registry
- * instance; AppError envelopes display in the overlay afterwards.
+ * urlencoded body. The response envelopes register with the 'delete'
+ * event type (onDelete beside ready); the empty success response
+ * removes the registry instance — remove cleans every replay trace of
+ * the id. AppError envelopes display in the overlay afterwards.
  * Errors (HTML answer at a wrong role, empty 500 body, network) tear
  * the promise up, the catch sits in the app wrapper (overlay).
  *
@@ -317,7 +328,7 @@ class Loader extends EventTarget {
       body:    body
     } );
 
-    const instances = await this.instantiateRawObjects( await response.json() );
+    const instances = await this.instantiateRawObjects( await response.json(), 'delete' );
 
     for( let i = 0; i < instances.length; i++ ) {
       if( instances[ i ] instanceof window.AppError ) instances[ i ].showError();
