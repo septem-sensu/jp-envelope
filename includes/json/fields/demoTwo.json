@@ -1,0 +1,21 @@
+{
+  "id": {
+    "nameDe": "ID",
+    "element": "input",
+    "type": "text",
+    "mandatory": true,
+    "unit": "",
+    "minLength": 3,
+    "messages": {
+      "mandatory": "Bitte eine Id angeben.",
+      "minLength": "Die Id muss mindestens {minLength} Zeichen haben."
+    },
+    "position": 100
+  },
+  "users": {
+    "nameDe": "Benutzer",
+    "class": "User",
+    "isCollection": true,
+    "position": 200
+  }
+}

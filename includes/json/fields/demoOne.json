@@ -1,0 +1,34 @@
+{
+  "id": {
+    "nameDe": "ID",
+    "element": "input",
+    "type": "text",
+    "mandatory": true,
+    "unit": "",
+    "minLength": 3,
+    "messages": {
+      "mandatory": "Bitte eine Id angeben.",
+      "minLength": "Die Id muss mindestens {minLength} Zeichen haben."
+    },
+    "position": 100
+  },
+  "demoTwo": {
+    "nameDe": "Demo 2",
+    "class": "DemoTwo",
+    "position": 300
+  },
+  "name": {
+    "nameDe": "Name",
+    "element": "input",
+    "type": "text",
+    "unit": "",
+    "position": 400
+  },
+  "lastName": {
+    "nameDe": "Nachname",
+    "element": "input",
+    "type": "text",
+    "unit": "",
+    "position": 500
+  }
+}
