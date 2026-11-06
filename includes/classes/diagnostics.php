@@ -12,7 +12,7 @@ require_once ( __DIR__ . '/../classes/baseObject.php' );
  * includes and the unit test result.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-10-26
  *
  * @example   $objDiagnostics = new Diagnostics();
@@ -28,20 +28,21 @@ class Diagnostics extends BaseObject {
    *
    */
   const TESTSUITES = [
-    'actionsTest'        => 'Actions',
-    'baseCollectionTest' => 'Base Collection',
-    'baseObjectTest'     => 'Base Object',
-    'blueprintTest'      => 'Blueprint',
-    'collectorTest'      => 'Collector',
-    'errorTest'          => 'Errors',
-    'hardErrorTest'      => 'Hard Errors',
-    'fieldValidatorTest' => 'Field Validator',
-    'genericCrudTest'    => 'Generic CRUD',
-    'requestTest'        => 'Requests',
-    'userListTest'       => 'User List',
-    'userLoginTest'      => 'User Login',
-    'userSaveDeleteTest' => 'CRUD',
-    'lockTest'           => 'Write Lock'
+    'actionsTest'           => 'Actions',
+    'baseCollectionTest'    => 'Base Collection',
+    'baseObjectTest'        => 'Base Object',
+    'blueprintTest'         => 'Blueprint',
+    'collectorTest'         => 'Collector',
+    'deletePropagationTest' => 'Delete Propagation',
+    'errorTest'             => 'Errors',
+    'hardErrorTest'         => 'Hard Errors',
+    'fieldValidatorTest'    => 'Field Validator',
+    'genericCrudTest'       => 'Generic CRUD',
+    'requestTest'           => 'Requests',
+    'userListTest'          => 'User List',
+    'userLoginTest'         => 'User Login',
+    'userSaveDeleteTest'    => 'CRUD',
+    'lockTest'              => 'Write Lock'
   ];
 
   /**

@@ -14,7 +14,7 @@ require_once ( __DIR__ . '/../classes/fieldValidator.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -376,7 +376,7 @@ class BaseObject {
     foreach( $objRawObject as $strProperty => $mixValue ) {
       if( ! property_exists( $this->class, $strProperty ) ) continue;
 
-      $strPropertyType = $this->getPropertyType( $strProperty );
+      $strPropertyType = self::getPropertyType( $this->class, $strProperty );
 
       if( $strPropertyType === 'builtin' ) {
         $this->$strProperty = $mixValue;
@@ -387,15 +387,15 @@ class BaseObject {
       if( ! isset( $mixValue ) || $mixValue === '' ) continue;
 
       if( $strPropertyType === 'class' ) {
-        $strClassName       = $this->getPropertyClass( $strProperty );
+        $strClassName       = self::getPropertyClass( $this->class, $strProperty );
         $this->$strProperty = new $strClassName( $mixValue );
 
         continue;
       }
 
       if( $strPropertyType === 'collection' ) {
-        $strCollectionClass        = $this->getPropertyClass( $strProperty );
-        $strCollectionAllowedClass = $this->getCollectionAllowedType( $strProperty );
+        $strCollectionClass        = self::getPropertyClass( $this->class, $strProperty );
+        $strCollectionAllowedClass = self::getCollectionAllowedType( $this->class, $strProperty );
         $this->$strProperty        = new $strCollectionClass();
 
         foreach( $mixValue as $strId ) {
@@ -412,19 +412,21 @@ class BaseObject {
    * property via reflection: it instantiates the declared collection
    * class without constructor and asks its getAllowedType(). It is
    * used by fillObject() to build the element instances from the
-   * stored id list and by rawObject() to report the element class in
-   * the frontend envelopes. The declared collection type must be
-   * concrete — an abstract collection type would throw a
-   * ReflectionException (fail loud).
+   * stored id list, by rawObject() to report the element class in
+   * the frontend envelopes and by referenceProperties() to find the
+   * collection properties that reference a deleted class. The declared
+   * collection type must be concrete — an abstract collection type
+   * would throw a ReflectionException (fail loud).
    *
+   * @param     string    $strClass      The class name owning the property
    * @param     string    $strProperty   The name of the collection property
    * @return    string    The class name of the allowed element type
    *
-   * @example   $strClassName = $this->getCollectionAllowedType( 'users' );
+   * @example   $strClassName = BaseObject::getCollectionAllowedType( 'User', 'users' );
    *
    */
-  private function getCollectionAllowedType( string $strProperty ) : string {
-    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+  private static function getCollectionAllowedType( string $strClass, string $strProperty ) : string {
+    $objReflectionProperty = new ReflectionProperty( $strClass, $strProperty );
     $strCollectionClass    = $objReflectionProperty->getType()->getName();
     $objReflectionClass    = new ReflectionClass( $strCollectionClass );
     $objInstanz            = $objReflectionClass->newInstanceWithoutConstructor();
@@ -437,16 +439,18 @@ class BaseObject {
    * reflection: 'builtin' for scalar and array types, 'collection' for
    * BaseCollection and its subclasses, 'class' for business object
    * references and 'undefined' when the property carries no type hint.
-   * It drives the branch selection in fillObject().
+   * It drives the branch selection in fillObject() and the reference
+   * property scan of the delete propagation.
    *
+   * @param     string    $strClass      The class name owning the property
    * @param     string    $strProperty   The name of the property
    * @return    string    The type category (builtin, collection, class or undefined)
    *
-   * @example   $strType = $objBaseObject->getPropertyType( 'roleId' );
+   * @example   $strType = BaseObject::getPropertyType( 'User', 'roleId' );
    *
    */
-  private function getPropertyType( string $strProperty ) : string {
-    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+  private static function getPropertyType( string $strClass, string $strProperty ) : string {
+    $objReflectionProperty = new ReflectionProperty( $strClass, $strProperty );
 
     if( ! $objReflectionProperty->hasType() ) return 'undefined';
     if( $objReflectionProperty->getType()->isBuiltin() ) return 'builtin';
@@ -459,19 +463,21 @@ class BaseObject {
   /**
    * This method returns the declared class name of a typed property as a
    * string. It is used to instantiate business object references and
-   * collection properties from the stored id during fillObject(). The
-   * type name is read via getName(), so a nullable declaration returns
-   * the bare class name without the '?' prefix. Returns null when the
+   * collection properties from the stored id during fillObject() and to
+   * validate the reference class in the generic save route. The type
+   * name is read via getName(), so a nullable declaration returns the
+   * bare class name without the '?' prefix. Returns null when the
    * property carries no type hint.
    *
+   * @param     string         $strClass      The class name owning the property
    * @param     string         $strProperty   The name of the property
    * @return    string|null    The declared class name or null
    *
-   * @example   $strClass = $objBaseObject->getPropertyClass( 'role' );
+   * @example   $strClass = BaseObject::getPropertyClass( 'User', 'role' );
    *
    */
-  private function getPropertyClass( string $strProperty ) : string | null {
-    $objReflectionProperty = new ReflectionProperty( $this->class, $strProperty );
+  private static function getPropertyClass( string $strClass, string $strProperty ) : string | null {
+    $objReflectionProperty = new ReflectionProperty( $strClass, $strProperty );
 
     if( ! $objReflectionProperty->hasType() ) return null;
 
@@ -639,7 +645,7 @@ class BaseObject {
       if( ( $objFields->$strProperty->type ?? null ) === 'password' ) continue;
       if( isset( $objFields->$strProperty->roleIds ) && ! in_array( $strCurrentRoleId, $objFields->$strProperty->roleIds, true ) ) continue;
 
-      $strPropertyType = $objObject->getPropertyType( $strProperty );
+      $strPropertyType = self::getPropertyType( $strClass, $strProperty );
 
       if( $strPropertyType === 'class' || $strPropertyType === 'collection' ) {
         $strReferenceError = $this->mergeReferenceProperty( $objObject, $strProperty, $mixValue );
@@ -713,12 +719,12 @@ class BaseObject {
       return 'Das Referenz-Format des Feldes ' . $strProperty . ' ist ungültig.';
     }
 
-    if( $objObject->getPropertyType( $strProperty ) === 'class' ) {
+    if( self::getPropertyType( $objObject->className(), $strProperty ) === 'class' ) {
       if( $mixValue->propertyType !== 'object' ) {
         return 'Das Feld ' . $strProperty . ' erwartet eine Objekt-Referenz.';
       }
 
-      $strReferenceClass = $objObject->getPropertyClass( $strProperty );
+      $strReferenceClass = self::getPropertyClass( $objObject->className(), $strProperty );
 
       if( $mixValue->class !== $strReferenceClass ) {
         return 'Das Feld ' . $strProperty . ' referenziert eine nicht deklarierte Klasse.';
@@ -743,8 +749,8 @@ class BaseObject {
       return 'Das Feld ' . $strProperty . ' erwartet eine Sammlungs-Referenz.';
     }
 
-    $strCollectionClass = $objObject->getPropertyClass( $strProperty );
-    $strAllowedClass    = $objObject->getCollectionAllowedType( $strProperty );
+    $strCollectionClass = self::getPropertyClass( $objObject->className(), $strProperty );
+    $strAllowedClass    = self::getCollectionAllowedType( $objObject->className(), $strProperty );
 
     if( $mixValue->class !== $strAllowedClass ) {
       return 'Das Feld ' . $strProperty . ' referenziert eine nicht deklarierte Klasse.';
@@ -894,12 +900,12 @@ class BaseObject {
     $arrDescriptors = [];
 
     foreach( $this as $strProperty => $mixValue ) {
-      if( $this->getPropertyType( $strProperty ) === 'class' ) {
+      if( self::getPropertyType( $this->class, $strProperty ) === 'class' ) {
         $objPropertyValue               = new stdClass();
 
         $objPropertyValue->propertyType = 'object';
         $objPropertyValue->property     = $strProperty;
-        $objPropertyValue->class        = $this->getPropertyClass( $strProperty );
+        $objPropertyValue->class        = self::getPropertyClass( $this->class, $strProperty );
         $objPropertyValue->value        = $mixValue->id;
 
         $arrDescriptors[] = $objPropertyValue;
@@ -907,12 +913,12 @@ class BaseObject {
         $this->$strProperty->rawObject( $objController, $arrResult );
       }
 
-      if( $this->getPropertyType( $strProperty ) === 'collection' ) {
+      if( self::getPropertyType( $this->class, $strProperty ) === 'collection' ) {
         $arrCollectionValue             = $mixValue->getAll();
         $objPropertyValue               = new stdClass();
         $objPropertyValue->propertyType = 'collection';
         $objPropertyValue->property     = $strProperty;
-        $objPropertyValue->class        = $this->getCollectionAllowedType( $strProperty );
+        $objPropertyValue->class        = self::getCollectionAllowedType( $this->class, $strProperty );
         $objPropertyValue->value        = $mixValue->idArray();
 
         foreach( $arrCollectionValue as $objCollectionValue ) {
@@ -985,7 +991,7 @@ class BaseObject {
       if( ! isset( $mixValue ) ) continue;
       if( in_array( $strKey, $this::NOSAVE ) ) continue;
 
-      $strPropertyType = $this->getPropertyType( $strKey );
+      $strPropertyType = self::getPropertyType( $this->class, $strKey );
 
       if( $strPropertyType === 'collection' ) {
         $objStdObject->$strKey = $mixValue->idArray();
@@ -1006,10 +1012,154 @@ class BaseObject {
   }
 
   /**
+   * This method is the delete propagation (phase A): before the object
+   * deletes itself it cleans every other loaded business class that
+   * declares the own class as a reference property. The scan works on
+   * the serialized entries (a class reference is stored as the id
+   * string, a collection reference as the id list) and runs per class
+   * under its own file lock; classes without a matching reference
+   * property are skipped by reflection alone, without reading their
+   * data file. A changed file is written back once, unchanged files
+   * stay untouched. There is no reference index by design — the scan
+   * reads the single source of truth, so it cannot drift.
+   *
+   * @return    void
+   *
+   * @example   $objBaseObject->deleteReferences();
+   *
+   */
+  private function deleteReferences() : void {
+    foreach( get_declared_classes() as $strClass ) {
+      if( ! is_subclass_of( $strClass, BaseObject::class ) ) continue;
+      if( $strClass === $this->class ) continue;
+
+      $arrProperties = self::referenceProperties( $strClass, $this->class );
+
+      if( count( $arrProperties ) === 0 ) continue;
+
+      $strFile = BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClass ) . '.json';
+
+      if( ! file_exists( $strFile ) ) continue;
+
+      BaseObject::withFileLock( $strFile, function() use ( $strFile, $arrProperties ) : void {
+        $objObjects = BaseObject::loadFileDeCrypted( $strFile );
+
+        if( ! isset( $objObjects ) ) return;
+
+        if( ! self::cleanEntries( $objObjects, $arrProperties, $this->id ) ) return;
+
+        BaseObject::saveFileEnCrypted( $strFile, $objObjects );
+      } );
+    }
+
+    return;
+  }
+
+  /**
+   * This method returns the reference properties of a class that declare
+   * the given target class: an array of property names mapped to their
+   * type category ('class' or 'collection'), empty when the class does
+   * not reference the target. It drives the reflection filter of the
+   * delete propagation — the cheapest possible check, no data file is
+   * read for a non-matching class.
+   *
+   * @param     string    $strClass         The class name to scan
+   * @param     string    $strTargetClass   The class name the properties must reference
+   * @return    array     The matching properties (name => 'class' | 'collection')
+   *
+   * @example   $arrProperties = BaseObject::referenceProperties( 'DemoOne', 'DemoTwo' );
+   *
+   */
+  private static function referenceProperties( string $strClass, string $strTargetClass ) : array {
+    $arrResult     = [];
+    $objReflection = new ReflectionClass( $strClass );
+
+    foreach( $objReflection->getProperties() as $objReflectionProperty ) {
+      if( ! $objReflectionProperty->hasType() ) continue;
+
+      $objType     = $objReflectionProperty->getType();
+      $strTypeName = $objType->getName();
+
+      if( $objType->isBuiltin() ) continue;
+
+      if( $strTypeName === 'BaseCollection' || is_subclass_of( $strTypeName, 'BaseCollection' ) ) {
+        $objCollection = ( new ReflectionClass( $strTypeName ) )->newInstanceWithoutConstructor();
+
+        if( $objCollection->getAllowedType() === $strTargetClass ) $arrResult[ $objReflectionProperty->getName() ] = 'collection';
+
+        continue;
+      }
+
+      if( $strTypeName === $strTargetClass ) $arrResult[ $objReflectionProperty->getName() ] = 'class';
+    }
+
+    return $arrResult;
+  }
+
+  /**
+   * This method removes a target id from the serialized reference
+   * properties of every entry in the loaded class file content: a
+   * class property matching the id is unset (the property vanishes
+   * from persistence, same convention as the empty reference in
+   * mergeReferenceProperty), a collection property containing the id
+   * is rebuilt as the filtered id list keeping the order of the
+   * remaining ids. Entries are modified in place (objects are
+   * handles); the caller decides whether and under which lock to
+   * write the content back. An optional skip id leaves one entry
+   * untouched (the deleting object itself in the own class file).
+   *
+   * @param     object    $objObjects        The loaded class file content (id => serialized entry)
+   * @param     array     $arrProperties     The reference properties to clean (name => 'class' | 'collection')
+   * @param     string    $strTargetId       The object id to remove from the references
+   * @param     string    $strSkipId         An entry id to leave untouched (empty: none)
+   * @return    boolean   True when at least one entry was changed, false otherwise
+   *
+   * @example   $boolChanged = self::cleanEntries( $objObjects, $arrProperties, $strTargetId );
+   *
+   */
+  private static function cleanEntries( object $objObjects, array $arrProperties, string $strTargetId, string $strSkipId = '' ) : bool {
+    $boolChanged = false;
+
+    foreach( $objObjects as $strId => $objEntry ) {
+      if( $strId === $strSkipId ) continue;
+
+      foreach( $arrProperties as $strProperty => $strPropertyType ) {
+        if( $strPropertyType === 'class' ) {
+          if( isset( $objEntry->$strProperty ) && $objEntry->$strProperty === $strTargetId ) {
+            unset( $objEntry->$strProperty );
+
+            $boolChanged = true;
+          }
+
+          continue;
+        }
+
+        if( ! isset( $objEntry->$strProperty ) || ! is_array( $objEntry->$strProperty ) ) continue;
+        if( ! in_array( $strTargetId, $objEntry->$strProperty, true ) ) continue;
+
+        $objEntry->$strProperty = array_values( array_filter( $objEntry->$strProperty, fn( string $strElementId ) : bool => $strElementId !== $strTargetId ) );
+
+        $boolChanged = true;
+      }
+    }
+
+    return $boolChanged;
+  }
+
+  /**
    * This method deletes the own entry from the class json file.
    * It returns false when the file or the entry does not exist.
    * The whole read-modify-write cycle runs under an exclusive file
    * lock on <file>.lock (see withFileLock).
+   *
+   * The delete propagation runs BEFORE the own entry is removed: phase
+   * A (deleteReferences) cleans every other loaded business class that
+   * references the own class, phase B cleans self-references of the
+   * own class inline within this lock (a nested saveObject would hit
+   * the held lock and time out). If the propagation fails (e.g. lock
+   * timeout), the own entry stays intact — the framework routes the
+   * exception over the soft error channel and a retry heals, because
+   * the scan is idempotent.
    *
    * @return    boolean   True when the entry was deleted, false otherwise
    *
@@ -1018,11 +1168,18 @@ class BaseObject {
    */
   public function deleteObject() : bool {
     if( ! file_exists( $this->dataJsonFile ) ) return false;
+    if( ! self::existsObject( $this->class, $this->id ) ) return false;
+
+    $this->deleteReferences();
 
     return BaseObject::withFileLock( $this->dataJsonFile, function() : bool {
       $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
 
       if( ! isset( $objObjects ) || ! isset( $objObjects->{ $this->id } ) ) return false;
+
+      $arrProperties = self::referenceProperties( $this->class, $this->class );
+
+      if( count( $arrProperties ) > 0 ) self::cleanEntries( $objObjects, $arrProperties, $this->id, $this->id );
 
       unset( $objObjects->{ $this->id } );
 

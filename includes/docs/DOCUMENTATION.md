@@ -35,6 +35,7 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden **Envelopes (Datenums
 	- [Persistenz & Datenspeicherung (`BaseObject`)](#Persistenz%20&%20Datenspeicherung%20(%60BaseObject%60))
 		- [Das Datei- und Speicherkonzept](#Das%20Datei-%20und%20Speicherkonzept)
 		- [CRUD-Operationen auf Instanz-Ebene](#CRUD-Operationen%20auf%20Instanz-Ebene)
+		- [Löschweitergabe (Referenz-Integrität beim Löschen)](#L%C3%B6schweitergabe%20(Referenz-Integrit%C3%A4t%20beim%20L%C3%B6schen))
 		- [Write-Locking für gleichzeitige Zugriffe](#Write-Locking%20f%C3%BCr%20gleichzeitige%20Zugriffe)
 		- [Filter-Konstanten für Properties](#Filter-Konstanten%20f%C3%BCr%20Properties)
 		- [Erstellung neuer Objekte](#Erstellung%20neuer%20Objekte)
@@ -237,7 +238,18 @@ Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 #### CRUD-Operationen auf Instanz-Ebene
 
 - **Speichern & Aktualisieren:** Ein Aufruf von `$instanz->saveObject()` schreibt oder aktualisiert ausschließlich den Eintrag des aktuellen Objekts in der jeweiligen JSON-Datei.
-- **Löschen:** Ein Aufruf von `$instanz->deleteObject()` entfernt den Eintrag des Objekts aus der Datei.
+- **Löschen:** Ein Aufruf von `$instanz->deleteObject()` entfernt den Eintrag des Objekts aus der Datei und räumt vorher die Referenzen anderer Objekte auf die gelöschte ID ab (siehe Löschweitergabe).
+
+#### Löschweitergabe (Referenz-Integrität beim Löschen)
+
+Referenz-Properties (class-typisierte Properties und Collections) persistieren die ID des referenzierten Objekts. Damit beim Löschen keine toten IDs zurückbleiben, räumt `deleteObject()` vor dem eigenen Delete die referenzierenden Objekte auf:
+
+- **Scan statt Index:** Es gibt keine separate Referenz-Index-Datei. Beim Delete scannt das Framework alle geladenen Business-Klassen und findet per Reflection (`referenceProperties()`) die Klassen, die die Zielklasse als class- oder collection-Property deklarieren. Der Scan liest die einzelne Quelle der Wahrheit und kann daher nicht driften — ein Referenz-Wechsel (A.x zeigt von Y auf Z) bleibt beim späteren Löschen von Y folgenlos, die gültige Referenz auf Z bleibt erhalten.
+- **Phase A (fremde Klassen):** Für jede Kandidatenklasse wird der Eintrag auf Roh-Ebene geräumt — eine class-Referenz auf die gelöschte ID wird `unset` (die Property verschwindet aus der Persistenz, gleiche Konvention wie die leere Referenz im generischen Save), eine Collection-ID-Liste wird gefiltert (Reihenfolge der restlichen IDs bleibt). Jede geänderte Datei wird einmal unter ihrem eigenen Write-Lock zurückgeschrieben; unveränderte Dateien bleiben unberührt (der Reflection-Filter läuft ohne Datei-Zugriff).
+- **Phase B (Selbst-Referenzen):** Referenzen der eigenen Klasse auf sich selbst werden inline innerhalb des bereits gehaltenen Locks der eigenen Datei geräumt — ein verschachtelter `saveObject()`-Aufruf würde auf die eigene Sperre treffen und in den Lock-Timeout laufen.
+- **Reihenfolge & Fail-loud:** Die Aufräumung läuft **vor** dem eigenen Delete. Schlägt sie fehl (z. B. Lock-Timeout), bleibt das zu löschende Objekt erhalten, der Fehler läuft über den etablierten Fehlerkanal, und ein Retry heilt — der Scan ist idempotent, bereits geräumte Klassen liefern beim zweiten Lauf keine Änderung mehr.
+- **Geladene Klassen:** Der Scan erfasst die Klassen der require-Kette. Die bestehende Konvention, dass neue Business-Klassen in `controller.php` verdrahtet werden, gilt damit auch für die Löschweitergabe.
+- **Regressionstest:** `php includes/tests/deletePropagationTest.php` (registriert als Diagnostics-Suite „Delete Propagation“).
 
 #### Write-Locking für gleichzeitige Zugriffe
 
