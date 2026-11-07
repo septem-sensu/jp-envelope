@@ -50,6 +50,7 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden **Envelopes (Datenums
 	- [Statischer Core vs. Dynamisches Nachladen](#Statischer%20Core%20vs.%20Dynamisches%20Nachladen)
 	- [Die Namenskonvention (PHP-to-JS-Mapping)](#Die%20Namenskonvention%20(PHP-to-JS-Mapping))
 	- [Der PHP zu JS-Kontrakt über Envelopes (`Kollektor`)](#Der%20PHP%20zu%20JS-Kontrakt%20%C3%BCber%20Envelopes%20(%60Kollektor%60))
+		- [Referenz-Deskriptoren im `data`-Payload](#Referenz-Deskriptoren%20im%20%60data%60-Payload)
 	- [Primäre Zufuhrwege für Daten-Envelopes des Kollektors (`Kollektor`)](#Prim%C3%A4re%20Zufuhrwege%20f%C3%BCr%20Daten-Envelopes%20des%20Kollektors%20(%60Kollektor%60))
 	- [Der App-Kontext (`App`)](#Der%20App-Kontext%20(%60App%60))
 		- [Daten-Payload der App-Instanz](#Daten-Payload%20der%20App-Instanz)
@@ -422,6 +423,35 @@ Jedes Business-Objekt, das für das Frontend bestimmt ist, wird in folgendes JSO
 2. **Deduplizierung:** Wird ein Objekt mit identischer Kombination aus `class` und `id` mehrfach hinzugefügt, gewinnt der letzte Eintrag. Die ursprüngliche Position im Array bleibt erhalten.
 3. **Injektion:** Im `header.tmpl` wird das gesammelte Array als `window[appAlias].rawObjects` in den globalen Client-Kontext injiziert.
 
+#### Referenz-Deskriptoren im `data`-Payload
+
+Referenz-Properties (class-typisierte Properties und Collections) reisen im `data`-Payload nicht als nackte IDs, sondern als **Deskriptor** — ein Untereintrag pro Referenz-Property, der die Deklaration selbst mitliefert:
+
+```json
+{
+  "propertyType": "object",
+  "property": "demoTwo",
+  "class": "DemoTwo",
+  "value": "demoTwo_001"
+}
+```
+
+|Feld|Inhalt|
+|---|---|
+|**`propertyType`**|`object` (class-typisierte Property, `value` = die ID) oder `collection` (Collection-Property, `value` = die ID-Liste)|
+|**`property`**|Der Name der Referenz-Property|
+|**`class`**|Die deklarierte Zielklasse|
+|**`value`**|Die ID bzw. ID-Liste; `null` = leere Objekt-Referenz, `[]` = leere Collection|
+
+Ein Property gilt als Referenz, sobald das `fields`-Feld eine `class` deklariert (`isCollection` entscheidet object/collection). Der Vertrag läuft in beide Richtungen:
+
+- **Server → Client (`rawObject()`):** Jede Referenz-Property steht im `data`-Payload in Deskriptor-Form; die Ziel-Objekte selbst laufen als Sub-Envelopes **vor** dem eigenen Envelope im Antwort-Array.
+- **Auflösung im Client (`fillObjects()`):** Ersetzt jeden Deskriptor durch die Instanz bzw. Instanz-Liste aus der Registry. Eine nicht auflösbare ID (dangling reference) wird über den Fehlerkanal gemeldet und reist als `undefined` — sonst würde sie beim nächsten Save still geleert.
+- **Client → Server (`toData()`):** Das Spiegelbild der Auflösung: Beim Save serialisiert die Instanz die Referenz-Instanzen zurück in Deskriptoren (ID bzw. ID-Liste). Eine leere Objekt-Referenz sendet `value: null`, eine leere Collection `[]`; eine `undefined`-Referenz bleibt komplett außen vor.
+- **Merge auf dem Server (`viewSaveObject`):** Referenz-Deskriptoren laufen durch `mergeReferenceProperty()` — die Zielklasse kommt **ausschließlich aus der Property-Reflection**, der gelieferte `class`-Wert wird nur auf Mismatch geprüft (Forgery-Schutz); jeder gelieferte ID wird existence-gechecked, ein `propertyType`-Mismatch wird abgewiesen. Leere Werte räumen auf: `null`/`''` entfernt die Property aus der Persistenz, `[]` persistiert eine leere ID-Liste. Fehler laufen als ein AppError-Envelope pro Feld (gesammelt mit den Validierungs-Fehlern); nicht gelieferte Referenzen bleiben unangetastet (Merge-Semantik).
+
+**Regressionstest:** `php includes/tests/genericCrudTest.php` (Referenz-Deskriptoren über die Save-Route) und `node includes/tests/baseObjectTest.js` (`toData`).
+
 ### Primäre Zufuhrwege für Daten-Envelopes des Kollektors (`Kollektor`)
 
 - **App-Kontext:** Wird als allererstes von `Controller::execute()` erzeugt, um die globale Konfiguration zu übergeben.
@@ -557,7 +587,9 @@ Der Startprozess im Client wird über ein Inline-Skript in der `header.start.tmp
 [ Ressourcen laden ] ─────────► Wartet via `await` auf alle `loadResources()` (z.B. CSS, Chart.js)
             │
             ▼
-[ App Ready ] ────────────────► Registriert Objekte in der Registry & feuert `registry.setAppReady()`
+[ App Ready ] ────────────────► Registriert Objekte in der Registry (Events queuen),
+            │                   löst die Referenzen (`fillObjects`), feuert die
+            │                   Event-Queue (`fireEvents`) und dann `registry.setAppReady()`
 ```
 
 
@@ -581,7 +613,9 @@ Die Registrierung verarbeitet alle übergebenen Envelopes parallel:
                               ↓
                       [loadResources()] ➔ Externe Skripte/CSS via await nachladen
                               ↓
-                      [Registry] ➔ Instanz registrieren ➔ registry.setAppReady() feuert
+                      [Registry] ➔ Instanz registrieren — Events stehen in der Event-Queue (feuern noch nicht)
+
+Nach allen Envelopes: `fillObjects()` löst die Referenz-Properties auf ➔ `fireEvents()` feuert die Events ➔ `registry.setAppReady()` feuert
 ```
 
 
@@ -611,7 +645,7 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 
 ### Registry-Events
 
-Jede Registrierung feuert Events an zwei Ebenen: pro Instanz (`{event}:{klasse}:{id}`) und klassenweit (`{event}:{klasse}`). Die Events tragen die fünf Typen der Konstante `Registry.EVENTNAMES` — der Auslöser bestimmt den Typ:
+Jede Registrierung stellt Events an zwei Ebenen in die Event-Queue: pro Instanz (`{event}:{klasse}:{id}`) und klassenweit (`{event}:{klasse}`). Die Events tragen die fünf Typen der Konstante `Registry.EVENTNAMES` — der Auslöser bestimmt den Typ, die Zustellung ist **deferred** (siehe unten):
 
 |Event|Auslöser|Beschreibung|
 |---|---|---|
@@ -619,11 +653,19 @@ Jede Registrierung feuert Events an zwei Ebenen: pro Instanz (`{event}:{klasse}:
 |**`load`**|Bootstrap & `app.loadObject`|Ein Envelope ist über die Standard-Pipeline (Klasse, Ressourcen, Daten) geladen.|
 |**`new`**|`app.newObject`|Eine Blaupause wurde unter der ID `new` registriert.|
 |**`save`**|`app.saveObject`|Eine Instanz wurde gespeichert — die ID wird bei jedem Save erneut registriert.|
-|**`delete`**|`app.deleteObject`|Eine Instanz wurde gelöscht; die Registry entfernt alle Replay-Spuren der ID unmittelbar danach (`remove()`).|
+|**`delete`**|`app.deleteObject`|Eine Instanz wurde gelöscht — bei Erfolg entfernt `remove()` alle Replay-Spuren der ID; ein blockierter Delete liefert stattdessen eine AppError-Card und lässt die Registry unangetastet.|
 
 Für jeden Typ existiert eine `on*`-Fassade mit identischer Signatur: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew` (jeweils `(klasse, id, callback)`, `id = null` für das klassenweite Abonnement).
 
 Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt. `registry.remove()` räumt die Replay-Spuren aller Event-Typen ab (Instanz- und Klassenebene) — gelöschte Instanzen werden nicht als Geister replayt. Blaupausen feuern bewusst nur auf Instanz-Ebene (`ready:{klasse}:new` / `new:{klasse}:new`), nie klassenweit.
+
+#### Deferred Dispatch: die Event-Queue
+
+Registrierung und Event-Auslieferung sind entkoppelt: `registry.register()` feuert nichts — es stellt die Registrierung in die interne Event-Queue (`pendingEvents`). Mit `registry.fireEvents()` arbeitet der Loader die Queue zu einem definierten Zeitpunkt in Registrierungs-Reihenfolge ab. Jeder Batch-Zufuhrweg (Bootstrap, `app.loadObject`, `app.saveObject`, `app.deleteObject`) folgt damit dem Ablauf instanziieren → registrieren (queued) → `fillObjects()` (Referenzen auflösen) → `fireEvents()`. Ein Callback sieht eine Instanz daher nie in einem halb verarbeiteten Zustand — insbesondere kann ein Save, das innerhalb der Queue-Warteschlange registriert, die Referenzen des Batches nicht mehr auswischen.
+
+- **Nachträge im Drain:** Callbacks, die sich synchron während der Abarbeitung registrieren, werden noch im selben Lauf bedient (Replay aus der frisch gefüllten `firedEvents`-Basis).
+- **Remove räumt die Queue mit:** `registry.remove()` wirft auch die ausstehende Queue-Position der ID weg — ein Event einer entfernten Instanz wird nie zugestellt.
+- **Fehlerkanal flusht selektiv:** `app.reportError( fehler, quelle, boolFlush )` flusht standardmäßig (`true`). Meldungen, die *innerhalb* eines Batch-Fills entstehen (z. B. die Warnung bei nicht auflösbarer Referenz in `fillObjects`), melden mit `false` — ein Flush dort würde die Batch-Events vorzeitig feuern.
 
 #### Die zwei Abonnement-Modi
 
@@ -632,7 +674,7 @@ Der Zeitpunkt der Listener-Registrierung relativ zum Event bestimmt die Zustellu
 |Modus|Aufruf-Syntax|Verhalten|Typischer Einsatzzweck|
 |---|---|---|---|
 |**Mit ID**|`onSave(klasse, id, callback)`|**Zeitpunkt-abhängig.** Registriert der Callback, **bevor** das Event feuert, bleibt er aktiv und feuert bei jeder erneuten Registrierung derselben ID — bei `save`/`load` also dauerhaft. Kommt er erst **nach** dem Event, liefert ein einziges Replay den aktuellen Zustand; danach bleibt er stumm (kein Speichern des Callbacks).|Gezieltes Reagieren auf eine bestimmte Instanz (z. B. Save-Bestätigung im Demo-Formular).|
-|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen (Replay) und für jede zukünftige Instanz.|Sammlungen verarbeiten (z. B. Karten-Loops), die dynamisch wachsen.|
+|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen (Replay) und mit jedem Event-Flush auch für jede zukünftige Instanz.|Sammlungen verarbeiten (z. B. Karten-Loops), die dynamisch wachsen.|
 
 > [!info] Wichtig für den View-Code
 > HTML-Template-Code sollte immer auf `registry.onAppReady()` warten. Versuche nicht, Objekte direkt nach dem Instanziieren im DOM zu verarbeiten.

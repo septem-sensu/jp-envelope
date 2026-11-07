@@ -62,6 +62,8 @@ Jedes Business-Objekt, das für das Frontend bestimmt ist, wird in folgendes JSO
 - **`id`:** Der eindeutige Schlüssel für die clientseitige Registry.
 - **`data`:** Die Nutzdaten. Sensible Daten (wie der Passwort-Hash des Users) werden hierbei  über die PHP-Konstante `NOSERIALIZE` herausgefiltert.
 
+**Referenz-Deskriptoren:** Referenz-Properties (class-typisierte Properties und Collections) reisen im `data`-Payload als Deskriptor `{ propertyType, property, class, value }` — `value` ist die ID bzw. ID-Liste, `null`/`[]` steht für leer. Der Client löst die Deskriptoren über die Registry auf (`fillObjects()`), das Save spiegelt sie zurück (`toData()`), und der Server merged sie über die Property-Reflection mit Existenz- und Mismatch-Prüfung (Details in der Dokumentation, Abschnitt „Referenz-Deskriptoren im `data`-Payload").
+
 ---
 
 ### Der Bootstrap (Loader)
@@ -110,24 +112,24 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 - `getAll(klasse)`: Liefert eine Kopie der Map dieser Klasse.
    **Wichtig:** Blaupausen (mit der ID `Registry::BLUEPRINTID = 'new'`) werden hierbei herausgefiltert. Dadurch können Templates in Schleifen (Template-Loops) iterieren, ohne Prüfungen einbauen zu müssen.
 
-Sobald eine Instanz registriert wird, feuert die Registry Events an zwei Ebenen ab (`{event}:{klasse}:{id}` für die Instanz, `{event}:{klasse}` klassenweit) — je nach Auslöser mit einem der fünf Event-Typen:
+Sobald eine Instanz registriert wird, stellt die Registry die Events an zwei Ebenen in die Event-Queue (`{event}:{klasse}:{id}` für die Instanz, `{event}:{klasse}` klassenweit) — je nach Auslöser mit einem der fünf Event-Typen. Der Loader feuert die Queue (`fireEvents()`) erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind (Deferred Dispatch):
 
 1. `ready` — Jede Registrierung: die Instanz ist unter ihrer ID erreichbar.
 2. `load` — Bootstrap & `app.loadObject`: Ein Envelope ist über die Standard-Pipeline geladen.
 3. `new` — `app.newObject`: Eine Blaupause wurde unter der ID `new` registriert.
 4. `save` — `app.saveObject`: Eine Instanz wurde gespeichert (die ID wird bei jedem Save erneut registriert).
-5. `delete` — `app.deleteObject`: Eine Instanz wurde gelöscht; die Registry entfernt alle Replay-Spuren der ID unmittelbar danach.
+5. `delete` — `app.deleteObject`: Eine Instanz wurde gelöscht; bei Erfolg entfernt die Registry alle Replay-Spuren der ID (`remove()`), ein blockierter Delete zeigt stattdessen eine AppError-Card.
 
 Für jeden Typ existiert eine `on*`-Fassade: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew`.
 
-Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt!
+Die Zustellung ist **deferred** (Event-Queue): `register()` feuert nichts, es stellt die Events in eine interne Queue; `fireEvents()` liefert sie in Registrierungs-Reihenfolge aus — der Loader flusht erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind. Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt!
 
 Die zwei Abonnement-Modi der Registry
 
 |Modus|Aufruf-Syntax|Verhalten|Typischer Einsatzzweck|
 |---|---|---|---|
 |**Mit ID**|`onSave(klasse, id, callback)`|**Zeitpunkt-abhängig.** Registriert der Callback vor dem Event, feuert er bei jeder erneuten Registrierung derselben ID (bei `save`/`load` dauerhaft). Kommt er nach dem Event, liefert ein einziges Replay den aktuellen Zustand — danach bleibt er stumm.|Gezieltes Warten auf eine ganz bestimmte Instanz.|
-|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen und für jede zukünftige Instanz.|Für dynamisch nachgeladene Objekte wie die **Blaupausen-Route**.|
+|**Ohne ID**|`onSave(klasse, null, callback)`|**Dauer-Abonnement.** Der Callback bleibt permanent aktiv. Er feuert sofort für alle bereits existierenden Instanzen und mit jedem Event-Flush auch für jede zukünftige Instanz.|Für dynamisch nachgeladene Objekte wie die **Blaupausen-Route**.|
 
 ---
 
