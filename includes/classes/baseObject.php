@@ -14,7 +14,7 @@ require_once ( __DIR__ . '/../classes/fieldValidator.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.18
+ * @version   0.2.19
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -147,6 +147,22 @@ class BaseObject {
   protected object  $fields;
 
   /**
+   * The id of the user who created the object — set by the generic save
+   * route (viewSaveObject) and the user create action on a create. The
+   * owner is a permission subject like the role ids: the classPermissions
+   * map of the view accepts the pseudo role 'owner' next to real role
+   * ids. Deliberately not filtered by NOSERIALIZE (travels to the
+   * frontend for UI visibility decisions) nor NOSAVE (persists). The
+   * property is not a declared field, so a client can never deliver or
+   * overwrite it over the save envelope — ownership changes stay a
+   * server-side task.
+   *
+   * @var       string
+   *
+   */
+  protected string  $ownerId;
+
+  /**
    * This method is the constructor of the class and initializes the object.
    * Without an id parameter a new object id is generated via newId().
    *
@@ -225,6 +241,21 @@ class BaseObject {
    */
   public function className() : string {
     return $this->class;
+  }
+
+  /**
+   * This method returns the id of the user who created the object.
+   *
+   * @return    string|null   The owner id or null when not set (blueprints
+   *                          and entries persisted before the owner concept)
+   *
+   * @example   $strOwnerId = $objBaseObject->ownerId();
+   *
+   */
+  public function ownerId() : string | null {
+    if( ! isset( $this->ownerId ) ) return null;
+
+    return $this->ownerId;
   }
 
   /**
@@ -571,7 +602,11 @@ class BaseObject {
    * invalid id values or the object dont exists arrive
    * from the request layer already filtered as null — the response is then
    * deliberately empty instead of an AppError, because json views do not
-   * carry an AppError channel.
+   * carry an AppError channel. The classPermissions whitelist of the view
+   * guards the read like the save route (isClassAllowed): a class the map
+   * does not declare and a failed role id / owner check both answer
+   * deliberately empty — a denied load hides behind the not-found
+   * convention (no existence leak).
    *
    * @param     Controller    $objController   The controller instance of the request
    * @return    array        The object envelope or an empty stdClass
@@ -586,7 +621,13 @@ class BaseObject {
     if( ! isset( $strClass ) || ! isset( $strId ) ) return [];
     if( ! self::existsObject( $strClass, $strId ) ) return [];
 
+    $arrAllowed = self::getClassPermissions( $objController, $strClass );
+
+    if( ! isset( $arrAllowed ) ) return [];
+
     $objObject = new $strClass( $strId );
+
+    if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) return [];
 
     return $objObject->rawObject();
   }
@@ -600,7 +641,14 @@ class BaseObject {
    * accepts only CRUD-capable classes: a BaseObject subclass with a field
    * definition — every other class name is silently filtered (like
    * viewLoadObject, json views carry no information channel for foreign
-   * classes). The merged values follow the field contract: only declared
+   * classes). Beyond the class gate the route enforces the classPermissions
+   * whitelist of the view: a class the map does not declare answers
+   * silently empty (as one), a declared class must pass the role id /
+   * owner check (isClassAllowed) — a failed check gets the permission
+   * AppError envelope; at a create the ownerId of the logged-in user is
+   * set on the new instance (the pseudo role 'owner' can only fire on
+   * updates, a blueprint has no owner yet). The merged values follow the
+   * field contract: only declared
    * fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
    * password fields are never merged, fields with a roleIds attribute only
    * for roles the definition allows and the own id is immutable — at a
@@ -643,15 +691,28 @@ class BaseObject {
 
     if( ! self::isCrudClass( $strClass ) ) return [];
 
+    $arrAllowed = self::getClassPermissions( $objController, $strClass );
+
+    if( ! isset( $arrAllowed ) ) return [];
+
     if( $boolCreate ) {
+      if( ! in_array( $objController->role()->id(), $arrAllowed, true ) ) {
+        return self::crudErrorEnvelope( 'Keine Berechtigung für dieses Objekt.', 'viewSaveObject' );
+      }
+
       $objObject = ( new ReflectionClass( $strClass ) )->newInstanceWithoutConstructor();
       $objObject->initObject( null );
+      $objObject->ownerId = $objController->user()->id();
     } else {
       if( ! self::existsObject( $strClass, $strId ) ) {
         return self::crudErrorEnvelope( 'Das zu speichernde Objekt existiert nicht.', 'viewSaveObject' );
       }
 
       $objObject = new $strClass( $strId );
+
+      if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) {
+        return self::crudErrorEnvelope( 'Keine Berechtigung für dieses Objekt.', 'viewSaveObject' );
+      }
     }
 
     $objFields         = BaseObject::getFieldsOfClass( $strClass );
@@ -803,7 +864,11 @@ class BaseObject {
    * and id address the envelope to remove. The route accepts only
    * CRUD-capable classes (a BaseObject subclass with a field definition,
    * see viewSaveObject) — every other class name is silently filtered.
-   * The onDelete hook runs before the persistence and can abort the delete
+   * The classPermissions whitelist of the view guards the delete like the
+   * save route: an undeclared class answers silently empty, a failed
+   * role id / owner check gets the permission AppError envelope — both
+   * before the onDelete hook. The onDelete hook runs before the
+   * persistence and can abort the delete
    * with its message as an AppError envelope. A successful response
    * carries the rawObject envelopes of the deleted object (reference sub
    * envelopes in front, own envelope last — the client registers the
@@ -826,7 +891,16 @@ class BaseObject {
       return self::crudErrorEnvelope( 'Das zu löschende Objekt existiert nicht.', 'viewDeleteObject' );
     }
 
-    $objObject    = new $strClass( $strId );
+    $arrAllowed = self::getClassPermissions( $objController, $strClass );
+
+    if( ! isset( $arrAllowed ) ) return [];
+
+    $objObject = new $strClass( $strId );
+
+    if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) {
+      return self::crudErrorEnvelope( 'Keine Berechtigung für dieses Objekt.', 'viewDeleteObject' );
+    }
+
     $strHookError = $objObject->onDelete( $objController );
 
     if( isset( $strHookError ) ) return self::crudErrorEnvelope( $strHookError, 'onDelete' );
@@ -856,6 +930,62 @@ class BaseObject {
     if( ! class_exists( $strClassName ) || ! is_subclass_of( $strClassName, BaseObject::class ) ) return false;
 
     return count( (array) BaseObject::getFieldsOfClass( $strClassName ) ) > 0;
+  }
+
+  /**
+   * This method reads the allowed role ids of the addressed class from
+   * the classPermissions map of the request view. The map is a
+   * whitelist: a view without a map and a class that the map does not
+   * declare both return null — the calling routes treat null as the
+   * silent empty answer (same convention as the isCrudClass gate, no
+   * information channel about foreign classes). A declared class
+   * returns its role id list which may contain the pseudo role 'owner'
+   * next to real role ids.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @param     string        $strClass        The addressed business class
+   * @return    array|null    The allowed role ids of the class or null when not declared
+   *
+   * @example   $arrAllowed = self::getClassPermissions( $objController, $strClass );
+   *
+   * @see       BaseObject::isClassAllowed
+   *
+   */
+  private static function getClassPermissions( Controller $objController, string $strClass ) : array | null {
+    $arrClassPermissions = $objController->viewObject()->classPermissions();
+
+    if( ! isset( $arrClassPermissions ) ) return null;
+
+    return $arrClassPermissions[ $strClass ] ?? null;
+  }
+
+  /**
+   * This method decides the class permission of the request over the
+   * allowed role id list of the addressed object's class (see
+   * getClassPermissions): the role of the user is allowed when listed,
+   * the user is allowed when the list declares the pseudo role 'owner'
+   * and the object carries the user id as its ownerId (the creator).
+   * The owner check cannot fire on a create — a blueprint has no owner
+   * yet, so creates are role-guarded only.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @param     BaseObject    $objObject       The addressed (loaded) object
+   * @param     array         $arrAllowed      The allowed role ids of the class
+   * @return    boolean       True when the request may treat the object, false otherwise
+   *
+   * @example   if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) return [];
+   *
+   * @see       BaseObject::getClassPermissions
+   *
+   */
+  private function isClassAllowed( Controller $objController, BaseObject $objObject, array $arrAllowed ) : bool {
+    if( in_array( $objController->role()->id(), $arrAllowed, true ) ) return true;
+
+    $strOwnerId = $objObject->ownerId();
+
+    if( in_array( 'owner', $arrAllowed, true ) && isset( $strOwnerId ) && $strOwnerId === $objController->user()->id() ) return true;
+
+    return false;
   }
 
   /**

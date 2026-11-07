@@ -16,16 +16,30 @@ declare( strict_types = 1 );
  * and reloaded through fillObject(). The still-closed guards
  * (missing/broken request payload, classes without field definitions)
  * answer empty per the json view convention; rejections travel as
- * AppError envelopes. The suite writes only into its own class json
+ * AppError envelopes. The classPermissions whitelist of the views is
+ * injected into the mock controller per suite helper (the production
+ * view.json map declares only the production classes): it covers the
+ * whitelist silence for undeclared classes, the owner pseudo role
+ * (own object allowed, foreign object denied, create never granted
+ * via owner, entries without ownerId stay role-only), the ownerId
+ * stamping on creates (envelope and persisted entry) and the forgery
+ * protection (a delivered ownerId is no field contract and stays
+ * without effect). The suite writes only into its own class json
  * files (persistTestObject.json, persistTestElement.json) including
  * the matching temporary field definitions (fields/persistTestObject.json,
  * fields/persistTestReferenceObject.json) — all removed on every suite
  * end by the shutdown handler. The User positive cases use a suite-owned
- * test account (persisttest@local.test) that the handler also removes;
- * the local production accounts are never touched.
+ * test account (persisttest@local.test), the permission cases an
+ * additional owner account (persistowner@local.test, owns itself) and a
+ * foreign victim account (persistvictim@local.test, ownerId = the owner)
+ * — the handler removes all; the local production accounts are never
+ * touched. The load and delete permission checks run over the User
+ * class: the params whitelist passes only production classes as the GET
+ * class parameter, the suite classes are reachable over the save route
+ * payload only.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.19
+ * @version   0.2.20
  * @since     2026-11-03
  *
  * @example   php includes/tests/genericCrudTest.php
@@ -40,18 +54,20 @@ $strRefDataFile   = BaseObject::FILEPATHJSON . 'data/persistTestReferenceObject.
 $strElemDataFile  = BaseObject::FILEPATHJSON . 'data/persistTestElement.json';
 $strRefFieldsFile = BaseObject::FILEPATHFIELDS . 'persistTestReferenceObject.json';
 $strTestUserId    = 'persisttest@local.test';
+$strOwnerUserId   = 'persistowner@local.test';
+$strVictimUserId  = 'persistvictim@local.test';
 
 /**
  * This shutdown handler removes the class json file, the lock side file
  * and the temporary field definitions of the test class — and the
- * suite-owned test account in the local user.json if the delete route
+ * suite-owned test accounts in the local user.json if the delete route
  * did not already. It runs on every suite end, including a FEHLER exit
  * of check().
  *
  * @return    void
  *
  */
-register_shutdown_function( function() use ( $strDataFile, $strFieldsFile, $strRefDataFile, $strElemDataFile, $strRefFieldsFile, $strTestUserId ) : void {
+register_shutdown_function( function() use ( $strDataFile, $strFieldsFile, $strRefDataFile, $strElemDataFile, $strRefFieldsFile, $strTestUserId, $strOwnerUserId, $strVictimUserId ) : void {
   @unlink( $strDataFile );
   @unlink( $strDataFile . '.lock' );
   @unlink( $strFieldsFile );
@@ -63,6 +79,14 @@ register_shutdown_function( function() use ( $strDataFile, $strFieldsFile, $strR
 
   if( BaseObject::existsObject( 'User', $strTestUserId ) ) {
     ( new User( $strTestUserId ) )->deleteObject();
+  }
+
+  if( BaseObject::existsObject( 'User', $strOwnerUserId ) ) {
+    ( new User( $strOwnerUserId ) )->deleteObject();
+  }
+
+  if( BaseObject::existsObject( 'User', $strVictimUserId ) ) {
+    ( new User( $strVictimUserId ) )->deleteObject();
   }
 
   return;
@@ -208,6 +232,46 @@ class PersistTestReferenceObject extends BaseObject {
 
 }
 
+/**
+ * This function injects a classPermissions map into the view object of
+ * the mock controller (protected property, test-only reflection access)
+ * — the route gates read the map from the request view.
+ *
+ * @param     Controller   $objController   The mock controller
+ * @param     array        $arrMap          The classPermissions map (class => role ids)
+ * @return    void
+ *
+ */
+function setMockClassPermissions( Controller $objController, array $arrMap ) : void {
+  ( new ReflectionProperty( 'View', 'classPermissions' ) )->setValue( $objController->viewObject(), (object) $arrMap );
+
+  return;
+}
+
+/**
+ * This function builds the mock controller for the generic route calls
+ * and injects the suite's classPermissions map into the request view:
+ * the production view.json map declares only the production classes, so
+ * the suite classes would be denied as undeclared — the guest mock role
+ * is the listed permission of the map, keeping the historical route
+ * checks untouched.
+ *
+ * @param     string       $strViewId   The view id for the scope
+ * @return    Controller   The mocked controller instance
+ *
+ */
+function crudMockController( string $strViewId ) : Controller {
+  $objController = mockController( $strViewId );
+
+  setMockClassPermissions( $objController, [
+    'PersistTestObject'          => [ 'guest' ],
+    'PersistTestReferenceObject' => [ 'guest' ],
+    'User'                       => [ 'guest' ]
+  ] );
+
+  return $objController;
+}
+
 // --- setup: remove leftovers of earlier crashed runs ---
 
 @unlink( $strDataFile );
@@ -224,7 +288,7 @@ class PersistTestReferenceObject extends BaseObject {
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 0, 'viewSaveObject: fehlender object-Parameter antwortet still-leer' );
 
@@ -233,7 +297,7 @@ Request::setScope( 'viewSaveObject' );
 
 $_POST[ 'object' ] = '{unterm Bogen';
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Ungültiges Objekt übermittelt.' && $arrEnvelope[ 0 ]->data->source === 'viewSaveObject', 'viewSaveObject: kaputtes JSON antwortet mit AppError-Envelope (Quelle viewSaveObject)' );
 
@@ -242,7 +306,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'Party', 'id' => 'x', 'data' => n
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 0, 'viewSaveObject: unbekannte Klasse wird still gefiltert' );
 
@@ -251,7 +315,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'Controller', 'id' => 'x', 'data'
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 0, 'viewSaveObject: Klasse ohne Felddefinition (Core) wird still gefiltert (CRUD-Gate)' );
 
@@ -269,7 +333,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Bitte Testpayload angeben.', 'viewSaveObject: Create ohne Pflichtfeld antwortet mit mandatory-Fehler' );
 
@@ -278,7 +342,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && str_contains( $arrEnvelope[ 0 ]->data->message, 'mindestens 3 Zeichen' ), 'viewSaveObject: Create unter minLength antwortet mit Regel-Fehler' );
 
@@ -287,7 +351,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestObject' && $arrEnvelope[ 0 ]->id !== 'new' && str_starts_with( $arrEnvelope[ 0 ]->id, 'PersistTestObject_' ), 'viewSaveObject: Create generiert die Server-Id (Blueprint-Id ersetzt)' );
 check( $arrEnvelope[ 0 ]->data->mixPayload === 'Wert Eins', 'viewSaveObject: Create-Antwort trägt den gemergten Payload' );
@@ -309,7 +373,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => $str
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id === $strCreatedId, 'viewSaveObject: Update antwortet mit dem bestehenden Envelope' );
 
@@ -327,7 +391,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'nie
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das zu speichernde Objekt existiert nicht.', 'viewSaveObject: Update einer unbekannten Id antwortet mit AppError' );
 
@@ -336,7 +400,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Der onSave-Hook hat den Save blockiert.' && $arrEnvelope[ 0 ]->data->source === 'onSave', 'viewSaveObject: ein string-Rückgabewert des onSave-Hooks blockiert mit AppError (Quelle onSave)' );
 check( count( (array) BaseObject::loadFileDeCrypted( $strDataFile ) ) === 1, 'viewSaveObject: blockierter Save persistiert nichts' );
@@ -346,7 +410,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 $strKeepId = $arrEnvelope[ 0 ]->id;
 
@@ -374,7 +438,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 $strRefId = $arrEnvelope[ 3 ]->id ?? null;
 
@@ -400,7 +464,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id !== 'new' && str_starts_with( $arrEnvelope[ 0 ]->id, 'PersistTestReferenceObject_' ), 'viewSaveObject: die Blueprint-Id im data-Vertrag wird ignoriert (Server-Id bleibt generiert)' );
 
@@ -411,7 +475,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Referenz-Format des Feldes objElement ist ungültig.', 'viewSaveObject: ein flacher Wert statt Deskriptor antwortet mit Format-Fehler' );
 
@@ -420,7 +484,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElement referenziert eine nicht deklarierte Klasse.', 'viewSaveObject: ein Objekt-Deskriptor mit fremder Klasse antwortet mit Klassen-Fehler' );
 
@@ -429,7 +493,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElement erwartet eine Objekt-Referenz.', 'viewSaveObject: ein Collection-Deskriptor auf einer Objekt-Referenz antwortet mit Typ-Fehler' );
 
@@ -438,7 +502,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das referenzierte Objekt des Feldes objElement existiert nicht.', 'viewSaveObject: eine Objekt-Referenz auf eine unbekannte Id antwortet mit Existenz-Fehler' );
 
@@ -447,7 +511,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Referenz-Format des Feldes objElements ist ungültig.', 'viewSaveObject: eine Collection-Referenz ohne id-Liste antwortet mit Format-Fehler' );
 
@@ -456,7 +520,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das Feld objElements erwartet eine Sammlungs-Referenz.', 'viewSaveObject: ein Objekt-Deskriptor auf einer Collection-Referenz antwortet mit Typ-Fehler' );
 
@@ -465,7 +529,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Ein referenziertes Objekt des Feldes objElements existiert nicht.', 'viewSaveObject: eine Collection-Referenz mit unbekanntem Element antwortet mit Existenz-Fehler' );
 
@@ -478,7 +542,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 3 && $arrEnvelope[ 2 ]->class === 'PersistTestReferenceObject', 'viewSaveObject: ein Objekt-Deskriptor mit leerem value wird akzeptiert' );
 
@@ -492,7 +556,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestReferenceObject', 'id
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestReferenceObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestReferenceObject', 'viewSaveObject: ein Collection-Deskriptor mit leerer id-Liste wird akzeptiert' );
 
@@ -508,7 +572,7 @@ Request::setScope( 'viewDeleteObject' );
 $_GET[ 'class' ] = 'PersistTestObject';
 $_GET[ 'id' ]    = $strKeepId;
 
-$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( mockController( 'viewDeleteObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( crudMockController( 'viewDeleteObject' ) );
 
 check( count( $arrEnvelope ) === 0, 'viewDeleteObject: Klasse außerhalb der Param-Whitelist antwortet still-leer (params.json-Gate)' );
 
@@ -518,13 +582,13 @@ Request::setScope( 'viewDeleteObject' );
 $_GET[ 'class' ] = 'User';
 $_GET[ 'id' ]    = 'niemand@local.test';
 
-$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( mockController( 'viewDeleteObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( crudMockController( 'viewDeleteObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Das zu löschende Objekt existiert nicht.', 'viewDeleteObject: unbekannte Id antwortet mit AppError' );
 
 $objKeep = new PersistTestObject( $strKeepId );
 
-check( $objKeep->onDelete( mockController( 'viewDeleteObject' ) ) === 'Der onDelete-Hook hat das Löschen blockiert.', 'onDelete-Hook: string-Rückgabe steht als Blockier-Meldung (Routing-Spiegel des onSave-Pfads)' );
+check( $objKeep->onDelete( crudMockController( 'viewDeleteObject' ) ) === 'Der onDelete-Hook hat das Löschen blockiert.', 'onDelete-Hook: string-Rückgabe steht als Blockier-Meldung (Routing-Spiegel des onSave-Pfads)' );
 
 $objKeep->deleteObject();
 
@@ -537,7 +601,7 @@ $_POST[ 'object' ] = json_encode( [ 'class' => 'User', 'id' => 'new', 'data' => 
 Request::reset();
 Request::setScope( 'viewSaveObject' );
 
-$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( mockController( 'viewSaveObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( crudMockController( 'viewSaveObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'User' && $arrEnvelope[ 0 ]->id === $strTestUserId, 'viewSaveObject: User-Create über den deklarierten id-Feldvertrag' );
 
@@ -551,10 +615,229 @@ Request::setScope( 'viewDeleteObject' );
 $_GET[ 'class' ] = 'User';
 $_GET[ 'id' ]    = $strTestUserId;
 
-$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( mockController( 'viewDeleteObject' ) );
+$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( crudMockController( 'viewDeleteObject' ) );
 
 check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'User' && $arrEnvelope[ 0 ]->id === $strTestUserId, 'viewDeleteObject: Erfolg liefert den Envelope des gelöschten Objekts' );
 check( BaseObject::existsObject( 'User', $strTestUserId ) === false, 'viewDeleteObject: der über die Route gelöschte Eintrag ist weg' );
+
+// --- classPermissions: owner account, whitelist silence, owner pseudo role, forgery ---
+
+// the owner entry owns itself, the victim entry belongs to the owner user —
+// both shapes feed the owner route checks below
+
+$objOwnerEntry           = new stdClass();
+$objOwnerEntry->id       = $strOwnerUserId;
+$objOwnerEntry->class    = 'User';
+$objOwnerEntry->password = BaseObject::enCrypteOnly( 'forge123' );
+$objOwnerEntry->roleId   = 'administrator';
+$objOwnerEntry->ownerId  = $strOwnerUserId;
+
+BaseObject::insertObject( 'User', $strOwnerUserId, $objOwnerEntry );
+
+$objVictimEntry           = new stdClass();
+$objVictimEntry->id       = $strVictimUserId;
+$objVictimEntry->class    = 'User';
+$objVictimEntry->password = BaseObject::enCrypteOnly( 'forge123' );
+$objVictimEntry->roleId   = 'user';
+$objVictimEntry->ownerId  = $strOwnerUserId;
+
+BaseObject::insertObject( 'User', $strVictimUserId, $objVictimEntry );
+
+check( BaseObject::existsObject( 'User', $strOwnerUserId ), 'classPermissions: der Owner-Test-Account ist angelegt' );
+check( BaseObject::existsObject( 'User', $strVictimUserId ), 'classPermissions: der Victim-Test-Account ist angelegt' );
+
+$objController = mockController( 'viewSaveObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'administrator' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new', 'data' => [ 'mixPayload' => 'Perm Eins' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+check( count( $arrEnvelope ) === 0, 'classPermissions: eine undeklarierte Klasse antwortet beim Speichern still-leer (Whitelist)' );
+
+$objController = mockController( 'viewSaveObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'administrator', 'owner' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new', 'data' => [ 'mixPayload' => 'Perm Eigen' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+$strOwnedId = $arrEnvelope[ 0 ]->id ?? null;
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestObject', 'classPermissions: Create mit deklarierter Rolle persistiert' );
+check( $arrEnvelope[ 0 ]->data->ownerId === $strOwnerUserId, 'classPermissions: der Create-Envelope trägt die Owner-Id des angemeldeten Users' );
+
+$objRawEntry = BaseObject::getRawObject( 'PersistTestObject', $strOwnedId );
+
+check( $objRawEntry->ownerId === $strOwnerUserId, 'classPermissions: die Owner-Id steht im Persistenzeintrag' );
+
+$objController = mockController( 'viewSaveObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => $strOwnedId, 'data' => [ 'mixPayload' => 'Perm Eigen Zwei' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id === $strOwnedId, 'classPermissions: der Owner darf sein Objekt über die Pseudo-Rolle owner ändern' );
+
+$objController = mockController( 'viewSaveObject' );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => $strOwnedId, 'data' => [ 'mixPayload' => 'Perm Hack' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Keine Berechtigung für dieses Objekt.' && $arrEnvelope[ 0 ]->data->source === 'viewSaveObject', 'classPermissions: ein fremder User erhält die Berechtigungs-Ablehnung (Update)' );
+check( BaseObject::getRawObject( 'PersistTestObject', $strOwnedId )->mixPayload === 'Perm Eigen Zwei', 'classPermissions: abgelehntes Update persistiert nichts (Bestand bleibt)' );
+
+$objController = mockController( 'viewSaveObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new', 'data' => [ 'mixPayload' => 'Perm Neu' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Keine Berechtigung für dieses Objekt.', 'classPermissions: ein Create wird nie über die Pseudo-Rolle owner erlaubt (kein Owner ohne Objekt)' );
+
+$objOrphanEntry             = new stdClass();
+$objOrphanEntry->class      = 'PersistTestObject';
+$objOrphanEntry->mixPayload = 'Perm Ohne';
+
+BaseObject::insertObject( 'PersistTestObject', 'permOrphan-1', $objOrphanEntry );
+
+$objController = mockController( 'viewSaveObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'permOrphan-1', 'data' => [ 'mixPayload' => 'Perm Forgery', 'ownerId' => $strOwnerUserId ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Keine Berechtigung für dieses Objekt.', 'classPermissions: ein Bestandsobjekt ohne ownerId wird abgewiesen und ein gelieferter ownerId bleibt wirkungslos' );
+
+$objRawEntry = BaseObject::getRawObject( 'PersistTestObject', 'permOrphan-1' );
+
+check( ! isset( $objRawEntry->ownerId ) && $objRawEntry->mixPayload === 'Perm Ohne', 'classPermissions: der Forgery-Versuch schreibt weder Owner-Id noch Payload (kein Feldvertrag)' );
+
+$objController = mockController( 'viewSaveObject' );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'guest' ] ] );
+
+$_POST[ 'object' ] = json_encode( [ 'class' => 'PersistTestObject', 'id' => 'new', 'data' => [ 'mixPayload' => 'Perm Fremd' ] ] );
+
+Request::reset();
+Request::setScope( 'viewSaveObject' );
+
+$arrEnvelope = ( new PersistTestObject() )->viewSaveObject( $objController );
+
+$strForeignId = $arrEnvelope[ 0 ]->id ?? null;
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'PersistTestObject', 'classPermissions: der Gast-Mock erstellt sein Objekt (Owner = Gast-Id)' );
+
+// --- classPermissions: the load route (owner allowed, foreign and undeclared hidden) ---
+
+$objController = mockController( 'viewLoadObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObject' );
+
+$_GET[ 'class' ] = 'User';
+$_GET[ 'id' ]    = $strVictimUserId;
+
+$arrEnvelope = ( new PersistTestObject() )->viewLoadObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id === $strVictimUserId, 'classPermissions: der Owner darf sein Objekt laden' );
+
+$objController = mockController( 'viewLoadObject' );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObject' );
+
+$_GET[ 'class' ] = 'User';
+$_GET[ 'id' ]    = $strVictimUserId;
+
+$arrEnvelope = ( new PersistTestObject() )->viewLoadObject( $objController );
+
+check( count( $arrEnvelope ) === 0, 'classPermissions: das fremde Objekt lädt still-leer (Tarnung als nicht vorhanden)' );
+
+$objController = mockController( 'viewLoadObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObject' );
+
+$_GET[ 'class' ] = 'User';
+$_GET[ 'id' ]    = $strVictimUserId;
+
+$arrEnvelope = ( new PersistTestObject() )->viewLoadObject( $objController );
+
+check( count( $arrEnvelope ) === 0, 'classPermissions: eine undeklarierte Klasse antwortet beim Laden still-leer' );
+
+// --- classPermissions: the delete route (owner allowed, foreign denied) ---
+
+$objController = mockController( 'viewDeleteObject', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewDeleteObject' );
+
+$_GET[ 'class' ] = 'User';
+$_GET[ 'id' ]    = $strVictimUserId;
+
+$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->id === $strVictimUserId, 'classPermissions: der Owner darf sein Objekt löschen' );
+check( BaseObject::existsObject( 'User', $strVictimUserId ) === false, 'classPermissions: das gelöschte Owner-Objekt ist weg' );
+
+$objController = mockController( 'viewDeleteObject' );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewDeleteObject' );
+
+$_GET[ 'class' ] = 'User';
+$_GET[ 'id' ]    = $strOwnerUserId;
+
+$arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( $objController );
+
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'AppError' && $arrEnvelope[ 0 ]->data->message === 'Keine Berechtigung für dieses Objekt.' && $arrEnvelope[ 0 ]->data->source === 'viewDeleteObject', 'classPermissions: ein fremder User erhält die Berechtigungs-Ablehnung (Delete)' );
+check( BaseObject::existsObject( 'User', $strOwnerUserId ), 'classPermissions: das abgelehnt gelöschte Objekt besteht weiter' );
+
+// --- cleanup: remove the remaining permission test objects ---
+
+( new PersistTestObject( $strOwnedId ) )->deleteObject();
+( new PersistTestObject( $strForeignId ) )->deleteObject();
+( new PersistTestObject( 'permOrphan-1' ) )->deleteObject();
 
 Request::reset();
 

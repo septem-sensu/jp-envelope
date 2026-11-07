@@ -7,11 +7,13 @@ require_once ( __DIR__ . '/../classes/baseObject.php' );
 /**
  * This class represents a configured view (view.json): it binds a view
  * method to a business class, carries the result type (empty = HTML,
- * 'json' = JSON response), the template chain and the allowed role ids,
- * and executes the actions and the view method of the view.
+ * 'json' = JSON response), the template chain, the allowed role ids and
+ * the classPermissions map (per-class role ids incl. the pseudo role
+ * 'owner' for the generic json routes), and executes the actions and the
+ * view method of the view.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.11
+ * @version   0.2.12
  * @since     2026-10-10
  *
  * @example   $objView = new View( 'viewUserList' );
@@ -78,6 +80,26 @@ class View extends BaseObject {
   protected array  $actionNames;
 
   /**
+   * The classPermissions map of the view: business class name mapped to
+   * the list of role ids allowed to treat objects of that class over the
+   * generic json routes (viewSaveObject, viewLoadObject, viewDeleteObject).
+   * A list may contain the pseudo role 'owner' next to real role ids —
+   * the creator of the object (its ownerId) passes then. The map is a
+   * whitelist: the routes deny every class the map does not declare
+   * (silently empty, like foreign classes) — a view without a map
+   * therefore denies every class. Validated fail-loud against the class
+   * code and the role configuration (validateClassPermissions). Not
+   * filtered by the NOSERIALIZE constant — it travels with the app
+   * envelope like the roleIds (a source for UI visibility decisions).
+   * Decodes from the json configuration as an object (same pattern as
+   * the fields property), the getter casts it into an array.
+   *
+   * @var       object
+   *
+   */
+  protected object $classPermissions;
+
+  /**
    * This method returns the name of the view method.
    *
    * @return    string|null   The view method name or null when not set
@@ -135,6 +157,24 @@ class View extends BaseObject {
   }
 
   /**
+   * This method returns the classPermissions map of the view
+   * (business class name mapped to the allowed role ids, see the
+   * classPermissions property). The map decodes from the json
+   * configuration as an object, so the getter casts it into an array
+   * for the route access.
+   *
+   * @return    array|null   The class permission map or null when not set
+   *
+   * @example   $arrClassPermissions = $objView->classPermissions();
+   *
+   */
+  public function classPermissions() : array | null {
+    if( ! isset( $this->classPermissions ) ) return null;
+
+    return (array) $this->classPermissions;
+  }
+
+  /**
    * This method returns the action names of the view.
    *
    * @return    array|null   The action names or null when not set
@@ -153,9 +193,10 @@ class View extends BaseObject {
    * actions run only when the request's 'action' parameter matches
    * their configured trigger, always actions run on every request of
    * the view — executed in their configured order before the view
-   * rendering. Both config sources are validated fail-loud against
-   * the class code (config drift fails loudly here instead of dying
-   * silently, see validateActions/validatePermissions). Actions the
+   * rendering. The config sources are validated fail-loud against
+   * the class code and the role configuration (config drift fails loudly
+   * here instead of dying silently, see validateActions/validatePermissions/
+   * validateClassPermissions). Actions the
    * role has no permission for are skipped — but when the request
    * triggers exactly such an action, the user gets a visible
    * AppError instead of silent nothing, and an 'action' parameter
@@ -174,6 +215,8 @@ class View extends BaseObject {
 
     $this->validateActions( $this->actionNames );
     $this->validatePermissions( $arrPermissions );
+
+    if( isset( $this->classPermissions ) ) $this->validateClassPermissions( $this->classPermissions() );
 
     $strActionTrigger = Request::param( 'action' );
     $boolMatched      = false;
@@ -260,6 +303,40 @@ class View extends BaseObject {
 
       if( count( $arrPermissionParts ) !== 2 || ! class_exists( $arrPermissionParts[ 0 ] ) || ! method_exists( $arrPermissionParts[ 0 ], $arrPermissionParts[ 1 ] ) ) {
         throw new RuntimeException( 'Die Rolle konfiguriert eine Permission ohne existierende Methode: ' . $strPermission );
+      }
+    }
+
+    return;
+  }
+
+  /**
+   * This method validates the classPermissions map of the view
+   * (business class name mapped to role ids, see the classPermissions
+   * property) fail-loud: every key must name an existing class and every
+   * entry of the role id lists must either be the pseudo role 'owner' or
+   * an existing role of the role configuration. Config drift (a renamed
+   * or removed class, a misspelled role id) would otherwise deny every
+   * request of the class silently. The RuntimeException lands via the
+   * executeActions catch of execute() in the soft error channel + server
+   * log.
+   *
+   * @param     array     $arrClassPermissions     The class permission map of the view
+   * @return    void
+   *
+   * @example   $this->validateClassPermissions( $this->classPermissions() );
+   *
+   */
+  private function validateClassPermissions( array $arrClassPermissions ) : void {
+    $strPrefix = 'Die View ' . $this->id() . ' konfiguriert ';
+
+    foreach( $arrClassPermissions as $strClass => $arrRoleIds ) {
+      if( ! class_exists( $strClass ) ) throw new RuntimeException( $strPrefix . 'eine unbekannte Klasse in classPermissions: ' . $strClass );
+      if( ! is_array( $arrRoleIds ) ) throw new RuntimeException( $strPrefix . 'eine ungültige Rollen-Liste in classPermissions: ' . $strClass );
+
+      foreach( $arrRoleIds as $strRoleId ) {
+        if( $strRoleId === 'owner' ) continue;
+
+        if( ! is_string( $strRoleId ) || ! BaseObject::existsObject( 'Role', $strRoleId ) ) throw new RuntimeException( $strPrefix . 'eine unbekannte Rolle in classPermissions (' . $strClass . '): ' . ( is_string( $strRoleId ) ? $strRoleId : gettype( $strRoleId ) ) );
       }
     }
 

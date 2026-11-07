@@ -164,6 +164,7 @@ Aufbau eines Views in der `view.json`:
 |`viewName`|_String_|Die auszuführende Methode auf der Zielklasse (`className`).|
 |`resultType`|_String_|Ausgabe-Typ: Leer = HTML-Rendering. `"json"` = Sendet JSON-Header + `json_encode`.|
 |`roleIds`|_Array_|Liste der Benutzerrollen, die diese View aufrufen dürfen.|
+|`classPermissions`|_Object_|Klassenbezogene Whitelist der generischen CRUD-Routen: Business-Klasse → Liste erlaubter Rollen-Ids inkl. der Pseudo-Rolle `"owner"` (der Ersteller des Objekts). Undeklarierte Klassen verweigern die Routen still.|
 |`templateNames`|_Array_|Die für die View zu ladenden Templates.|
 |`actionNames`|_Object-Array_|Registrierte Business-Logik-Aktionen, die **vor** dem Rendern laufen.|
 
@@ -181,6 +182,12 @@ Das Framework trennt Trigger-Namen im HTML-Formular von den PHP-Methodennamen. D
 > Beim Ausführen (`View::validateActions` & `validatePermissions`) prüft das Framework, ob alle konfigurierten Klassen/Methoden existieren und das JSON-Format stimmt.
 > Bei Fehlern wird eine `RuntimeException` ausgelöst.
 > Es gibt **keine stillen Fehler (Zombies)** im Hintergrund, das System meldet Fehler über den Controller als geloggten Fehler.
+
+---
+
+### Klassenbezogene Rechte der CRUD-Routen (`classPermissions` & `ownerId`)
+
+Die generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate eine klassenbezogene Whitelist am View: die `classPermissions`-Map legt pro Business-Klasse fest, welche Rollen (inkl. der Pseudo-Rolle `"owner"` = der Ersteller) Objekte dieser Klasse behandeln dürfen — undeklarierte Klassen verweigern die Routen still. Beim Erstellen stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt; der Client kann sie nie liefern oder überschreiben, da sie kein Feldvertrag ist. Save und Delete melden eine Verweigerung als AppError, Load antwortet still-leer (kein Existenz-Leak). Details in `includes/docs/DOCUMENTATION.md`.
 
 ---
 

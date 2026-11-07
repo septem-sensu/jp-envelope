@@ -10,7 +10,7 @@ declare( strict_types = 1 );
  * committable and have SKIP paths when local production data is missing.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.10
+ * @version   0.2.11
  * @since     2026-10-18
  *
  * @example   php includes/tests/collectorTest.php
@@ -68,16 +68,20 @@ function check( bool $boolCondition, string $strMessage ) : void {
  * Controller subclass whose constructor deliberately skips the parent
  * constructor (the real one boots the whole app incl. auth). Without a
  * view id only presentation, user and role exist; with a view id the view
- * object is created and the request scope is set accordingly.
+ * object is created and the request scope is set accordingly. An optional
+ * user id resolves the mock user over the auth id path (default: the
+ * guest fallback) — the base of the owner permission checks.
  *
  * @param     string|null   $strViewId   The view id for the scope or null
+ * @param     string|null   $strUserId   The user id of the mock user or null for the guest fallback
  * @return    Controller    The mocked controller instance
  *
  * @example   $objController = mockController( 'viewUserList' );
+ * @example   $objController = mockController( 'viewSaveObject', 'max@musterman.de' );
  *
  */
-function mockController( string | null $strViewId = null ) : Controller {
-  return new class( $strViewId ) extends Controller {
+function mockController( string | null $strViewId = null, string | null $strUserId = null ) : Controller {
+  return new class( $strViewId, $strUserId ) extends Controller {
 
     /**
      * This method is the constructor of the anonymous mock: it wires the
@@ -85,12 +89,13 @@ function mockController( string | null $strViewId = null ) : Controller {
      * sets the view object plus the request scope when a view id is given.
      *
      * @param     string|null   $strViewId   The view id for the scope or null
+     * @param     string|null   $strUserId   The user id of the mock user or null
      * @return    void
      *
      */
-    public function __construct( string | null $strViewId = null ) {
+    public function __construct( string | null $strViewId = null, string | null $strUserId = null ) {
       $this->presentation = new Presentation();
-      $this->user         = new User();
+      $this->user         = isset( $strUserId ) ? new User( $strUserId ) : new User();
       $this->role         = $this->user->role();
 
       if( isset( $strViewId ) ) {

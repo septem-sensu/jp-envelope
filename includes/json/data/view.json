@@ -12,6 +12,11 @@
     "className": "BaseObject",
     "resultType": "json",
     "roleIds": [ "administrator", "user" ],
+    "classPermissions": {
+      "User": [ "administrator", "user" ],
+      "DemoOne": [ "administrator", "user" ],
+      "DemoTwo": [ "administrator", "user" ]
+    },
     "templateNames": [],
     "actionNames": []
   },
@@ -20,6 +25,11 @@
     "className": "BaseObject",
     "resultType": "json",
     "roleIds": [ "administrator", "user" ],
+    "classPermissions": {
+      "User": [ "administrator", "user", "owner" ],
+      "DemoOne": [ "administrator", "user", "owner" ],
+      "DemoTwo": [ "administrator", "user", "owner" ]
+    },
     "templateNames": [],
     "actionNames": []
   },
@@ -28,6 +38,11 @@
     "className": "BaseObject",
     "resultType": "json",
     "roleIds": [ "administrator" ],
+    "classPermissions": {
+      "User": [ "administrator" ],
+      "DemoOne": [ "administrator" ],
+      "DemoTwo": [ "administrator" ]
+    },
     "templateNames": [],
     "actionNames": []
   },

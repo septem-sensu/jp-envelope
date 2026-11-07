@@ -15,7 +15,7 @@ require_once ( __DIR__ . '/../classes/request.php' );
  * 'action' parameter trigger.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.12
+ * @version   0.2.13
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'user@example.com' );
@@ -224,7 +224,9 @@ class User extends BaseObject {
    * account is persisted directly via insertObject instead of the
    * constructor: getUser() falls back to the guest user when the user does
    * not exist, so the User constructor can never deliver an empty new
-   * instance. Rejected guards collect soft errors for the AppError channel.
+   * instance. The ownerId of the logged-in user (the creator) is set on
+   * the entry like the generic save route does. Rejected guards collect
+   * soft errors for the AppError channel.
    *
    * @param     Controller    $objController   The controller instance of the request
    * @return    void
@@ -256,6 +258,7 @@ class User extends BaseObject {
     $objEntry->class    = 'User';
     $objEntry->password = BaseObject::enCrypteOnly( $strPassword );
     $objEntry->roleId   = $strRoleId;
+    $objEntry->ownerId  = $objController->user()->id();
 
     BaseObject::insertObject( 'User', $strId, $objEntry );
 

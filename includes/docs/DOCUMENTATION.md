@@ -118,6 +118,7 @@ Jede darstellbare Seite oder API-Endpunkt ist in `includes/json/data/view.json` 
 |`viewName`|_String_|Die auszuführende Methode auf der Zielklasse (`className`).|
 |`resultType`|_String_|Ausgabe-Typ: Leer = HTML-Rendering. `"json"` = Sendet JSON-Header + `json_encode`.|
 |`roleIds`|_Array_|Liste der Benutzerrollen, die diese View aufrufen dürfen.|
+|`classPermissions`|_Object_|Klassenbezogene Whitelist der generischen CRUD-Routen: Business-Klasse → Liste erlaubter Rollen-Ids (inkl. Pseudo-Rolle `"owner"`, siehe unten).|
 |`templateNames`|_Array_|Die für die View zu ladenden Templates.|
 |`actionNames`|_Object-Array_|Registrierte Business-Logik-Aktionen, die **vor** dem Rendern laufen.|
 
@@ -132,6 +133,20 @@ Das Framework trennt Trigger-Namen im HTML-Formular von den PHP-Methodennamen. D
 > Beim Ausführen (`View::validateActions` & `validatePermissions`) prüft das Framework, ob alle konfigurierten Klassen/Methoden existieren und das JSON-Format stimmt.
 > Bei Fehlern wird eine `RuntimeException` ausgelöst.
 > Es gibt **keine stillen Fehler (Zombies)** im Hintergrund, das System meldet Fehler über den Controller als geloggten Fehler.
+
+#### Klassenbezogene Rechte der generischen CRUD-Routen (`classPermissions` & `ownerId`)
+
+Die drei generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate (`roleIds`) und zur Parameter-Whitelist eine **klassenbezogene Whitelist** am View: die `classPermissions`-Map bildet jede behandelbare Business-Klasse auf die Liste der Rollen-Ids ab, die Objekte dieser Klasse über die Route behandeln dürfen. Ein Eintrag darf die Pseudo-Rolle `"owner"` enthalten — sie steht für den Ersteller des Objekts (dessen `ownerId`). `viewNewObject` bleibt bewusst außen vor: Er gibt nichts preis und schreibt nichts.
+
+- **Whitelist-Semantik:** Eine Klasse, die die Map nicht deklariert, verweigern alle drei Routen still. Ein View ohne Map verweigert demnach jede Klasse.
+- **`ownerId` am Objekt:** Beim Erstellen über die Save-Route (und in `User::createUser`) stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt. Die Property reist im Envelope (Quelle für UI-Sichtbarkeitsentscheidungen) und persistiert; der Client kann sie nie liefern oder überschreiben — der Save-Merge übernimmt nur in `fields/*.json` deklarierte Felder, und `ownerId` ist kein Feldvertrag.
+- **Verweigerung je Route:** Save und Delete melden sie als AppError-Envelope („Keine Berechtigung für dieses Objekt."); Load antwortet konventionsgemäß still-leer — die Verweigerung tarnt sich als nicht existentes Objekt (kein Existenz-Leak).
+- **Create nie über `owner`:** Ein neues Objekt hat noch keinen Owner — der Create-Pfad prüft ausschließlich die Rollen-Liste.
+- **Bestands-Einträge ohne `ownerId`:** Die Property bleibt unset, die Pseudo-Rolle greift nicht — es zählen nur die Rollen-Ids. Keine Datenmigration nötig.
+- **Fail-Loud-Validierung:** `View::validateClassPermissions` prüft die Map beim View-Aufruf gegen die Klassen- und Rollenkonfiguration — Config-Drift (umbenannte Klasse, Tippfehler bei der Rolle) wirft eine `RuntimeException` in den weichen Fehlerkanal.
+- **Abgrenzung:** Das `roleIds`-Attribut an einem Feld in `fields/*.json` filtert property-genau, wer dieses **einzelne Feld** im Save-Merge überschreiben darf; `classPermissions` am View regelt objekt-genau, wer das **ganze Objekt** über die CRUD-Routen behandeln darf.
+
+**Regressionstest:** `php includes/tests/genericCrudTest.php` (Whitelist-Stille, Pseudo-Rolle, Forgery-Schutz, Load-Tarnung).
 
 ### Authentifizierung & Autorisierung (`Auth`)
 

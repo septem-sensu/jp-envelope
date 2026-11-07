@@ -20,10 +20,12 @@ declare( strict_types = 1 );
  * touched. The missing-file guard of loadFileDeCrypted() is checked
  * before the first insert creates its storage file. The positive
  * viewLoadObject check reads the first local user and therefore
- * carries a SKIP path on machines without user.json.
+ * carries a SKIP path on machines without user.json; its guest mock
+ * receives an injected classPermissions whitelist because the
+ * production map of viewLoadObject denies the guest role.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-11-02
  *
  * @example   php includes/tests/baseObjectTest.php
@@ -482,13 +484,20 @@ check( count( $arrEnvelope ) === 0, 'viewLoadObject: nicht existierende Id antwo
 if( count( BaseObject::getObjectsFromClass( 'User' ) ) > 0 ) {
   $objUser = BaseObject::getObjectsFromClass( 'User' )[ 0 ];
 
+  // the production view.json map denies the guest role — the suite
+  // injects its own whitelist for the route check
+
+  $objController = mockController( 'viewLoadObject' );
+
+  ( new ReflectionProperty( 'View', 'classPermissions' ) )->setValue( $objController->viewObject(), (object) [ 'User' => [ 'guest' ] ] );
+
   Request::reset();
   Request::setScope( 'viewLoadObject' );
 
   $_GET[ 'class' ] = 'User';
   $_GET[ 'id' ]    = $objUser->id();
 
-  $arrEnvelope = ( new PersistTestObject() )->viewLoadObject( mockController( 'viewLoadObject' ) );
+  $arrEnvelope = ( new PersistTestObject() )->viewLoadObject( $objController );
 
   check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'User' && $arrEnvelope[ 0 ]->id === $objUser->id(), 'viewLoadObject: Envelope der gewhitlisteten Klasse' );
   check( isset( $arrEnvelope[ 0 ]->data->id ), 'viewLoadObject: data-Payload liegt vor' );
