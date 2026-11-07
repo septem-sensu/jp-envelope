@@ -553,7 +553,7 @@ $_GET[ 'id' ]    = $strTestUserId;
 
 $arrEnvelope = ( new PersistTestObject() )->viewDeleteObject( mockController( 'viewDeleteObject' ) );
 
-check( count( $arrEnvelope ) > 0, 'viewDeleteObject: Erfolg antwortet nicht leer' );
+check( count( $arrEnvelope ) === 1 && $arrEnvelope[ 0 ]->class === 'User' && $arrEnvelope[ 0 ]->id === $strTestUserId, 'viewDeleteObject: Erfolg liefert den Envelope des gelöschten Objekts' );
 check( BaseObject::existsObject( 'User', $strTestUserId ) === false, 'viewDeleteObject: der über die Route gelöschte Eintrag ist weg' );
 
 Request::reset();

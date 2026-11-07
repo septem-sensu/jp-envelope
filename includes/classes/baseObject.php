@@ -804,12 +804,14 @@ class BaseObject {
    * CRUD-capable classes (a BaseObject subclass with a field definition,
    * see viewSaveObject) — every other class name is silently filtered.
    * The onDelete hook runs before the persistence and can abort the delete
-   * with its message as an AppError envelope. A successful response is
-   * empty (the envelope no longer exists — the client removes its registry
-   * instance), a lost delete race reports the AppError envelope.
+   * with its message as an AppError envelope. A successful response
+   * carries the rawObject envelopes of the deleted object (reference sub
+   * envelopes in front, own envelope last — the client registers the
+   * instance before remove fires the delete events), a lost delete race
+   * or hook rejection reports the AppError envelopes.
    *
    * @param     Controller    $objController   The controller instance of the request
-   * @return    array         Empty on success or the rejection AppError envelopes
+   * @return    array         The deleted object envelopes on success or the rejection AppError envelopes
    *
    * @example   $arrEnvelopes = $objBaseObject->viewDeleteObject( $objController );
    *

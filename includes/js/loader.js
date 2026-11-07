@@ -312,10 +312,12 @@ class Loader extends EventTarget {
 /**
  * This method deletes an addressed object over the generic json delete
  * route (viewDeleteObject, POST): the parameters class and id travel as
- * urlencoded body. The response envelopes register with the 'delete'
- * event type (onDelete beside ready); the empty success response
- * removes the registry instance — remove cleans every replay trace of
- * the id. AppError envelopes display in the overlay afterwards.
+ * urlencoded body. The success response carries the deleted envelope
+ * (plus reference sub envelopes) — instantiateRawObjects registers it
+ * with the 'delete' event type (onDelete beside ready), then remove
+ * cleans every replay trace of the id, so the delete events fire on a
+ * registered instance. AppError envelopes display in the overlay and
+ * leave the registry untouched (a blocked delete keeps its instance).
  * Errors (HTML answer at a wrong role, empty 500 body, network) tear
  * the promise up, the catch sits in the app wrapper (overlay).
  *
@@ -323,7 +325,7 @@ class Loader extends EventTarget {
  *
  * @param     {string}    className   The PHP class name of the object
  * @param     {string}    id          The id of the object
- * @return    {Promise}   instances   The registered instances of the response (AppError cards on rejection, empty on success)
+ * @return    {Promise}   instances   The registered instances of the response (deleted instance on success, AppError cards on rejection)
  *
  * @example   await loader.deleteObject( 'User', 'max@musterman.de' );
  *
@@ -343,11 +345,17 @@ class Loader extends EventTarget {
 
     const instances = await this.instantiateRawObjects( await response.json(), 'delete' );
 
+    let boolHasErrors = false;
+
     for( let i = 0; i < instances.length; i++ ) {
-      if( instances[ i ] instanceof window.AppError ) instances[ i ].showError();
+      if( instances[ i ] instanceof window.AppError ) {
+        boolHasErrors = true;
+
+        instances[ i ].showError();
+      }
     }
 
-    window[ appAlias ].registry.remove( className, id );
+    if( ! boolHasErrors ) window[ appAlias ].registry.remove( className, id );
 
     return instances;
   }
