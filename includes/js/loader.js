@@ -347,7 +347,7 @@ class Loader extends EventTarget {
       if( instances[ i ] instanceof window.AppError ) instances[ i ].showError();
     }
 
-    if( instances.length === 0 ) window[ appAlias ].registry.remove( className, id );
+    window[ appAlias ].registry.remove( className, id );
 
     return instances;
   }

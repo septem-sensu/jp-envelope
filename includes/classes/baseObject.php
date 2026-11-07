@@ -811,7 +811,7 @@ class BaseObject {
       return self::crudErrorEnvelope( 'Das Objekt konnte nicht gelöscht werden.', 'viewDeleteObject' );
     }
 
-    return [];
+    return $objObject->rawObject();
   }
 
   /**

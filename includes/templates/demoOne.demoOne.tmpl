@@ -2,13 +2,21 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
-    app.registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
-      console.log( demoOneInstance );
+    app.registry.onLoad( 'User', 'info@bloompro.de', ( userInstance ) => {
+      console.log( userInstance );
+
+      app.registry.onDelete( userInstance.class, userInstance.id, () => {
+        console.log( 'gelöscht' );
+
+        return;
+      } );
+
+      app.deleteObject( userInstance );
 
       return;
     } );
 
-    app.loadObject( 'DemoOne', 'demoOne_001' );
+    app.loadObject( 'User', 'info@bloompro.de' );
     app.currentUser().addNavbarTop( app );
 
     return;
