@@ -346,7 +346,7 @@ body {
   width: 100%;
   margin-bottom: 10px;
   height: auto;
-  max-height: 1000px;
+  max-height: 2000px;
   overflow: hidden;
   transition: max-height 1.0s ease;
   border-style: solid;
