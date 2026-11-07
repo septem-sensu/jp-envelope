@@ -35,6 +35,7 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden **Envelopes (Datenums
 	- [Persistenz & Datenspeicherung (`BaseObject`)](#Persistenz%20&%20Datenspeicherung%20(%60BaseObject%60))
 		- [Das Datei- und Speicherkonzept](#Das%20Datei-%20und%20Speicherkonzept)
 		- [CRUD-Operationen auf Instanz-Ebene](#CRUD-Operationen%20auf%20Instanz-Ebene)
+		- [Lifecycle-Hooks (`onSave`, `onDelete`, `onLoad`)](#Lifecycle-Hooks%20(%60onSave%60%2C%20%60onDelete%60%2C%20%60onLoad%60))
 		- [Löschweitergabe (Referenz-Integrität beim Löschen)](#L%C3%B6schweitergabe%20(Referenz-Integrit%C3%A4t%20beim%20L%C3%B6schen))
 		- [Write-Locking für gleichzeitige Zugriffe](#Write-Locking%20f%C3%BCr%20gleichzeitige%20Zugriffe)
 		- [Filter-Konstanten für Properties](#Filter-Konstanten%20f%C3%BCr%20Properties)
@@ -239,6 +240,21 @@ Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 
 - **Speichern & Aktualisieren:** Ein Aufruf von `$instanz->saveObject()` schreibt oder aktualisiert ausschließlich den Eintrag des aktuellen Objekts in der jeweiligen JSON-Datei.
 - **Löschen:** Ein Aufruf von `$instanz->deleteObject()` entfernt den Eintrag des Objekts aus der Datei und räumt vorher die Referenzen anderer Objekte auf die gelöschte ID ab (siehe Löschweitergabe).
+
+#### Lifecycle-Hooks (`onSave`, `onDelete`, `onLoad`)
+
+Business-Klassen überschreiben die drei Hook-Methoden von `BaseObject`, um in den Objekt-Lebenszyklus einzugreifen:
+
+|Hook|Auslöser|Signatur|Protokoll|
+|---|---|---|---|
+|**`onSave`**|Generische Save-Route (`viewSaveObject`), **vor** der Persistenz|`onSave( ?Controller ) : ?string`|String = Save wird abgebrochen, die Meldung läuft als AppError-Envelope ins Frontend-Overlay; `null` = erlaubt|
+|**`onDelete`**|Generische Delete-Route (`viewDeleteObject`), **vor** dem Delete|`onDelete( ?Controller ) : ?string`|dito|
+|**`onLoad`**|`initObject()`, **nach** `fillObject()`|`onLoad() : void`|kein Protokoll — reiner Informations-Hook, ein Rückgabewert wird ignoriert|
+
+- **`onLoad` feuert nur bei echtem Load:** Der Hook läuft nur, wenn `fillObject()` tatsächlich einen persistierten Eintrag geladen hat. Blaupausen (`createBlueprint()`) und Instanziierungen mit unbekannter oder leerer ID bleiben hook-los. Er feuert bei **jedem** realen Load — auch außerhalb eines Request-Kontexts, z. B. wenn Referenz-Properties beim `fillObject()` ihre Zielobjekte instanziieren.
+- **Zweck von `onLoad`:** Abgeleitete Werte aus dem geladenen Eintrag setzen, Caches wärmen, Logging. Die Instanz selbst (`$this`) trägt den kompletten Kontext; ein Controller-Parameter existiert bewusst nicht, da der Load überwiegend request-fremd läuft.
+- **Guards-Symmetrie:** `onSave`/`onDelete` hängen an den generischen CRUD-Routen und bekommen den Request-Controller übergeben (`null` außerhalb von Requests, z. B. in Tests); `onLoad` hängt am Konstruktionspfad jeder Instanz. Direkte `saveObject()`-/`deleteObject()`-Aufrufe im Code laufen **nicht** durch die Save-/Delete-Hooks — sie gehören ausschließlich zur generischen Route.
+- **Regressionstest:** `php includes/tests/baseObjectTest.php` (onLoad-Szenarien gegen eine eigene Test-Klassendatei) und `php includes/tests/genericCrudTest.php` (Save-/Delete-Hooks über die Routen).
 
 #### Löschweitergabe (Referenz-Integrität beim Löschen)
 

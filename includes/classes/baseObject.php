@@ -181,7 +181,7 @@ class BaseObject {
     $this->fields       = BaseObject::getFieldsOfClass( $this->class );
     $this->dataJsonFile = $this::FILEPATHJSON . 'data/' . lcfirst( $this->class ) . '.json';
 
-    $this->fillObject();
+    if( $this->fillObject() ) $this->onLoad();
 
     return;
   }
@@ -251,7 +251,7 @@ class BaseObject {
    * @param     Controller|null   $objController   The controller instance of the request or null
    * @return    string|null       The rejection message or null to allow the save
    *
-   * @example   protected function onSave( ?Controller $objController = null ) : ?string { ... }
+   * @example   public function onSave( ?Controller $objController = null ) : ?string { ... }
    *
    */
   public function onSave( ?Controller $objController = null ) : ?string {
@@ -270,11 +270,31 @@ class BaseObject {
    * @param     Controller|null   $objController   The controller instance of the request or null
    * @return    string|null       The rejection message or null to allow the delete
    *
-   * @example   protected function onDelete( ?Controller $objController = null ) : ?string { ... }
+   * @example   public function onDelete( ?Controller $objController = null ) : ?string { ... }
    *
    */
   public function onDelete( ?Controller $objController = null ) : ?string {
     return null;
+  }
+
+  /**
+   * This method is the lifecycle hook of object instantiation. It fires
+   * only when initObject() actually loaded a persisted entry (fillObject()
+   * returned true) — blueprints and instantiations with an unknown or
+   * empty id stay hook-less. Business classes override it to derive state
+   * from the loaded entry, warm caches or log on load; the instance itself
+   * ($this) carries the full context and there is no return protocol —
+   * the framework ignores anything a subclass returns. Unlike onSave and
+   * onDelete the hook also runs outside a request context (e.g. when
+   * references instantiate their targets during fillObject()).
+   *
+   * @return    void
+   *
+   * @example   public function onLoad() : void { ... }
+   *
+   */
+  public function onLoad() : void {
+    return;
   }
 
   /**
@@ -357,21 +377,23 @@ class BaseObject {
    * are overwritten (consistent reload semantics). Values that are
    * missing or empty in the file leave the corresponding property
    * untouched, properties that do not exist on the class are skipped.
-   * It is a no-op when the id, the class name or the file is missing.
+   * It is a no-op when the id, the class name or the file is missing —
+   * the boolean result reports whether an entry was actually loaded,
+   * so callers can react (e.g. initObject() fires the onLoad hook).
    *
-   * @return    void
+   * @return    boolean   True when the persisted entry was loaded, false on no-op
    *
-   * @example   $objBaseObject->fillObject();
+   * @example   $boolLoaded = $objBaseObject->fillObject();
    *
    */
-  public function fillObject() : void {
-    if( ! isset( $this->id ) || $this->id == '' ) return;
-    if( ! isset( $this->class ) || $this->class == '' ) return;
-    if( ! file_exists( $this->dataJsonFile ) ) return;
+  public function fillObject() : bool {
+    if( ! isset( $this->id ) || $this->id == '' ) return false;
+    if( ! isset( $this->class ) || $this->class == '' ) return false;
+    if( ! file_exists( $this->dataJsonFile ) ) return false;
 
     $objRawObject = self::getRawObject( $this->class, $this->id );
 
-    if( ! isset( $objRawObject ) ) return;
+    if( ! isset( $objRawObject ) ) return false;
 
     foreach( $objRawObject as $strProperty => $mixValue ) {
       if( ! property_exists( $this->class, $strProperty ) ) continue;
@@ -404,7 +426,7 @@ class BaseObject {
       }
     }
 
-    return;
+    return true;
   }
 
   /**

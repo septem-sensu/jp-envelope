@@ -9,15 +9,18 @@ declare( strict_types = 1 );
  * getObject, getObjectsFromClass), the persistence roundtrip of
  * saveObject() and fillObject() (builtin, class reference and
  * collection properties, NOSAVE filter, last-wins update), the
- * deleteObject cycle and the viewLoadObject envelope route. The write
- * locking itself is covered by lockTest. The suite writes only into
- * its own class json files derived from the test class names
- * (persistTestObject.json, persistTestChild.json) — they are
- * removed on every suite end by the shutdown handler, the local
- * production data files are never touched. The missing-file guard of
- * loadFileDeCrypted() is checked before the first insert creates its
- * storage file. The positive viewLoadObject check reads the first local
- * user and therefore carries a SKIP path on machines without user.json.
+ * deleteObject cycle and the viewLoadObject envelope route. The
+ * onLoad hook is covered against its own test class file: it fires
+ * on every real load, while blueprints and unknown ids stay
+ * hook-less. The write locking itself is covered by lockTest. The
+ * suite writes only into its own class json files derived from the
+ * test class names (persistTestObject.json, persistTestChild.json,
+ * persistTestHook.json) — they are removed on every suite end by the
+ * shutdown handler, the local production data files are never
+ * touched. The missing-file guard of loadFileDeCrypted() is checked
+ * before the first insert creates its storage file. The positive
+ * viewLoadObject check reads the first local user and therefore
+ * carries a SKIP path on machines without user.json.
  *
  * @author    Markus Götz <info@septem-sensu.de>
  * @version   0.2.17
@@ -31,20 +34,23 @@ require_once ( __DIR__ . '/bootstrap.php' );
 
 $strObjectsFile  = BaseObject::FILEPATHJSON . 'data/persistTestObject.json';
 $strChildrenFile = BaseObject::FILEPATHJSON . 'data/persistTestChild.json';
+$strHookFile     = BaseObject::FILEPATHJSON . 'data/persistTestHook.json';
 
 /**
- * This shutdown handler removes the two class json files of the test
+ * This shutdown handler removes the class json files of the test
  * classes including their lock side files — it runs on every suite
  * end, including a FEHLER exit of check().
  *
  * @return    void
  *
  */
-register_shutdown_function( function() use ( $strObjectsFile, $strChildrenFile ) : void {
+register_shutdown_function( function() use ( $strObjectsFile, $strChildrenFile, $strHookFile ) : void {
   @unlink( $strObjectsFile );
   @unlink( $strObjectsFile . '.lock' );
   @unlink( $strChildrenFile );
   @unlink( $strChildrenFile . '.lock' );
+  @unlink( $strHookFile );
+  @unlink( $strHookFile . '.lock' );
 
   return;
 } );
@@ -245,12 +251,66 @@ class PersistTestObject extends BaseObject {
 
 }
 
+/**
+ * Local hook test class: owns its own class json file so the onLoad
+ * firing paths can be checked against real persistence — a static
+ * counter counts the onLoad invocations (persistTestHook.json,
+ * removed by the shutdown handler). The counter lives statically so
+ * no hook bookkeeping can leak into the persisted entry.
+ *
+ */
+class PersistTestHook extends BaseObject {
+
+  /**
+   * The static onLoad invocation counter of the hook test.
+   *
+   * @var       integer
+   *
+   */
+  public static int $intOnLoadCount = 0;
+
+  /**
+   * The builtin payload property of the hook test class.
+   *
+   * @var       string
+   *
+   */
+  protected string $mixPayload = '';
+
+  /**
+   * This method is the onLoad override of the hook test class: it
+   * increments the static counter instead of doing real work.
+   *
+   * @return    void
+   *
+   */
+  public function onLoad() : void {
+    self::$intOnLoadCount++;
+
+    return;
+  }
+
+  /**
+   * This method reads the builtin payload property of the hook test
+   * class.
+   *
+   * @return    string   The payload value
+   *
+   */
+  public function payload() : string {
+    return $this->mixPayload;
+  }
+
+}
+
 // --- setup: remove leftovers of earlier crashed runs, missing-file guard ---
 
 @unlink( $strObjectsFile );
 @unlink( $strObjectsFile . '.lock' );
 @unlink( $strChildrenFile );
 @unlink( $strChildrenFile . '.lock' );
+@unlink( $strHookFile );
+@unlink( $strHookFile . '.lock' );
 
 check( BaseObject::loadFileDeCrypted( $strObjectsFile ) === null, 'loadFileDeCrypted: nicht existierende Datei liefert null (Guard) statt Read-Crash' );
 
@@ -365,6 +425,31 @@ check( $objParent->deleteObject() === false, 'deleteObject: zweites Löschen lie
 
 check( $objParent->onSave( null ) === null, 'hook: onSave-Basis-Default erlaubt den Save (null)' );
 check( $objParent->onDelete( null ) === null, 'hook: onDelete-Basis-Default erlaubt das Löschen (null)' );
+
+// --- onLoad hook: fires only on a real load (blueprint and ghost stay hook-less) ---
+
+$objHookEntry = new stdClass();
+$objHookEntry->mixPayload = 'HookPayload';
+
+check( BaseObject::insertObject( 'PersistTestHook', 'hookEins', $objHookEntry ) === true, 'onLoad: Hook-Testeintrag persistiert' );
+
+PersistTestHook::$intOnLoadCount = 0;
+
+$objHook = new PersistTestHook( 'hookEins' );
+
+check( $objHook->payload() === 'HookPayload' && PersistTestHook::$intOnLoadCount === 1, 'onLoad: feuert, wenn fillObject über den Konstruktor einen Eintrag geladen hat' );
+
+$objHookBlueprint = BaseObject::createBlueprint( 'PersistTestHook' );
+
+check( $objHookBlueprint->id() === BaseObject::BLUEPRINTID && PersistTestHook::$intOnLoadCount === 1, 'onLoad: Blaupause bleibt hook-los' );
+
+$objHookGhost = new PersistTestHook( 'niemandDa' );
+
+check( $objHookGhost->payload() === '' && PersistTestHook::$intOnLoadCount === 1, 'onLoad: unbekannte Id bleibt eine leere, hook-lose Instanz' );
+
+$objHookReload = new PersistTestHook( 'hookEins' );
+
+check( $objHookReload->payload() === 'HookPayload' && PersistTestHook::$intOnLoadCount === 2, 'onLoad: feuert bei jedem realen Load erneut' );
 
 // --- viewLoadObject: the envelope route of the loader ---
 
