@@ -224,8 +224,8 @@ class User extends BaseObject {
    * account is persisted directly via insertObject instead of the
    * constructor: getUser() falls back to the guest user when the user does
    * not exist, so the User constructor can never deliver an empty new
-   * instance. The ownerId of the logged-in user (the creator) is set on
-   * the entry like the generic save route does. Rejected guards collect
+   * instance. The ownerId of the logged-in user (the creator) is always
+   * the userId of oneself. Rejected guards collect
    * soft errors for the AppError channel.
    *
    * @param     Controller    $objController   The controller instance of the request
@@ -258,7 +258,7 @@ class User extends BaseObject {
     $objEntry->class    = 'User';
     $objEntry->password = BaseObject::enCrypteOnly( $strPassword );
     $objEntry->roleId   = $strRoleId;
-    $objEntry->ownerId  = $objController->user()->id();
+    $objEntry->ownerId  = $strId;
 
     BaseObject::insertObject( 'User', $strId, $objEntry );
 

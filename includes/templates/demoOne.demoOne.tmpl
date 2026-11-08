@@ -2,6 +2,31 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
+    app.registry.onLoad( 'DemoOne', 'DemoOne_6af024143b0b07.93634326', ( instance ) => {
+      const user = app.registry.get( 'User' );
+
+      console.log( instance );
+      console.log( user );
+
+      //instance.name     = 'Markus';
+      //instance.lastName = 'Götz';
+      //instance.user      = null;
+
+      app.registry.onSave( 'DemoOne', 'DemoOne_6af024143b0b07.93634326', ( updatedInstance ) => {
+        console.log( updatedInstance );
+
+        return;
+      } );
+
+      //app.saveObject( instance );
+
+      return;
+    } );
+
+    app.loadObject( 'DemoOne', 'DemoOne_6af024143b0b07.93634326' );
+    app.currentUser().addNavbarTop( app );
+
+    /*
     app.registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
       console.log( demoOneInstance );
 
@@ -10,6 +35,7 @@
 
     app.loadObject( 'DemoOne', 'demoOne_001' );
     app.currentUser().addNavbarTop( app );
+    */
 
     return;
   } );

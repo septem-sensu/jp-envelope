@@ -12,6 +12,11 @@
     },
     "position": 100
   },
+  "user": {
+    "nameDe": "Benutzer",
+    "class": "User",
+    "position": 200
+  },
   "demoTwo": {
     "nameDe": "Demo 2",
     "class": "DemoTwo",
