@@ -224,9 +224,10 @@ class User extends BaseObject {
    * account is persisted directly via insertObject instead of the
    * constructor: getUser() falls back to the guest user when the user does
    * not exist, so the User constructor can never deliver an empty new
-   * instance. The ownerId of the logged-in user (the creator) is always
-   * the userId of oneself. Rejected guards collect
-   * soft errors for the AppError channel.
+   * instance. The ownerId of the new account is always its own user id —
+   * regardless of who created it — so the pseudo role 'owner' lets every
+   * user edit and delete their own account. Rejected guards collect soft
+   * errors for the AppError channel.
    *
    * @param     Controller    $objController   The controller instance of the request
    * @return    void
