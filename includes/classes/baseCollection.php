@@ -56,12 +56,13 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
    * @example   $objUserCollection->push( $objUser );
    *
    */
-  public function push( mixed $mixItems ) : void {
+  public function push( mixed $mixItems, bool $boolOnlyUnique = true ) : void {
     $strAllowedType = $this->getAllowedType();
     $strItemsType   = gettype( $mixItems );
 
     if( $strItemsType !== 'array' ) {
       if( ! ( $mixItems instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItems ) ) );
+      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->items ) ) return;
 
       $this->items[] = $mixItems;
 
@@ -70,6 +71,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     foreach( $mixItems as $mixItem ) {
       if( ! ( $mixItem instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItem ) ) );
+      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->items ) ) continue;
 
       array_push( $this->items, $mixItem );
     }
@@ -92,12 +94,13 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
    * @example   $objUserCollection->unshift( $objUser );
    *
    */
-  public function unshift( mixed $mixItems ) : void {
+  public function unshift( mixed $mixItems, bool $boolOnlyUnique = true ) : void {
     $strAllowedType = $this->getAllowedType();
     $strItemsType   = gettype( $mixItems );
 
     if( $strItemsType !== 'array' ) {
       if( ! ( $mixItems instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItems ) ) );
+      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->items ) ) return;
 
       array_unshift( $this->items, $mixItems );
 
@@ -106,6 +109,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     foreach( array_reverse( $mixItems ) as $mixItem ) {
       if( ! ( $mixItem instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItem ) ) );
+      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->items ) ) continue;
 
       array_unshift( $this->items, $mixItem );
     }
