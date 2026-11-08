@@ -2,8 +2,12 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
-    app.registry.onLoad( 'DemoOne', null, ( instances ) => {
+    app.registry.onLoad( 'DemoOne', 'all', ( instances ) => {
       console.log( instances );
+
+      instances.forEach( ( instance ) => {
+        console.log( instance );
+      } );
 
       return;
     } );
@@ -46,7 +50,6 @@
     app.loadObject( 'DemoOne', 'demoOne_001' );
     app.currentUser().addNavbarTop( app );
 */
-
     return;
   } );
 </script>

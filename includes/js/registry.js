@@ -145,13 +145,17 @@ class Registry {
  *
  */
   fireEvents() {
+    let isLoadEvent = false;
+
     while( this.pendingEvents.length > 0 ) {
       const pendingEvent = this.pendingEvents.shift();
 
-      const eventNameReadyInstance          = this.getEventName( pendingEvent.classKey, pendingEvent.id, 'ready' );
-      const eventNameInstance               = pendingEvent.eventName !== null ? this.getEventName( pendingEvent.classKey, pendingEvent.id, pendingEvent.eventName ) : null;
+      const eventNameReadyInstance               = this.getEventName( pendingEvent.classKey, pendingEvent.id, 'ready' );
+      const eventNameInstance                    = pendingEvent.eventName !== null ? this.getEventName( pendingEvent.classKey, pendingEvent.id, pendingEvent.eventName ) : null;
 
       this.firedEvents[ eventNameReadyInstance ] = pendingEvent.instance;
+
+      if( pendingEvent.eventName !== null && pendingEvent.eventName === 'load' ) isLoadEvent = true;
 
       if( eventNameInstance !== null ) this.firedEvents[ eventNameInstance ] = pendingEvent.instance;
       if( this.listeners[ eventNameReadyInstance ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameReadyInstance ] );
@@ -171,6 +175,20 @@ class Registry {
       if( this.listeners[ eventNameReadyClass ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameReadyClass ] );
       if( eventNameClass !== null && this.listeners[ eventNameClass ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameClass ] );
     }
+
+    if( ! isLoadEvent ) return;
+
+    this.forEachClass( ( className ) => {
+      const classKey              = this._key( className );
+      const eventNameReady        = this.getEventName( classKey, 'all', 'ready' );
+      const eventNameLoad         = this.getEventName( classKey, 'all', 'load' );
+      const instances             = this.getAll( className );
+
+      this.firedEvents[ eventNameReady ] = instances;
+      this.firedEvents[ eventNameLoad ]  = instances;
+      if( this.listeners[ eventNameReady ] ) this._dispatchSafely( instances, ...this.listeners[ eventNameReady ] );
+      if( this.listeners[ eventNameLoad ] ) this._dispatchSafely( instances, ...this.listeners[ eventNameLoad ] );
+    } );
 
     return;
   }
