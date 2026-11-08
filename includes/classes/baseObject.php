@@ -1052,8 +1052,11 @@ class BaseObject {
    */
   public function rawObject( Controller | null $objController = null, array | null &$arrResult = [] ) : array {
     $arrDescriptors = [];
+    $arrNoSerialize = self::NOSERIALIZE;
 
     foreach( $this as $strProperty => $mixValue ) {
+      if( in_array( $strProperty, $arrNoSerialize ) ) continue;
+
       if( self::getPropertyType( $this->class, $strProperty ) === 'class' ) {
         $objPropertyValue               = new stdClass();
 
