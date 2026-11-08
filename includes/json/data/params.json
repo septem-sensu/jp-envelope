@@ -10,6 +10,7 @@
     "newClass": { "type": "string", "values": [ "User", "DemoOne", "DemoTwo" ] }
   },
   "viewLoadObject": {},
+  "viewLoadObjects": {},
   "viewSaveObject": {
     "object": { "type": "string" }
   },

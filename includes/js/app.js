@@ -195,6 +195,16 @@ class App extends BaseObject {
     return;
   }
 
+  async loadObjects( className ) {
+    try {
+      return await this.loader.loadObjects( className );
+    } catch( loadObjectsError ) {
+      this.reportError( loadObjectsError, 'Class: ' + className );
+    }
+
+    return;
+  }
+
 /**
  * This method saves an object over the generic json save route: it
  * serializes the instance data (toData) into the envelope and lets

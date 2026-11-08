@@ -13,7 +13,20 @@
     "resultType": "json",
     "roleIds": [ "administrator", "user" ],
     "classPermissions": {
-      "User": [ "administrator", "user" ],
+      "User": [ "administrator", "owner" ],
+      "DemoOne": [ "administrator", "user" ],
+      "DemoTwo": [ "administrator", "user" ]
+    },
+    "templateNames": [],
+    "actionNames": []
+  },
+  "viewLoadObjects": {
+    "viewName": "viewLoadObjects",
+    "className": "BaseObject",
+    "resultType": "json",
+    "roleIds": [ "administrator", "user" ],
+    "classPermissions": {
+      "User": [ "administrator", "owner" ],
       "DemoOne": [ "administrator", "user" ],
       "DemoTwo": [ "administrator", "user" ]
     },

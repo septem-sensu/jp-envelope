@@ -203,7 +203,6 @@ class Loader extends EventTarget {
     window[ appAlias ].registry.fireEvents();
 
     return instances;
-
   }
 
 /**
@@ -251,6 +250,13 @@ class Loader extends EventTarget {
  */
   async loadObject( className, id ) {
     const url      = document.location.pathname + '?view=viewLoadObject&class=' + encodeURIComponent( className ) + '&id=' + encodeURIComponent( id );
+    const response = await fetch( url );
+
+    return await this.instantiateRawObjects( await response.json(), 'load' );
+  }
+
+  async loadObjects( className ) {
+    const url      = document.location.pathname + '?view=viewLoadObjects&class=' + encodeURIComponent( className );
     const response = await fetch( url );
 
     return await this.instantiateRawObjects( await response.json(), 'load' );

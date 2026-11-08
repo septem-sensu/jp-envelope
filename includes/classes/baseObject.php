@@ -632,6 +632,27 @@ class BaseObject {
     return $objObject->rawObject();
   }
 
+  public function viewLoadObjects( Controller $objController ) : array {
+    $strClass   = Request::param( 'class' );
+    $arrAllowed = self::getClassPermissions( $objController, $strClass );
+    $arrResult  = [];
+
+    if( ! isset( $strClass ) ) return [];
+    if( ! isset( $arrAllowed ) ) return [];
+
+    $arrObjects = self::getObjectsFromClass( $strClass );
+
+    if( ! isset( $arrObjects ) ) return [];
+
+    foreach( $arrObjects as $objObject ) {
+      if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) continue;
+
+      array_push( $arrResult, ...$objObject->rawObject() );
+    }
+
+    return $arrResult;
+  }
+
   /**
    * This method serves the generic json save route behind
    * index.php?view=viewSaveObject (POST): the request parameter 'object'

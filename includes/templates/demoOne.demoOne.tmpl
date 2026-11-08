@@ -2,6 +2,16 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
+    app.registry.onLoad( 'DemoOne', null, ( instances ) => {
+      console.log( instances );
+
+      return;
+    } );
+
+    app.loadObjects( 'DemoOne' );
+    app.currentUser().addNavbarTop( app );
+
+/*
     app.registry.onLoad( 'DemoOne', 'DemoOne_6af024143b0b07.93634326', ( instance ) => {
       const user = app.registry.get( 'User' );
 
@@ -26,7 +36,7 @@
     app.loadObject( 'DemoOne', 'DemoOne_6af024143b0b07.93634326' );
     app.currentUser().addNavbarTop( app );
 
-    /*
+
     app.registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {
       console.log( demoOneInstance );
 
@@ -35,7 +45,7 @@
 
     app.loadObject( 'DemoOne', 'demoOne_001' );
     app.currentUser().addNavbarTop( app );
-    */
+*/
 
     return;
   } );
