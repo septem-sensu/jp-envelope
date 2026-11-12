@@ -4,12 +4,13 @@ declare( strict_types = 1 );
 
 /**
  * This suite is the regression test for the PHP to JS contract of the
- * rawObjects collector: envelope structure, dedupe with last-wins
- * override, the alternative JS class name and the app context
- * including the throw order of execute().
+ * rawObjects collector: envelope structure, the NOSERIALIZE filtering
+ * of reference properties, dedupe with last-wins override, the
+ * alternative JS class name and the app context including the throw
+ * order of execute().
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.10
+ * @version   0.2.11
  * @since     2026-10-18
  *
  * @example   php includes/tests/collectorTest.php
@@ -48,6 +49,70 @@ class TestObject extends BaseObject {
 
 }
 
+/**
+ * Local test object: a BaseObject subclass with two 'class' reference
+ * properties onto TestObject — one filtered by the own NOSERIALIZE
+ * override, one visible — for the reference handling checks of
+ * rawObject().
+ *
+ */
+class RefTestObject extends BaseObject {
+
+  /**
+   * The NOSERIALIZE override of the test object: the hidden reference
+   * property is filtered beside the base defaults.
+   *
+   * @var       array
+   *
+   */
+  const NOSERIALIZE = [ "dataJsonFile", "actionNames", "objHidden" ];
+
+  /**
+   * The hidden 'class' reference property of the test object.
+   *
+   * @var       TestObject|null
+   *
+   */
+  protected ?TestObject $objHidden = null;
+
+  /**
+   * The visible 'class' reference property of the test object.
+   *
+   * @var       TestObject|null
+   *
+   */
+  protected ?TestObject $objVisible = null;
+
+  /**
+   * This method sets the hidden 'class' reference property of the
+   * test object.
+   *
+   * @param     TestObject   $objTarget   The referenced instance
+   * @return    void
+   *
+   */
+  public function setHidden( TestObject $objTarget ) : void {
+    $this->objHidden = $objTarget;
+
+    return;
+  }
+
+  /**
+   * This method sets the visible 'class' reference property of the
+   * test object.
+   *
+   * @param     TestObject   $objTarget   The referenced instance
+   * @return    void
+   *
+   */
+  public function setVisible( TestObject $objTarget ) : void {
+    $this->objVisible = $objTarget;
+
+    return;
+  }
+
+}
+
 $objController = mockController();
 
 $objTestA = new TestObject();
@@ -59,6 +124,20 @@ check( $objRawObject->id === $objTestA->id(), 'rawObject: Id im Envelope' );
 check( $objRawObject->data->class === 'TestObject', 'rawObject: Property class serialisiert' );
 check( $objRawObject->data->id === $objTestA->id(), 'rawObject: Property id serialisiert' );
 check( ! isset( $objRawObject->data->dataJsonFile ), 'rawObject: dataJsonFile gefiltert (NOSERIALIZE)' );
+
+// --- rawObject with reference properties: NOSERIALIZE also filters the reference handling ---
+
+$objRef = new RefTestObject();
+$objRef->setHidden( $objTestA );
+$objRef->setVisible( $objTestB );
+
+$arrRefEnvelopes = $objRef->rawObject();
+
+check( count( $arrRefEnvelopes ) === 2 && $arrRefEnvelopes[ 1 ]->class === 'RefTestObject' && $arrRefEnvelopes[ 1 ]->id === $objRef->id(), 'rawObject: eigener Envelope plus Sub-Envelope der sichtbaren Referenz' );
+check( $arrRefEnvelopes[ 0 ]->class === 'TestObject' && $arrRefEnvelopes[ 0 ]->id === $objTestB->id(), 'rawObject: sichtbare Referenz wird vor dem eigenen Envelope als Sub-Envelope eingebettet' );
+check( $arrRefEnvelopes[ 1 ]->data->objVisible->propertyType === 'object' && $arrRefEnvelopes[ 1 ]->data->objVisible->value === $objTestB->id(), 'rawObject: sichtbare Referenz trägt ihren Deskriptor' );
+check( ! isset( $arrRefEnvelopes[ 1 ]->data->objHidden ), 'rawObject: NOSERIALIZE-Referenz erscheint weder als Wert noch als Deskriptor' );
+check( $arrRefEnvelopes[ 0 ]->id !== $objTestA->id(), 'rawObject: referenziertes Objekt der NOSERIALIZE-Referenz wird nicht eingebettet' );
 
 $objController->addRawObject( $objTestA );
 $objController->addRawObject( $objTestB );

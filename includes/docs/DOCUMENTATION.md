@@ -303,7 +303,7 @@ Das System unterscheidet zwischen Speicher- und Anzeige-Filtern:
 |Konstante|Wirkungsweise|
 |---|---|
 |**`NOSAVE`**|Filtert Properties, die **nicht** in die JSON-Datei geschrieben werden sollen (z. B. temporäre Systempfade). Standardmäßig in `BaseObject` gesetzt für `dataJsonFile` und `fields`. Bei der Klasse `User` zusätzlich für `isUserSet`. _Wichtig:_ Sensitive Daten wie Passwort-Hashes bleiben hierin enthalten!|
-|**`NOSERIALIZE`**|Filtert Properties exklusiv für die Frontend-Ausgabe (`rawObject`). Verhindert, dass sensible Daten wie Passwort-Hashes an den Client geliefert werden.|
+|**`NOSERIALIZE`**|Filtert Properties exklusiv für die Frontend-Ausgabe (`rawObject`/`serializeObject`). Verhindert, dass sensible Daten wie Passwort-Hashes an den Client geliefert werden. Gilt auch für Referenz-Properties (class-/collection-typiert): Eine gefilterte Referenz erscheint weder als Wert noch als Deskriptor im `data`-Payload, und ihre referenzierten Objekte werden nicht als Sub-Envelopes eingebettet. Im generischen Save wird die Property ebenfalls übersprungen (Forgery-Schutz).|
 
 #### Erstellung neuer Objekte
 

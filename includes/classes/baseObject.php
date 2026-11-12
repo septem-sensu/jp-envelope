@@ -14,7 +14,7 @@ require_once ( __DIR__ . '/../classes/fieldValidator.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.19
+ * @version   0.2.20
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -1063,7 +1063,10 @@ class BaseObject {
    * own data payload as a descriptor (with its id respectively its
    * element id list), replacing the raw instance value from
    * serializeObject() — for multiple reference properties all of their
-   * descriptors are embedded.
+   * descriptors are embedded. Properties filtered by NOSERIALIZE are
+   * skipped before the reference handling: they carry neither value nor
+   * descriptor, and their referenced objects are not embedded as sub
+   * envelopes either.
    *
    * @param     Controller|null   $objController   The controller object or null
    * @return    array             The collector envelope of the object array
@@ -1073,7 +1076,7 @@ class BaseObject {
    */
   public function rawObject( Controller | null $objController = null, array | null &$arrResult = [] ) : array {
     $arrDescriptors = [];
-    $arrNoSerialize = self::NOSERIALIZE;
+    $arrNoSerialize = $this::NOSERIALIZE;
 
     foreach( $this as $strProperty => $mixValue ) {
       if( in_array( $strProperty, $arrNoSerialize ) ) continue;
