@@ -14,7 +14,7 @@ declare( strict_types = 1 );
  * contained ids via rawObject().
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.16
+ * @version   0.2.17
  * @since     2026-11-01
  *
  * @example   $objUserCollection = new UserCollection();
@@ -48,12 +48,17 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
    * input is appended element by element in the given order. Every
    * element must be an instance of getAllowedType(), otherwise an
    * InvalidArgumentException is thrown; elements appended before the
-   * mismatch stay in place.
+   * mismatch stay in place. With onlyUnique (the default) an element
+   * whose id is already in the collection is skipped silently, both
+   * for the single element and within the given array; with
+   * $boolOnlyUnique = false duplicates are appended as usual.
    *
-   * @param     mixed   $mixItems   An element instance of the allowed type or an array of them
+   * @param     mixed   $mixItems         An element instance of the allowed type or an array of them
+   * @param     bool    $boolOnlyUnique   Skip elements whose id is already in the collection (default true)
    * @return    void
    *
    * @example   $objUserCollection->push( $objUser );
+   * @example   $objUserCollection->push( $objUser, false );   // allow duplicates
    *
    */
   public function push( mixed $mixItems, bool $boolOnlyUnique = true ) : void {
@@ -62,7 +67,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     if( $strItemsType !== 'array' ) {
       if( ! ( $mixItems instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItems ) ) );
-      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->items ) ) return;
+      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->idArray() ) ) return;
 
       $this->items[] = $mixItems;
 
@@ -71,7 +76,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     foreach( $mixItems as $mixItem ) {
       if( ! ( $mixItem instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItem ) ) );
-      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->items ) ) continue;
+      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->idArray() ) ) continue;
 
       array_push( $this->items, $mixItem );
     }
@@ -86,9 +91,14 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
    * order (the iteration over the reversed array). Every element
    * must be an instance of getAllowedType(), otherwise an
    * InvalidArgumentException is thrown; elements prepended before
-   * the mismatch stay in place.
+   * the mismatch stay in place. With onlyUnique (the default) an
+   * element whose id is already in the collection is skipped
+   * silently, both for the single element and within the given
+   * array; with $boolOnlyUnique = false duplicates are prepended
+   * as usual.
    *
-   * @param     mixed   $mixItems   An element instance of the allowed type or an array of them
+   * @param     mixed   $mixItems         An element instance of the allowed type or an array of them
+   * @param     bool    $boolOnlyUnique   Skip elements whose id is already in the collection (default true)
    * @return    void
    *
    * @example   $objUserCollection->unshift( $objUser );
@@ -100,7 +110,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     if( $strItemsType !== 'array' ) {
       if( ! ( $mixItems instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItems ) ) );
-      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->items ) ) return;
+      if( $boolOnlyUnique && in_array( $mixItems->id(), $this->idArray() ) ) return;
 
       array_unshift( $this->items, $mixItems );
 
@@ -109,7 +119,7 @@ abstract class BaseCollection implements IteratorAggregate, Countable {
 
     foreach( array_reverse( $mixItems ) as $mixItem ) {
       if( ! ( $mixItem instanceof $strAllowedType ) ) throw new InvalidArgumentException( sprintf( "Element muss vom Typ %s sein, %s gegeben.", $strAllowedType, gettype( $mixItem ) ) );
-      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->items ) ) continue;
+      if( $boolOnlyUnique && in_array( $mixItem->id(), $this->idArray() ) ) continue;
 
       array_unshift( $this->items, $mixItem );
     }

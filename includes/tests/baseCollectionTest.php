@@ -164,6 +164,47 @@ try {
 check( $boolCaught, 'unshift invalid: fremder Typ wirft InvalidArgumentException' );
 check( count( $objCollection ) === 3, 'unshift invalid: Collection bleibt unverändert' );
 
+// --- push and unshift: onlyUnique skips elements already in the collection ---
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( [ $objItemA, $objItemB ] );
+$objCollection->push( $objItemA );
+
+check( $objCollection->getAll() === [ $objItemA, $objItemB ], 'push single unique: vorhandene Id wird übersprungen' );
+
+$objCollection->push( $objItemA, false );
+
+check( count( $objCollection ) === 3 && $objCollection->getAll()[ 2 ] === $objItemA, 'push single unique false: Duplikat wird angehängt' );
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( $objItemA );
+$objCollection->push( [ $objItemA, $objItemB ] );
+
+check( $objCollection->getAll() === [ $objItemA, $objItemB ], 'push array unique: vorhandene Elemente im Input werden übersprungen, neue angehängt' );
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( [ $objItemA, $objItemA ] );
+
+check( count( $objCollection ) === 1, 'push array unique: Duplikate innerhalb des Input-Arrays bleiben außen vor' );
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( [ $objItemA, $objItemB ] );
+$objCollection->unshift( $objItemB );
+
+check( $objCollection->getAll() === [ $objItemA, $objItemB ], 'unshift single unique: vorhandene Id wird übersprungen' );
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( $objItemC );
+$objCollection->unshift( [ $objItemA, $objItemB, $objItemB ] );
+
+check( $objCollection->getAll() === [ $objItemA, $objItemB, $objItemC ], 'unshift array unique: vorhandene Ids werden übersprungen, Blockreihenfolge bewahrt' );
+
+$objCollection = new CollectionTestCollection();
+$objCollection->push( $objItemA );
+$objCollection->unshift( $objItemA, false );
+
+check( count( $objCollection ) === 2 && $objCollection->getAll()[ 0 ] === $objItemA, 'unshift single unique false: Duplikat wird vorangestellt' );
+
 // --- pop and shift: remove from both ends ---
 
 $objCollection = new CollectionTestCollection();
