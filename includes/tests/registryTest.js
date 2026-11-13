@@ -11,6 +11,9 @@
  *   replay, the callback fires exactly once per event
  * - the class-wide events (id null): permanent subscription with
  *   full replay, blueprints stay silent class-wide
+ * - the loadall collection event: fires once per load batch with the
+ *   complete instance map, replay for late listeners, remove keeps
+ *   the snapshot current
  * - the app ready channel: storage, dispatch with the app instance
  *   and replay for late listeners
  * - remove: instance removal without ghost replays (delete and
@@ -151,6 +154,41 @@ objRegistry.register( 'Weed', 'weedC', { name: 'three' } );
 objRegistry.fireEvents();
 
 check( arrClassEarly.length === 3 && arrClassLate.length === 3, 'Klassenweit: Subscription bleibt für spätere Instanzen permanent' );
+
+// --- loadall: Sammel-Kanal der Load-Batches ---
+
+const objRegistryLoadAll = new Registry();
+const arrLoadAllTrack    = [];
+
+objRegistryLoadAll.onLoadAll( 'Task', ( mapInstances ) => arrLoadAllTrack.push( mapInstances ) );
+
+objRegistryLoadAll.register( 'Task', 'taskA', { name: 'A' }, 'load' );
+objRegistryLoadAll.register( 'Task', 'taskB', { name: 'B' }, 'load' );
+objRegistryLoadAll.register( 'Sub', 'subA', { name: 'S' }, 'load' );
+objRegistryLoadAll.fireEvents();
+
+check( arrLoadAllTrack.length === 1 && arrLoadAllTrack[ 0 ].size === 2 && arrLoadAllTrack[ 0 ].get( 'taskA' ).name === 'A', 'loadall: Load-Batch feuert einmal mit der kompletten Instanz-Map der Klasse' );
+
+const arrLoadAllLate = [];
+
+objRegistryLoadAll.onLoadAll( 'Task', ( mapInstances ) => arrLoadAllLate.push( mapInstances ) );
+
+check( arrLoadAllLate.length === 1 && arrLoadAllLate[ 0 ].size === 2, 'loadall: Late-Listener bekommt den Replay der Instanz-Map sofort' );
+
+const intTrackBefore = arrLoadAllTrack.length;
+
+objRegistryLoadAll.register( 'Task', 'taskC', { name: 'C' }, 'save' );
+objRegistryLoadAll.fireEvents();
+
+check( arrLoadAllTrack.length === intTrackBefore, 'loadall: Save-Batch feuert den Sammel-Kanal nicht' );
+
+objRegistryLoadAll.remove( 'Task', 'taskB' );
+
+const arrLoadAllSnapshot = [];
+
+objRegistryLoadAll.onLoadAll( 'Task', ( mapInstances ) => arrLoadAllSnapshot.push( mapInstances ) );
+
+check( arrLoadAllSnapshot.length === 1 && arrLoadAllSnapshot[ 0 ].size === 1 && ! arrLoadAllSnapshot[ 0 ].has( 'taskB' ), 'loadall: remove entfernt die Instanz aus dem Replay-Snapshot (kein Geist)' );
 
 // --- App-Ready-Kanal: Speicherung, Dispatch mit App-Instanz, Replay ---
 

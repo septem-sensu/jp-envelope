@@ -182,7 +182,7 @@ class App extends BaseObject {
  * @param     {string}    id           The PHP id of the object
  * @return    {Promise}   instance     The registered object instance
  *
- * @example   const user = await app.newObject( 'User', 'max@musterman.de' );
+ * @example   const user = await app.loadObject( 'User', 'max@musterman.de' );
  *
  */
   async loadObject( className, id ) {
@@ -195,6 +195,23 @@ class App extends BaseObject {
     return;
   }
 
+/**
+ * This method demands every object of a business class on demand: it
+ * loads the instances of the class over the view viewLoadObjects and
+ * registers them under their ids — templates access the finished
+ * instances over registry.onLoad/onLoadAll (with replay, timing
+ * irrelevant) or await the returned instance array. Every disturbance
+ * runs over the JS error channel as overlay instead of as silent
+ * silence.
+ *
+ * @public
+ *
+ * @param     {string}    className    The PHP class name of the objects
+ * @return    {Promise}   instances    The registered object instances (undefined on failure)
+ *
+ * @example   const demoOnes = await app.loadObjects( 'DemoOne' );
+ *
+ */
   async loadObjects( className ) {
     try {
       return await this.loader.loadObjects( className );

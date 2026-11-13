@@ -2,7 +2,7 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
-    app.registry.onLoad( 'DemoOne', 'all', ( instances ) => {
+    app.registry.onLoadAll( 'DemoOne', ( instances ) => {
       console.log( instances );
 
       instances.forEach( ( instance ) => {

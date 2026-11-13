@@ -136,11 +136,11 @@ Das Framework trennt Trigger-Namen im HTML-Formular von den PHP-Methodennamen. D
 
 #### Klassenbezogene Rechte der generischen CRUD-Routen (`classPermissions` & `ownerId`)
 
-Die drei generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate (`roleIds`) und zur Parameter-Whitelist eine **klassenbezogene Whitelist** am View: die `classPermissions`-Map bildet jede behandelbare Business-Klasse auf die Liste der Rollen-Ids ab, die Objekte dieser Klasse über die Route behandeln dürfen. Ein Eintrag darf die Pseudo-Rolle `"owner"` enthalten — sie steht für den Ersteller des Objekts (dessen `ownerId`). `viewNewObject` bleibt bewusst außen vor: Er gibt nichts preis und schreibt nichts.
+Die vier generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewLoadObjects`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate (`roleIds`) und zur Parameter-Whitelist eine **klassenbezogene Whitelist** am View: die `classPermissions`-Map bildet jede behandelbare Business-Klasse auf die Liste der Rollen-Ids ab, die Objekte dieser Klasse über die Route behandeln dürfen. Ein Eintrag darf die Pseudo-Rolle `"owner"` enthalten — sie steht für den Ersteller des Objekts (dessen `ownerId`). `viewNewObject` bleibt bewusst außen vor: Er gibt nichts preis und schreibt nichts.
 
 - **Whitelist-Semantik:** Eine Klasse, die die Map nicht deklariert, verweigern alle drei Routen still. Ein View ohne Map verweigert demnach jede Klasse.
 - **`ownerId` am Objekt:** Beim Erstellen über die Save-Route (und in `User::createUser`) stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt. Die Property reist im Envelope (Quelle für UI-Sichtbarkeitsentscheidungen) und persistiert; der Client kann sie nie liefern oder überschreiben — der Save-Merge übernimmt nur in `fields/*.json` deklarierte Felder, und `ownerId` ist kein Feldvertrag.
-- **Verweigerung je Route:** Save und Delete melden sie als AppError-Envelope („Keine Berechtigung für dieses Objekt."); Load antwortet konventionsgemäß still-leer — die Verweigerung tarnt sich als nicht existentes Objekt (kein Existenz-Leak).
+- **Verweigerung je Route:** Save und Delete melden sie als AppError-Envelope („Keine Berechtigung für dieses Objekt."); Load antwortet konventionsgemäß still-leer — die Verweigerung tarnt sich als nicht existentes Objekt (kein Existenz-Leak). `viewLoadObjects` filtert Objekte mit gescheiterter Prüfung aus der Liste aus; eine unzulässige Klasse antwortet komplett leer.
 - **Create nie über `owner`:** Ein neues Objekt hat noch keinen Owner — der Create-Pfad prüft ausschließlich die Rollen-Liste.
 - **Bestands-Einträge ohne `ownerId`:** Die Property bleibt unset, die Pseudo-Rolle greift nicht — es zählen nur die Rollen-Ids. Keine Datenmigration nötig.
 - **Fail-Loud-Validierung:** `View::validateClassPermissions` prüft die Map beim View-Aufruf gegen die Klassen- und Rollenkonfiguration — Config-Drift (umbenannte Klasse, Tippfehler bei der Rolle) wirft eine `RuntimeException` in den weichen Fehlerkanal.
@@ -660,23 +660,24 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 
 ### Registry-Events
 
-Jede Registrierung stellt Events an zwei Ebenen in die Event-Queue: pro Instanz (`{event}:{klasse}:{id}`) und klassenweit (`{event}:{klasse}`). Die Events tragen die fünf Typen der Konstante `Registry.EVENTNAMES` — der Auslöser bestimmt den Typ, die Zustellung ist **deferred** (siehe unten):
+Jede Registrierung stellt Events an zwei Ebenen in die Event-Queue: pro Instanz (`{event}:{klasse}:{id}`) und klassenweit (`{event}:{klasse}`). Die Events tragen die sechs Typen der Konstante `Registry.EVENTNAMES` — der Auslöser bestimmt den Typ, die Zustellung ist **deferred** (siehe unten):
 
 |Event|Auslöser|Beschreibung|
 |---|---|---|
 |**`ready`**|Jede Registrierung|Basis-Event: Eine Instanz ist unter ihrer ID in der Registry erreichbar.|
-|**`load`**|Bootstrap & `app.loadObject`|Ein Envelope ist über die Standard-Pipeline (Klasse, Ressourcen, Daten) geladen.|
+|**`load`**|Bootstrap & `app.loadObject`/`app.loadObjects`|Ein Envelope ist über die Standard-Pipeline (Klasse, Ressourcen, Daten) geladen.|
 |**`new`**|`app.newObject`|Eine Blaupause wurde unter der ID `new` registriert.|
 |**`save`**|`app.saveObject`|Eine Instanz wurde gespeichert — die ID wird bei jedem Save erneut registriert.|
 |**`delete`**|`app.deleteObject`|Eine Instanz wurde gelöscht — bei Erfolg entfernt `remove()` alle Replay-Spuren der ID; ein blockierter Delete liefert stattdessen eine AppError-Card und lässt die Registry unangetastet.|
+|**`loadall`**|`fireEvents()` nach jedem Load-Batch (Bootstrap, `app.loadObject`, `app.loadObjects`)|Sammel-Kanal klassenweit: Der Callback erhält die komplette Instanz-Map der Klasse (`getAll()`, ohne Blaupausen), frisch aus der Registry zum Dispatch-Zeitpunkt.|
 
-Für jeden Typ existiert eine `on*`-Fassade mit identischer Signatur: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew` (jeweils `(klasse, id, callback)`, `id = null` für das klassenweite Abonnement).
+Für die Instanz-Typen existiert eine `on*`-Fassade mit identischer Signatur: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew` (jeweils `(klasse, id, callback)`, `id = null` für das klassenweite Abonnement). Der Sammel-Kanal hat die eigene Fassade `onLoadAll(klasse, callback)` — der Callback erhält statt einer Instanz die Instanz-Map.
 
-Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt. `registry.remove()` räumt die Replay-Spuren aller Event-Typen ab (Instanz- und Klassenebene) — gelöschte Instanzen werden nicht als Geister replayt. Blaupausen feuern bewusst nur auf Instanz-Ebene (`ready:{klasse}:new` / `new:{klasse}:new`), nie klassenweit.
+Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt. `registry.remove()` räumt die Replay-Spuren aller Event-Typen ab (Instanz- und Klassenebene) — gelöschte Instanzen werden nicht als Geister replayt; beim `loadall`-Snapshot entfernt `remove()` die Instanz aus der Replay-Map, neu erstellte Objekte (Create über die Save-Route) wachsen mit dem nächsten Load-Batch hinein. Blaupausen feuern bewusst nur auf Instanz-Ebene (`ready:{klasse}:new` / `new:{klasse}:new`), nie klassenweit.
 
 #### Deferred Dispatch: die Event-Queue
 
-Registrierung und Event-Auslieferung sind entkoppelt: `registry.register()` feuert nichts — es stellt die Registrierung in die interne Event-Queue (`pendingEvents`). Mit `registry.fireEvents()` arbeitet der Loader die Queue zu einem definierten Zeitpunkt in Registrierungs-Reihenfolge ab. Jeder Batch-Zufuhrweg (Bootstrap, `app.loadObject`, `app.saveObject`, `app.deleteObject`) folgt damit dem Ablauf instanziieren → registrieren (queued) → `fillObjects()` (Referenzen auflösen) → `fireEvents()`. Ein Callback sieht eine Instanz daher nie in einem halb verarbeiteten Zustand — insbesondere kann ein Save, das innerhalb der Queue-Warteschlange registriert, die Referenzen des Batches nicht mehr auswischen.
+Registrierung und Event-Auslieferung sind entkoppelt: `registry.register()` feuert nichts — es stellt die Registrierung in die interne Event-Queue (`pendingEvents`). Mit `registry.fireEvents()` arbeitet der Loader die Queue zu einem definierten Zeitpunkt in Registrierungs-Reihenfolge ab. Jeder Batch-Zufuhrweg (Bootstrap, `app.loadObject`, `app.loadObjects`, `app.saveObject`, `app.deleteObject`) folgt damit dem Ablauf instanziieren → registrieren (queued) → `fillObjects()` (Referenzen auflösen) → `fireEvents()`. Ein Callback sieht eine Instanz daher nie in einem halb verarbeiteten Zustand — insbesondere kann ein Save, das innerhalb der Queue-Warteschlange registriert, die Referenzen des Batches nicht mehr auswischen. Nach dem Drain feuert `fireEvents()` zusätzlich den Sammel-Kanal `loadall` für jede Klasse, die im Batch eine Load-Registrierung trug.
 
 - **Nachträge im Drain:** Callbacks, die sich synchron während der Abarbeitung registrieren, werden noch im selben Lauf bedient (Replay aus der frisch gefüllten `firedEvents`-Basis).
 - **Remove räumt die Queue mit:** `registry.remove()` wirft auch die ausstehende Queue-Position der ID weg — ein Event einer entfernten Instanz wird nie zugestellt.

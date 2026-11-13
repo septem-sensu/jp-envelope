@@ -632,22 +632,52 @@ class BaseObject {
     return $objObject->rawObject();
   }
 
+  /**
+   * This method serves the json view behind index.php?view=viewLoadObjects&class=...
+   * and returns the collector envelope array of every object of the class
+   * for on-demand bulk loading in the frontend. Invalid class values arrive
+   * from the request layer already filtered as null — the response is then
+   * deliberately empty instead of an AppError, because json views do not
+   * carry an AppError channel. The classPermissions whitelist of the view
+   * guards the read like the load route (isClassAllowed): a class the map
+   * does not declare answers deliberately empty, objects with a failed role
+   * id / owner check are filtered out of the list. The reference sub
+   * envelopes travel per object (rawObject) — shared references are
+   * deduplicated by class and id, every envelope travels exactly once.
+   *
+   * @param     Controller    $objController   The controller instance of the request
+   * @return    array        The collector envelope array of the class or an empty array
+   *
+   * @example   $arrEnvelopes = $objBaseObject->viewLoadObjects( $objController );
+   *
+   * @see       BaseObject::viewLoadObject
+   *
+   */
   public function viewLoadObjects( Controller $objController ) : array {
-    $strClass   = Request::param( 'class' );
-    $arrAllowed = self::getClassPermissions( $objController, $strClass );
-    $arrResult  = [];
+    $strClass = Request::param( 'class' );
 
     if( ! isset( $strClass ) ) return [];
+
+    $arrAllowed = self::getClassPermissions( $objController, $strClass );
+
     if( ! isset( $arrAllowed ) ) return [];
 
     $arrObjects = self::getObjectsFromClass( $strClass );
-
-    if( ! isset( $arrObjects ) ) return [];
+    $arrResult  = [];
+    $arrSeen    = [];
 
     foreach( $arrObjects as $objObject ) {
       if( ! $this->isClassAllowed( $objController, $objObject, $arrAllowed ) ) continue;
 
-      array_push( $arrResult, ...$objObject->rawObject() );
+      foreach( $objObject->rawObject() as $objRawObject ) {
+        $strSeenKey = $objRawObject->class . '::' . $objRawObject->id;
+
+        if( isset( $arrSeen[ $strSeenKey ] ) ) continue;
+
+        $arrSeen[ $strSeenKey ] = true;
+
+        array_push( $arrResult, $objRawObject );
+      }
     }
 
     return $arrResult;

@@ -112,17 +112,18 @@ Registry ➔ [Klassenname (kleingeschrieben)] ➔ [Objekt-ID] ➔ [JS-Instanz]
 - `getAll(klasse)`: Liefert eine Kopie der Map dieser Klasse.
    **Wichtig:** Blaupausen (mit der ID `Registry::BLUEPRINTID = 'new'`) werden hierbei herausgefiltert. Dadurch können Templates in Schleifen (Template-Loops) iterieren, ohne Prüfungen einbauen zu müssen.
 
-Sobald eine Instanz registriert wird, stellt die Registry die Events an zwei Ebenen in die Event-Queue (`{event}:{klasse}:{id}` für die Instanz, `{event}:{klasse}` klassenweit) — je nach Auslöser mit einem der fünf Event-Typen. Der Loader feuert die Queue (`fireEvents()`) erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind (Deferred Dispatch):
+Sobald eine Instanz registriert wird, stellt die Registry die Events an zwei Ebenen in die Event-Queue (`{event}:{klasse}:{id}` für die Instanz, `{event}:{klasse}` klassenweit) — je nach Auslöser mit einem der sechs Event-Typen. Der Loader feuert die Queue (`fireEvents()`) erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind (Deferred Dispatch):
 
 1. `ready` — Jede Registrierung: die Instanz ist unter ihrer ID erreichbar.
-2. `load` — Bootstrap & `app.loadObject`: Ein Envelope ist über die Standard-Pipeline geladen.
+2. `load` — Bootstrap & `app.loadObject`/`app.loadObjects`: Ein Envelope ist über die Standard-Pipeline geladen.
 3. `new` — `app.newObject`: Eine Blaupause wurde unter der ID `new` registriert.
 4. `save` — `app.saveObject`: Eine Instanz wurde gespeichert (die ID wird bei jedem Save erneut registriert).
 5. `delete` — `app.deleteObject`: Eine Instanz wurde gelöscht; bei Erfolg entfernt die Registry alle Replay-Spuren der ID (`remove()`), ein blockierter Delete zeigt stattdessen eine AppError-Card.
+6. `loadall` — Sammel-Kanal nach jedem Load-Batch (Bootstrap, `app.loadObject`, `app.loadObjects`): Der Callback erhält die komplette Instanz-Map der Klasse (`getAll()`, ohne Blaupausen).
 
-Für jeden Typ existiert eine `on*`-Fassade: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew`.
+Für die Instanz-Typen existiert eine `on*`-Fassade: `onReady`, `onLoad`, `onSave`, `onDelete`, `onNew` — der Sammel-Kanal nutzt `onLoadAll(klasse, callback)`.
 
-Die Zustellung ist **deferred** (Event-Queue): `register()` feuert nichts, es stellt die Events in eine interne Queue; `fireEvents()` liefert sie in Registrierungs-Reihenfolge aus — der Loader flusht erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind. Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt!
+Die Zustellung ist **deferred** (Event-Queue): `register()` feuert nichts, es stellt die Events in eine interne Queue; `fireEvents()` liefert sie in Registrierungs-Reihenfolge aus — der Loader flusht erst, wenn alle Referenzen des Envelope-Batchs aufgelöst sind, danach feuert der Flush den Sammel-Kanal `loadall` für jede Load-Klasse des Batches. Wenn das Event bereits gefeuert wurde, nutzt das Framework ein **Fired-Events-Replay**: Bereits verpasste Events werden für zu spät registrierte Listener wiederholt — beim `loadall`-Snapshot hält `remove()` die Replay-Map aktuell (keine Geister).
 
 Die zwei Abonnement-Modi der Registry
 
@@ -187,7 +188,7 @@ Das Framework trennt Trigger-Namen im HTML-Formular von den PHP-Methodennamen. D
 
 ### Klassenbezogene Rechte der CRUD-Routen (`classPermissions` & `ownerId`)
 
-Die generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate eine klassenbezogene Whitelist am View: die `classPermissions`-Map legt pro Business-Klasse fest, welche Rollen (inkl. der Pseudo-Rolle `"owner"` = der Ersteller) Objekte dieser Klasse behandeln dürfen — undeklarierte Klassen verweigern die Routen still. Beim Erstellen stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt; der Client kann sie nie liefern oder überschreiben, da sie kein Feldvertrag ist. Save und Delete melden eine Verweigerung als AppError, Load antwortet still-leer (kein Existenz-Leak). Details in `includes/docs/DOCUMENTATION.md`.
+Die generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewLoadObjects`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate eine klassenbezogene Whitelist am View: die `classPermissions`-Map legt pro Business-Klasse fest, welche Rollen (inkl. der Pseudo-Rolle `"owner"` = der Ersteller) Objekte dieser Klasse behandeln dürfen — undeklarierte Klassen verweigern die Routen still. Beim Erstellen stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt; der Client kann sie nie liefern oder überschreiben, da sie kein Feldvertrag ist. Save und Delete melden eine Verweigerung als AppError, Load antwortet still-leer bzw. filtert unzulässige Objekte aus der Liste (kein Existenz-Leak). Details in `includes/docs/DOCUMENTATION.md`.
 
 ---
 

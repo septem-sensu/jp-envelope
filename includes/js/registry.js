@@ -4,14 +4,16 @@
  * finished instances, templates never read them directly but wait for
  * the registry events (ready per id, class-wide per instance, appReady
  * once, plus the object event types load/save/delete/new which the
- * Loader routes fire beside ready) — already fired events replay for
- * late listeners, class-wide listeners subscribe permanently, the
- * timing stays decoupled from the load order. The event delivery is
- * deferred: register() only queues the registration in pendingEvents,
- * fireEvents() drains the queue — the Loader flushes after the batch
- * fill (fillObjects), so an object event fires only when every
- * reference of the batch is resolved (a save in the queue window
- * cannot wipe the references anymore).
+ * Loader routes fire beside ready, plus the class-wide collection
+ * event loadall which fireEvents() fires after a load batch) —
+ * already fired events replay for late listeners, class-wide
+ * listeners subscribe permanently, the timing stays decoupled from
+ * the load order. The event delivery is deferred: register() only
+ * queues the registration in pendingEvents, fireEvents() drains the
+ * queue — the Loader flushes after the batch fill (fillObjects), so
+ * an object event fires only when every reference of the batch is
+ * resolved (a save in the queue window cannot wipe the references
+ * anymore).
  *
  * @class
  *
@@ -56,8 +58,9 @@ class Registry {
 /**
  * The event types of the registry: ready fires on every registration,
  * the object types travel from the Loader routes (load, save, delete,
- * new). remove() cleans the replay traces of every type, onEvent
- * addresses them by name.
+ * new), loadall is the class-wide collection event after a load batch.
+ * remove() cleans the replay traces of every type, onEvent addresses
+ * them by name.
  *
  * @static
  *
@@ -66,7 +69,7 @@ class Registry {
  * @example   for( let i = 0; i < Registry.EVENTNAMES.length; i++ ) { ... }
  *
  */
-  static EVENTNAMES = [ 'ready', 'load', 'save', 'delete', 'new' ];
+  static EVENTNAMES = [ 'ready', 'load', 'save', 'delete', 'new', 'loadall' ];
 
 /**
  * This method is the constructor of the class: it carries the registry
@@ -135,7 +138,13 @@ class Registry {
  * base over firedEvents fills here, earlier registered listeners
  * dispatch directly, later ones are served from the replay. Callbacks
  * that register synchronously during the drain append to the queue
- * and are delivered within the same run.
+ * and are delivered within the same run. As the last delivery step
+ * the drain fires the class-wide collection event loadall for every
+ * class that carried a load registration in the drained queue
+ * (Bootstrap, app.loadObject, app.loadObjects — blueprints count
+ * not): the callback receives the complete instance map of the class
+ * (getAll, fresh from the registry at dispatch time) and the replay
+ * base stores the same snapshot for late onLoadAll listeners.
  *
  * @public
  *
@@ -145,7 +154,7 @@ class Registry {
  *
  */
   fireEvents() {
-    let isLoadEvent = false;
+    const arrLoadAllClasses = [];
 
     while( this.pendingEvents.length > 0 ) {
       const pendingEvent = this.pendingEvents.shift();
@@ -155,7 +164,7 @@ class Registry {
 
       this.firedEvents[ eventNameReadyInstance ] = pendingEvent.instance;
 
-      if( pendingEvent.eventName !== null && pendingEvent.eventName === 'load' ) isLoadEvent = true;
+      if( pendingEvent.eventName === 'load' && pendingEvent.id !== this.constructor.BLUEPRINTID && ! arrLoadAllClasses.includes( pendingEvent.classKey ) ) arrLoadAllClasses.push( pendingEvent.classKey );
 
       if( eventNameInstance !== null ) this.firedEvents[ eventNameInstance ] = pendingEvent.instance;
       if( this.listeners[ eventNameReadyInstance ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameReadyInstance ] );
@@ -176,19 +185,14 @@ class Registry {
       if( eventNameClass !== null && this.listeners[ eventNameClass ] ) this._dispatchSafely( pendingEvent.instance, ...this.listeners[ eventNameClass ] );
     }
 
-    if( ! isLoadEvent ) return;
+    for( let i = 0; i < arrLoadAllClasses.length; i++ ) {
+      const eventNameLoadAll = this.getEventName( arrLoadAllClasses[ i ], null, 'loadall' );
+      const instances        = this.getAll( arrLoadAllClasses[ i ] );
 
-    this.forEachClass( ( className ) => {
-      const classKey              = this._key( className );
-      const eventNameReady        = this.getEventName( classKey, 'all', 'ready' );
-      const eventNameLoad         = this.getEventName( classKey, 'all', 'load' );
-      const instances             = this.getAll( className );
+      this.firedEvents[ eventNameLoadAll ] = instances;
 
-      this.firedEvents[ eventNameReady ] = instances;
-      this.firedEvents[ eventNameLoad ]  = instances;
-      if( this.listeners[ eventNameReady ] ) this._dispatchSafely( instances, ...this.listeners[ eventNameReady ] );
-      if( this.listeners[ eventNameLoad ] ) this._dispatchSafely( instances, ...this.listeners[ eventNameLoad ] );
-    } );
+      if( this.listeners[ eventNameLoadAll ] ) this._dispatchSafely( instances, ...this.listeners[ eventNameLoadAll ] );
+    }
 
     return;
   }
@@ -356,26 +360,30 @@ class Registry {
   }
 
 /**
- * This method registers an event listener in two modes: with id an
- * id-specific subscription — an already fired event dispatches the
- * callback directly (replay), the callback is not stored; a listener
- * registered before the event stays armed and dispatches again on
- * every re-registration of the same id (the early listener fires
- * permanently, the late replay arrives once — save/load re-register
- * their id on every route call, so the difference matters). With id
- * null a permanent per-instance subscription of the class — the
- * replay dispatches the callback for every already registered
- * instance, the callback stays armed for later registrations (e. g.
- * on-demand envelopes after appReady). Blueprints never arrive
- * class-wide: templates which need them listen on the instance id
- * 'new' (e. g. onNew( className, 'new' )).
+ * This method registers an event listener in three modes: the
+ * collection event loadall (Sammel-Kanal, id-argument ignored) —
+ * an already fired batch dispatches the complete instance map
+ * directly (replay), the callback stays stored and receives the
+ * fresh map again on every future load batch of the class. With id
+ * an id-specific subscription — an already fired event dispatches
+ * the callback directly (replay), the callback is not stored; a
+ * listener registered before the event stays armed and dispatches
+ * again on every re-registration of the same id (the early listener
+ * fires permanently, the late replay arrives once — save/load
+ * re-register their id on every route call, so the difference
+ * matters). With id null a permanent per-instance subscription of
+ * the class — the replay dispatches the callback for every already
+ * registered instance, the callback stays armed for later
+ * registrations (e. g. on-demand envelopes after appReady).
+ * Blueprints never arrive class-wide: templates which need them
+ * listen on the instance id 'new' (e. g. onNew( className, 'new' )).
  *
  * @public
  *
  * @param     {string}        className       The PHP class name
  * @param     {string|null}   id              The instance id or null for the class-wide subscription
- * @param     {function}      callback        The callback with the instance as parameter
- * @param     {string}        eventNameType   The event type: 'ready', 'load', 'save', 'delete' or 'new'
+ * @param     {function}      callback        The callback with the instance as parameter (loadall: the complete instance map)
+ * @param     {string}        eventNameType   The event type: 'ready', 'load', 'save', 'delete', 'new' or 'loadall'
  * @return    {void}
  *
  * @example   registry.onEvent( 'User', 'new', ( blueprint ) => { ... }, 'new' );
@@ -383,7 +391,17 @@ class Registry {
  *
  */
   onEvent( className, id = null, callback, eventNameType ) {
-    const eventName = this.getEventName( className, id, eventNameType );
+    const eventName = this.getEventName( className, eventNameType === 'loadall' ? null : id, eventNameType );
+
+    if( eventNameType === 'loadall' ) {
+      if( this.firedEvents[ eventName ] ) this._dispatchSafely( this.firedEvents[ eventName ], callback );
+
+      if( ! this.listeners[ eventName ] ) this.listeners[ eventName ] = [];
+
+      this.listeners[ eventName ].push( callback );
+
+      return;
+    }
 
     if( id === null ) {
       if( this.firedEvents[ eventName ] ) this.firedEvents[ eventName ].forEach( ( instance ) => this._dispatchSafely( instance, callback ) );
@@ -432,8 +450,8 @@ class Registry {
 /**
  * This method registers a load listener (delegate to onEvent): load
  * fires on the bootstrap registration of every collector envelope and
- * on app.loadObject — see onEvent for the early/late listener
- * semantics.
+ * on app.loadObject/app.loadObjects — see onEvent for the early/late
+ * listener semantics.
  *
  * @public
  *
@@ -510,6 +528,35 @@ class Registry {
  */
   onNew( className, id = null, callback ) {
     this.onEvent( className, id, callback, 'new' );
+
+    return;
+  }
+
+/**
+ * This method registers a loadall listener (delegate to onEvent):
+ * loadall is the class-wide collection event after a load batch
+ * (Bootstrap, app.loadObject, app.loadObjects) — the callback
+ * receives the complete instance map of the class (getAll, without
+ * blueprints). Already fired batches replay the stored snapshot
+ * directly, the listener stays stored and receives the fresh map
+ * again on every future load batch of the class; remove() keeps the
+ * snapshot current when an instance leaves the registry (deleted
+ * instances never replay). Creates (save route) do not fire the
+ * collection event — the snapshot grows with the next load batch.
+ *
+ * @public
+ *
+ * @param     {string}        className    The PHP class name
+ * @param     {function}      callback     The callback with the complete instance map as parameter
+ * @return    {void}
+ *
+ * @example   registry.onLoadAll( 'DemoOne', ( instances ) => { ... } );
+ *
+ * @see       Registry#onEvent
+ *
+ */
+  onLoadAll( className, callback ) {
+    this.onEvent( className, null, callback, 'loadall' );
 
     return;
   }

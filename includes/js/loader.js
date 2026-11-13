@@ -11,10 +11,10 @@
  * without debug the rawObjects leave the namespace, a failed
  * resource load keeps them (fail-loud). Every route registers with
  * its event type (registerObjects: load, loadNewObject: new,
- * loadObject: load, saveObject: save, deleteObject: delete) — the
- * registry delivers the matching object events beside ready, deferred
- * via fireEvents() after the fill so every reference of the batch is
- * resolved before a listener sees the instance.
+ * loadObject/loadObjects: load, saveObject: save, deleteObject:
+ * delete) — the registry delivers the matching object events beside
+ * ready, deferred via fireEvents() after the fill so every reference
+ * of the batch is resolved before a listener sees the instance.
  *
  * @class
  *
@@ -255,6 +255,26 @@ class Loader extends EventTarget {
     return await this.instantiateRawObjects( await response.json(), 'load' );
   }
 
+/**
+ * This method loads every object of a business class on demand (called
+ * by app.loadObjects): fetch on the json view viewLoadObjects, the
+ * envelope array runs through the standard pipeline and registers with
+ * the 'load' event type (onLoad beside ready, after the flush the
+ * collection event loadall fires for every class of the batch) — the
+ * class files can load for the first time on this way. Errors (HTML
+ * answer at a wrong role, empty 500 body, network) tear the promise
+ * up, the catch sits in the app wrapper (overlay).
+ *
+ * @public
+ *
+ * @param     {string}    className   The PHP class name of the objects
+ * @return    {Promise}   instances   The registered instances of the response in collector order
+ *
+ * @example   const demoOnes = await loader.loadObjects( 'DemoOne' );
+ *
+ * @see       Loader#instantiateRawObjects
+ *
+ */
   async loadObjects( className ) {
     const url      = document.location.pathname + '?view=viewLoadObjects&class=' + encodeURIComponent( className );
     const response = await fetch( url );

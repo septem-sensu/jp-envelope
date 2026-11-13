@@ -33,10 +33,10 @@ declare( strict_types = 1 );
  * additional owner account (persistowner@local.test, owns itself) and a
  * foreign victim account (persistvictim@local.test, ownerId = the owner)
  * — the handler removes all; the local production accounts are never
- * touched. The load and delete permission checks run over the User
- * class: the params whitelist passes only production classes as the GET
- * class parameter, the suite classes are reachable over the save route
- * payload only.
+ * touched. The load, bulk load and delete permission checks run over
+ * the User class: the params whitelist passes only production classes
+ * as the GET class parameter, the suite classes are reachable over the
+ * save route payload only.
  *
  * @author    Markus Götz <info@septem-sensu.de>
  * @version   0.2.20
@@ -800,6 +800,54 @@ $_GET[ 'id' ]    = $strVictimUserId;
 $arrEnvelope = ( new PersistTestObject() )->viewLoadObject( $objController );
 
 check( count( $arrEnvelope ) === 0, 'classPermissions: eine undeklarierte Klasse antwortet beim Laden still-leer' );
+
+// --- classPermissions: the bulk load route (owner list, foreign and undeclared hidden) ---
+
+$objController = mockController( 'viewLoadObjects', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObjects' );
+
+$_GET[ 'class' ] = 'User';
+
+$arrEnvelope   = ( new PersistTestObject() )->viewLoadObjects( $objController );
+$arrLoadedIds  = [];
+
+foreach( $arrEnvelope as $objEnvelope ) {
+  if( $objEnvelope->class !== 'User' ) continue;
+
+  $arrLoadedIds[] = $objEnvelope->id;
+}
+
+check( in_array( $strOwnerUserId, $arrLoadedIds, true ) && in_array( $strVictimUserId, $arrLoadedIds, true ), 'classPermissions: der Bulk-Load liefert dem Owner die Liste seiner Objekte (inklusive Victim-Objekt)' );
+
+$objController = mockController( 'viewLoadObjects' );
+
+setMockClassPermissions( $objController, [ 'User' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObjects' );
+
+$_GET[ 'class' ] = 'User';
+
+$arrEnvelope = ( new PersistTestObject() )->viewLoadObjects( $objController );
+
+check( count( $arrEnvelope ) === 0, 'classPermissions: der Bulk-Load ohne Owner-Übereinstimmung antwortet leer' );
+
+$objController = mockController( 'viewLoadObjects', $strOwnerUserId );
+
+setMockClassPermissions( $objController, [ 'PersistTestObject' => [ 'owner' ] ] );
+
+Request::reset();
+Request::setScope( 'viewLoadObjects' );
+
+$_GET[ 'class' ] = 'User';
+
+$arrEnvelope = ( new PersistTestObject() )->viewLoadObjects( $objController );
+
+check( count( $arrEnvelope ) === 0, 'classPermissions: der Bulk-Load einer undeklarierten Klasse antwortet leer' );
 
 // --- classPermissions: the delete route (owner allowed, foreign denied) ---
 
