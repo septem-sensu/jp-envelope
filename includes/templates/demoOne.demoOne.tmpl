@@ -2,6 +2,7 @@
 
 <script type="text/javascript">
   window[ appAlias ].registry.onAppReady( ( app ) => {
+
     app.registry.onLoadAll( 'DemoOne', ( instances ) => {
       console.log( instances );
 
@@ -22,9 +23,9 @@
       console.log( instance );
       console.log( user );
 
-      //instance.name     = 'Markus';
+      instance.name     = 'Jens';
       //instance.lastName = 'Götz';
-      //instance.user      = null;
+      instance.user      = user;
 
       app.registry.onSave( 'DemoOne', 'DemoOne_6af024143b0b07.93634326', ( updatedInstance ) => {
         console.log( updatedInstance );
@@ -32,13 +33,14 @@
         return;
       } );
 
-      //app.saveObject( instance );
+      app.saveObject( instance );
 
       return;
     } );
 
     app.loadObject( 'DemoOne', 'DemoOne_6af024143b0b07.93634326' );
     app.currentUser().addNavbarTop( app );
+
 
 
     app.registry.onLoad( 'DemoOne', 'demoOne_001', ( demoOneInstance ) => {

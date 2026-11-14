@@ -40,7 +40,7 @@
     "roleIds": [ "administrator", "user" ],
     "classPermissions": {
       "User": [ "administrator", "user", "owner" ],
-      "DemoOne": [ "user", "user" ],
+      "DemoOne": [ "user", "owner" ],
       "DemoTwo": [ "administrator", "user", "owner" ]
     },
     "templateNames": [],

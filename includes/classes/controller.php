@@ -322,20 +322,20 @@ class Controller extends BaseObject {
   }
 
   /**
-   * This method collects an array of soft errors:actions report rejected guards
-   * here, undexecute() throws the collected errors into the frontend
-   * Collector as AppError envelopes. The severity must be “Error” or
-   * 'Warning'. The view permission check remains intentionally silent –
-   * Missing authorizations are not an information channel to the outside world.
+   * This method collects an array of soft errors: actions report rejected
+   * guards here, and execute() throws the collected errors into the frontend
+   * collector as AppError envelopes. The severity must be 'error' or
+   * 'warning'. The view permission check deliberately stays silent —
+   * missing permissions are not an information channel to the outside.
    *
-   * @param     array         $arrMessages   The array with error message for the frontend
+   * @param     array         $arrMessages   The error messages for the frontend
    * @param     string|null   $strSource     The action trigger that rejected (e.g. 'changeUser')
    * @param     string        $strSeverity   The severity, 'error' (default) or 'warning'
    * @return    bool          Indicates whether errors were added to the collector
    *
    * @throws    RuntimeException   When the severity is unknown
    *
-   * @example   $hasAdded = $objController->addErrors( [ 'Ungültige Eingabe.'. 'Bitte Name angeben.' }, 'createUser', 'warning' );
+   * @example   $hasAdded = $objController->addErrors( [ 'Ungültige Eingabe.', 'Bitte Name angeben.' ], 'createUser', 'warning' );
    *
    */
   public function addErrors( array $arrMessages, string | null $strSource = null, string $strSeverity = 'error' ) : bool {
