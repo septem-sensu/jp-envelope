@@ -86,9 +86,10 @@
         <h2 class="phpdocumentor-content__title">collectorTest.php</h2>
 
             <p class="phpdocumentor-summary">This suite is the regression test for the PHP to JS contract of the
-rawObjects collector: envelope structure, dedupe with last-wins
-override, the alternative JS class name and the app context
-including the throw order of execute().</p>
+rawObjects collector: envelope structure, the NOSERIALIZE filtering
+of reference properties, dedupe with last-wins override, the
+alternative JS class name and the app context including the throw
+order of execute().</p>
 
         
         
@@ -112,7 +113,7 @@ including the throw order of execute().</p>
                     <span class="phpdocumentor-tag__name">version</span>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
-                                            <span class="phpdocumentor-tag-link">0.2.10</span>
+                                            <span class="phpdocumentor-tag-link">0.2.11</span>
                                                                                 
                                              
                                     </dd>
@@ -153,7 +154,10 @@ including the throw order of execute().</p>
     </h4>
     <dl class="phpdocumentor-table-of-contents">
                     <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/TestObject.html"><abbr title="\TestObject">TestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass with one
-serializable property for the collector checks.</dd>    </dl>
+serializable property for the collector checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/RefTestObject.html"><abbr title="\RefTestObject">RefTestObject</abbr></a></dt><dd>Local test object: a BaseObject subclass with two &#039;class&#039; reference
+properties onto TestObject — one filtered by the own NOSERIALIZE
+override, one visible — for the reference handling checks of
+rawObject().</dd>    </dl>
 
 
 

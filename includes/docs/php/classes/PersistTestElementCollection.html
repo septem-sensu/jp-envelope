@@ -108,7 +108,7 @@
         <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">161</span>
+    <span class="phpdocumentor-element-found-in__line">185</span>
 
     </aside>
 
@@ -229,7 +229,10 @@ the collection. Non-array input is taken as a single element, array
 input is appended element by element in the given order. Every
 element must be an instance of getAllowedType(), otherwise an
 InvalidArgumentException is thrown; elements appended before the
-mismatch stay in place.</dd>
+mismatch stay in place. With onlyUnique (the default) an element
+whose id is already in the collection is skipped silently, both
+for the single element and within the given array; with
+$boolOnlyUnique = false duplicates are appended as usual.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseCollection.html#method_set">set()</a>
@@ -259,7 +262,11 @@ element, array input is prepended as a whole, preserving its
 order (the iteration over the reversed array). Every element
 must be an instance of getAllowedType(), otherwise an
 InvalidArgumentException is thrown; elements prepended before
-the mismatch stay in place.</dd>
+the mismatch stay in place. With onlyUnique (the default) an
+element whose id is already in the collection is skipped
+silently, both for the single element and within the given
+array; with $boolOnlyUnique = false duplicates are prepended
+as usual.</dd>
 
     </dl>
 
@@ -335,7 +342,7 @@ the mismatch stay in place.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">150</span>
+    <span class="phpdocumentor-element-found-in__line">164</span>
 
     </aside>
 
@@ -386,7 +393,7 @@ the mismatch stay in place.</dd>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">228</span>
+    <span class="phpdocumentor-element-found-in__line">242</span>
 
     </aside>
 
@@ -447,7 +454,7 @@ instance is usable with the count() function.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">166</span>
+    <span class="phpdocumentor-element-found-in__line">180</span>
 
     </aside>
 
@@ -508,7 +515,7 @@ it is the single read route onto the container content.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">170</span>
+    <span class="phpdocumentor-element-found-in__line">194</span>
 
     </aside>
 
@@ -552,7 +559,7 @@ collection.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">214</span>
+    <span class="phpdocumentor-element-found-in__line">228</span>
 
     </aside>
 
@@ -613,7 +620,7 @@ collection instance is usable in foreach loops.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">182</span>
+    <span class="phpdocumentor-element-found-in__line">196</span>
 
     </aside>
 
@@ -676,7 +683,7 @@ as the value of the collection descriptor.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">125</span>
+    <span class="phpdocumentor-element-found-in__line">139</span>
 
     </aside>
 
@@ -736,7 +743,7 @@ returns it (null when the collection is empty).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">59</span>
+    <span class="phpdocumentor-element-found-in__line">64</span>
 
     </aside>
 
@@ -745,11 +752,14 @@ the collection. Non-array input is taken as a single element, array
 input is appended element by element in the given order. Every
 element must be an instance of getAllowedType(), otherwise an
 InvalidArgumentException is thrown; elements appended before the
-mismatch stay in place.</p>
+mismatch stay in place. With onlyUnique (the default) an element
+whose id is already in the collection is skipped silently, both
+for the single element and within the given array; with
+$boolOnlyUnique = false duplicates are appended as usual.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-                    <span class="phpdocumentor-signature__name">push</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$mixItems</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+                    <span class="phpdocumentor-signature__name">push</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$mixItems</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type">bool&nbsp;</span><span class="phpdocumentor-signature__argument__name">$boolOnlyUnique</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">true</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -763,6 +773,15 @@ mismatch stay in place.</p>
                             </dt>
             <dd class="phpdocumentor-argument-list__definition">
                     <section class="phpdocumentor-description"><p>An element instance of the allowed type or an array of them</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$boolOnlyUnique</span>
+                : <span class="phpdocumentor-signature__argument__return-type">bool</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">true</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Skip elements whose id is already in the collection (default true)</p>
 </section>
 
             </dd>
@@ -781,6 +800,15 @@ mismatch stay in place.</p>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
                                                  <section class="phpdocumentor-description"><p>$objUserCollection-&gt;push( $objUser );</p>
+</section>
+
+                                    </dd>
+                            <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$objUserCollection-&gt;push( $objUser, false );   // allow duplicates</p>
 </section>
 
                                     </dd>
@@ -804,7 +832,7 @@ mismatch stay in place.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">197</span>
+    <span class="phpdocumentor-element-found-in__line">211</span>
 
     </aside>
 
@@ -869,7 +897,7 @@ the current elements and appends the given ones via push()
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">138</span>
+    <span class="phpdocumentor-element-found-in__line">152</span>
 
     </aside>
 
@@ -929,7 +957,7 @@ returns it (null when the collection is empty).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseCollection.php"><a href="files/classes-basecollection.html"><abbr title="classes/baseCollection.php">baseCollection.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">95</span>
+    <span class="phpdocumentor-element-found-in__line">107</span>
 
     </aside>
 
@@ -939,11 +967,15 @@ element, array input is prepended as a whole, preserving its
 order (the iteration over the reversed array). Every element
 must be an instance of getAllowedType(), otherwise an
 InvalidArgumentException is thrown; elements prepended before
-the mismatch stay in place.</p>
+the mismatch stay in place. With onlyUnique (the default) an
+element whose id is already in the collection is skipped
+silently, both for the single element and within the given
+array; with $boolOnlyUnique = false duplicates are prepended
+as usual.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-                    <span class="phpdocumentor-signature__name">unshift</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$mixItems</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+                    <span class="phpdocumentor-signature__name">unshift</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$mixItems</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type">bool&nbsp;</span><span class="phpdocumentor-signature__argument__name">$boolOnlyUnique</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">true</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
@@ -957,6 +989,15 @@ the mismatch stay in place.</p>
                             </dt>
             <dd class="phpdocumentor-argument-list__definition">
                     <section class="phpdocumentor-description"><p>An element instance of the allowed type or an array of them</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$boolOnlyUnique</span>
+                : <span class="phpdocumentor-signature__argument__return-type">bool</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">true</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Skip elements whose id is already in the collection (default true)</p>
 </section>
 
             </dd>

@@ -130,8 +130,10 @@ share. Most methods guard CLI runs of the regression suites.</dd>            <dt
 declares User as the allowed element type of BaseCollection and
 inherits the container behavior from it.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/View.html"><abbr title="\View">View</abbr></a></dt><dd>This class represents a configured view (view.json): it binds a view
 method to a business class, carries the result type (empty = HTML,
-&#039;json&#039; = JSON response), the template chain and the allowed role ids,
-and executes the actions and the view method of the view.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/CollectionTestItem.html"><abbr title="\CollectionTestItem">CollectionTestItem</abbr></a></dt><dd>Local test element: a minimal BaseObject subclass with one payload
+&#039;json&#039; = JSON response), the template chain, the allowed role ids and
+the classPermissions map (per-class role ids incl. the pseudo role
+&#039;owner&#039; for the generic json routes), and executes the actions and the
+view method of the view.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/CollectionTestItem.html"><abbr title="\CollectionTestItem">CollectionTestItem</abbr></a></dt><dd>Local test element: a minimal BaseObject subclass with one payload
 property and accessor. The base class provides id(), so the element
 is fully usable for the idArray() checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/CollectionTestCollection.html"><abbr title="\CollectionTestCollection">CollectionTestCollection</abbr></a></dt><dd>Local test collection: declares CollectionTestItem as the allowed
 element type.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestChild.html"><abbr title="\PersistTestChild">PersistTestChild</abbr></a></dt><dd>Local test child: a minimal BaseObject subclass with one payload
@@ -142,8 +144,21 @@ type of the persistence contract (builtin, class reference,
 collection) and a runtime property filtered by the own NOSAVE
 override. The nullable property declarations deliberately use the
 &#039;?Class&#039; form — getPropertyType()/getPropertyClass() read the bare
-type name via ReflectionNamedType.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/TestObject.html"><abbr title="\TestObject">TestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass with one
-serializable property for the collector checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestObject.html"><abbr title="\PersistTestObject">PersistTestObject</abbr></a></dt><dd>Local test class: a minimal CRUD-capable BaseObject subclass with the
+type name via ReflectionNamedType.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestHook.html"><abbr title="\PersistTestHook">PersistTestHook</abbr></a></dt><dd>Local hook test class: owns its own class json file so the onLoad
+firing paths can be checked against real persistence — a static
+counter counts the onLoad invocations (persistTestHook.json,
+removed by the shutdown handler). The counter lives statically so
+no hook bookkeeping can leak into the persisted entry.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/TestObject.html"><abbr title="\TestObject">TestObject</abbr></a></dt><dd>Local test object: a minimal BaseObject subclass with one
+serializable property for the collector checks.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/RefTestObject.html"><abbr title="\RefTestObject">RefTestObject</abbr></a></dt><dd>Local test object: a BaseObject subclass with two &#039;class&#039; reference
+properties onto TestObject — one filtered by the own NOSERIALIZE
+override, one visible — for the reference handling checks of
+rawObject().</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DeleteTestTarget.html"><abbr title="\DeleteTestTarget">DeleteTestTarget</abbr></a></dt><dd>Local test target: a minimal BaseObject subclass with one payload
+property — the referenced class of the delete test source.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DeleteTestTargetCollection.html"><abbr title="\DeleteTestTargetCollection">DeleteTestTargetCollection</abbr></a></dt><dd>Local test collection: declares DeleteTestTarget as the allowed
+element type.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DeleteTestSource.html"><abbr title="\DeleteTestSource">DeleteTestSource</abbr></a></dt><dd>Local test source: a BaseObject with a &#039;class&#039; reference and a
+&#039;collection&#039; reference onto DeleteTestTarget — the object whose
+entries the delete propagation has to clean.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DeleteTestNode.html"><abbr title="\DeleteTestNode">DeleteTestNode</abbr></a></dt><dd>Local test node: a self-referencing BaseObject (collection onto the
+own class) — the phase B case of the delete propagation.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/DeleteTestNodeCollection.html"><abbr title="\DeleteTestNodeCollection">DeleteTestNodeCollection</abbr></a></dt><dd>Local test node collection: declares DeleteTestNode as the allowed
+element type.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestObject.html"><abbr title="\PersistTestObject">PersistTestObject</abbr></a></dt><dd>Local test class: a minimal CRUD-capable BaseObject subclass with the
 declared field mixPayload (mandatory) and strSecret (NOSERIALIZE
 guard against forged envelope writes) plus the hook logic: a payload
 &#039;BLOCK&#039; aborts the save route, a payload &#039;KEEP&#039; reports on delete.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestElement.html"><abbr title="\PersistTestElement">PersistTestElement</abbr></a></dt><dd>Local test class: the referenced element of the reference suite cases,
@@ -198,7 +213,9 @@ line and stops the suite with exit code 1.</dd>
 Controller subclass whose constructor deliberately skips the parent
 constructor (the real one boots the whole app incl. auth). Without a
 view id only presentation, user and role exist; with a view id the view
-object is created and the request scope is set accordingly.</dd>
+object is created and the request scope is set accordingly. An optional
+user id resolves the mock user over the auth id path (default: the
+guest fallback) — the base of the owner permission checks.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -function -">
     <a class="" href="namespaces/default.html#function_setParams">setParams()</a>
@@ -208,6 +225,27 @@ object is created and the request scope is set accordingly.</dd>
 <dd>This helper resets the request state, sets the viewUserList scope
 (the action view of the user management) and applies the given
 parameters as POST values — the common prelude of every scenario.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_setMockClassPermissions">setMockClassPermissions()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>This function injects a classPermissions map into the view object of
+the mock controller (protected property, test-only reflection access)
+— the route gates read the map from the request view.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_crudMockController">crudMockController()</a>
+    <span>
+                                &nbsp;: <a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>    </span>
+</dt>
+<dd>This function builds the mock controller for the generic route calls
+and injects the suite&#039;s classPermissions map into the request view:
+the production view.json map declares only the production classes, so
+the suite classes would be denied as undeclared — the guest mock role
+is the listed permission of the map, keeping the historical route
+checks untouched.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -function -">
     <a class="" href="namespaces/default.html#function_crashView">crashView()</a>
@@ -405,7 +443,7 @@ line and stops the suite with exit code 1.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/bootstrap.php"><a href="files/tests-bootstrap.html"><abbr title="tests/bootstrap.php">bootstrap.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">79</span>
+    <span class="phpdocumentor-element-found-in__line">83</span>
 
     </aside>
 
@@ -413,12 +451,14 @@ line and stops the suite with exit code 1.</p>
 Controller subclass whose constructor deliberately skips the parent
 constructor (the real one boots the whole app incl. auth). Without a
 view id only presentation, user and role exist; with a view id the view
-object is created and the request scope is set accordingly.</p>
+object is created and the request scope is set accordingly. An optional
+user id resolves the mock user over the auth id path (default: the
+guest fallback) — the base of the owner permission checks.</p>
 
     
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility"></span>
-                    <span class="phpdocumentor-signature__name">mockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
+                    <span class="phpdocumentor-signature__name">mockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strUserId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
 
     
         <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
@@ -429,6 +469,15 @@ object is created and the request scope is set accordingly.</p>
                  = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
             <dd class="phpdocumentor-argument-list__definition">
                     <section class="phpdocumentor-description"><p>The view id for the scope or null</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strUserId</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The user id of the mock user or null for the guest fallback</p>
 </section>
 
             </dd>
@@ -447,6 +496,15 @@ object is created and the request scope is set accordingly.</p>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
                                                  <section class="phpdocumentor-description"><p>$objController = mockController( 'viewUserList' );</p>
+</section>
+
+                                    </dd>
+                            <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$objController = mockController( 'viewSaveObject', 'max@musterman.de' );</p>
 </section>
 
                                     </dd>
@@ -517,6 +575,106 @@ parameters as POST values — the common prelude of every scenario.</p>
                                             </dl>
 
     
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_setMockClassPermissions">
+        setMockClassPermissions()
+        <a href="namespaces/default.html#function_setMockClassPermissions" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">245</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This function injects a classPermissions map into the view object of
+the mock controller (protected property, test-only reflection access)
+— the route gates read the map from the request view.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">setMockClassPermissions</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;&nbsp;</span><span class="phpdocumentor-signature__argument__name">$arrMap</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The mock controller</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$arrMap</span>
+                : <span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The classPermissions map (class =&gt; role ids)</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+    
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_crudMockController">
+        crudMockController()
+        <a href="namespaces/default.html#function_crudMockController" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">263</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This function builds the mock controller for the generic route calls
+and injects the suite&#039;s classPermissions map into the request view:
+the production view.json map declares only the production classes, so
+the suite classes would be denied as undeclared — the guest mock role
+is the listed permission of the map, keeping the historical route
+checks untouched.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">crudMockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strViewId</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The view id for the scope</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The mocked controller instance</p>
+</section>
+
+            </section>
+
 </article>
                     <article class="phpdocumentor-element -function - ">
     <h4 class="phpdocumentor-element__name" id="function_crashView">

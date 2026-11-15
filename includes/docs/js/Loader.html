@@ -74,7 +74,7 @@
         Loader
         </h2>
         
-            <div class="class-description">This class is the dynamic half of the frontend bootstrap: theheader loads only the base scripts statically (utils, loader,registry, fieldValidator, BaseObject) — every view class, Chart.js andevery stylesheet is requested by the Loader on demand (one classper file, file name = first letter lower case CamelCase).registerObjects() builds the complete bootstrap from the injectedcollector: per envelope one instance, then all resources awaited,then the registry entries, then app-ready — all-or-nothing; onlywithout debug the rawObjects leave the namespace, a failedresource load keeps them (fail-loud). Every route registers withits event type (registerObjects: load, loadNewObject: new,loadObject: load, saveObject: save, deleteObject: delete) — theregistry fires the matching object events beside ready.</div>
+            <div class="class-description">This class is the dynamic half of the frontend bootstrap: theheader loads only the base scripts statically (utils, loader,registry, fieldValidator, BaseObject) — every view class, Chart.js andevery stylesheet is requested by the Loader on demand (one classper file, file name = first letter lower case CamelCase).registerObjects() builds the complete bootstrap from the injectedcollector: per envelope one instance, then all resources awaited,then the registry entries, then the batch fill (fillObjects), thenthe deferred event flush and app-ready — all-or-nothing; onlywithout debug the rawObjects leave the namespace, a failedresource load keeps them (fail-loud). Every route registers withits event type (registerObjects: load, loadNewObject: new,loadObject/loadObjects: load, saveObject: save, deleteObject:delete) — the registry delivers the matching object events besideready, deferred via fireEvents() after the fill so every referenceof the batch is resolved before a listener sees the instance.</div>
         
     
 </header>
@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.18</li>
+			<li>0.2.19</li>
 		</ul>
 	</dd>
 	
@@ -395,7 +395,7 @@
 
     
     <div class="description">
-        This method deletes an addressed object over the generic json deleteroute (viewDeleteObject, POST): the parameters class and id travel asurlencoded body. The response envelopes register with the 'delete'event type (onDelete beside ready); the empty success responseremoves the registry instance — remove cleans every replay trace ofthe id. AppError envelopes display in the overlay afterwards.Errors (HTML answer at a wrong role, empty 500 body, network) tearthe promise up, the catch sits in the app wrapper (overlay).
+        This method deletes an addressed object over the generic json deleteroute (viewDeleteObject, POST): the parameters class and id travel asurlencoded body. The CSRF token of the app instance travels besidethem as the 'csrfToken' parameter (stateless HMAC over the authcookie token — the controller recomputes and compares it). Thesuccess response carries the deleted envelope(plus reference sub envelopes) — instantiateRawObjects registers itwith the 'delete' event type (onDelete beside ready), then removecleans every replay trace of the id, so the delete events fire on aregistered instance. AppError envelopes display in the overlay andleave the registry untouched (a blocked delete keeps its instance).Errors (HTML answer at a wrong role, empty 500 body, network) tearthe promise up, the catch sits in the app wrapper (overlay).
     </div>
     
 
@@ -535,7 +535,7 @@
     
             
 <div class="param-desc">
-    instances   The registered instances of the response (AppError cards on rejection, empty on success)
+    instances   The registered instances of the response (deleted instance on success, AppError cards on rejection)
 </div>
 
 
@@ -577,7 +577,7 @@
 
     
     <div class="description">
-        This method runs the complete envelope pipeline for on-demandloaded objects (blueprints): instantiate, load resources,register in the registry — the ready event incl. replay fires theregistry itself, the optional event type fires the matching objectevent beside it.
+        This method runs the envelope pipeline for a single on-demandloaded object: instantiate, load resources, register in theregistry. The event delivery is deferred — the registration onlyqueues in the registry (pendingEvents), the caller flushes viafireEvents() when the batch is complete (instantiateRawObjects).
     </div>
     
 
@@ -712,6 +712,13 @@
 	
 
 	
+	<dt class="tag-see method-doc-label method-doc-details-label">See:</dt>
+	<dd class="tag-see">
+		<ul>
+			<li><a href="Loader.html#instantiateRawObjects">Loader#instantiateRawObjects</a></li>
+			</ul>
+	</dd>
+	
 
 	
 </dl>
@@ -774,7 +781,7 @@
 
     
     <div class="description">
-        This method runs the complete envelope pipeline for a whole envelopearray in collector order: every envelope is instantiated and registeredvia instantiateRawObject, then the sub object references of allinstances are resolved via fillObjects(). Use this variant for the jsonviews that deliver an array of envelopes (blueprint, viewLoadObject).
+        This method runs the complete envelope pipeline for a whole envelopearray in collector order: every envelope is instantiated and registeredvia instantiateRawObject, then the sub object references of allinstances are resolved via fillObjects(), then the deferred eventqueue flushes via fireEvents() — the object events fire only whenevery reference of the batch is resolved. Use this variant for thejson views that deliver an array of envelopes (blueprint,viewLoadObject).
     </div>
     
 
@@ -1468,6 +1475,171 @@
             
 <hr>
 <dt>
+    <h4 class="name" id="loadObjects"><span class="type-signature">&lt;async> </span>loadObjects(className)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method loads every object of a business class on demand (calledby app.loadObjects): fetch on the json view viewLoadObjects, theenvelope array runs through the standard pipeline and registers withthe 'load' event type (onLoad beside ready, after the flush thecollection event loadall fires for every class of the batch) — theclass files can load for the first time on this way. Errors (HTMLanswer at a wrong role, empty 500 body, network) tear the promiseup, the catch sits in the app wrapper (overlay).
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP class name of the objects</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+	<dt class="tag-see method-doc-label method-doc-details-label">See:</dt>
+	<dd class="tag-see">
+		<ul>
+			<li><a href="Loader.html#instantiateRawObjects">Loader#instantiateRawObjects</a></li>
+			</ul>
+	</dd>
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances   The registered instances of the response in collector order
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const demoOnes = await loader.loadObjects( &#x27;DemoOne&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
     <h4 class="name" id="loadScriptAsync"><span class="type-signature"></span>loadScriptAsync(scriptName)</h4>
     
     
@@ -1792,7 +1964,7 @@
 
     
     <div class="description">
-        This method builds the complete app bootstrap: it instantiatesevery envelope of the collector in parallel, awaits afterwards allloadResources() calls, registers the finished instances in theregistry and fires app-ready only then. Without debug it deletesthe rawObjects from the namespace afterwards — a failed resourceload keeps them (fail-loud).
+        This method builds the complete app bootstrap: it instantiatesevery envelope of the collector in parallel, awaits afterwards allloadResources() calls, registers the finished instances in theregistry, fills the batch references, flushes the deferred eventqueue (fireEvents) and fires app-ready only then. Without debug itdeletes the rawObjects from the namespace afterwards — a failedresource load keeps them (fail-loud).
     </div>
     
 
@@ -1896,7 +2068,7 @@
 
     
     <div class="description">
-        This method saves an envelope over the generic json save route(viewSaveObject, POST): the envelope (class, id, data) travels as theurlencoded 'object' parameter — with the blueprint id the servercreates the object under a generated id. The response envelopes runthrough the standard pipeline (instantiateRawObjects) and registerwith the 'save' event type (onSave beside ready): object envelopesregister/refresh their registry instances, AppErrorenvelopes display in the overlay afterwards. On a successfulblueprint save the stale blueprint instance leaves the registry —the server id replaced it. Errors (HTML answer at a wrong role,empty 500 body, network) tear the promise up, the catch sits in theapp wrapper (overlay).
+        This method saves an envelope over the generic json save route(viewSaveObject, POST): the envelope (class, id, data) travels as theurlencoded 'object' parameter — with the blueprint id the servercreates the object under a generated id. The CSRF token of the appinstance travels beside it as the 'csrfToken' parameter (statelessHMAC over the auth cookie token — the controller recomputes andcompares it). The response envelopes runthrough the standard pipeline (instantiateRawObjects) and registerwith the 'save' event type (onSave beside ready): object envelopesregister/refresh their registry instances, AppErrorenvelopes display in the overlay afterwards. On a successfulblueprint save the stale blueprint instance leaves the registry —the server id replaced it. Errors (HTML answer at a wrong role,empty 500 body, network) tear the promise up, the catch sits in theapp wrapper (overlay).
     </div>
     
 
@@ -2092,7 +2264,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-11-05T15:17:21+01:00
+		on 2026-11-15T14:46:47+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>

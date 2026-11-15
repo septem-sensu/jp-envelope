@@ -113,7 +113,7 @@
 	<dt class="tag-version method-doc-label method-doc-details-label">Version:</dt>
 	<dd class="tag-version">
 		<ul class="dummy">
-			<li>0.2.12</li>
+			<li>0.2.13</li>
 		</ul>
 	</dd>
 	
@@ -711,7 +711,165 @@
     
         <h5>Example</h5>
         
-    <pre class="sunlight-highlight-javascript">const user = await app.newObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
+    <pre class="sunlight-highlight-javascript">const user = await app.loadObject( &#x27;User&#x27;, &#x27;max@musterman.de&#x27; );</pre>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt>
+    <h4 class="name" id="loadObjects"><span class="type-signature">&lt;async> </span>loadObjects(className)</h4>
+    
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        This method demands every object of a business class on demand: itloads the instances of the class over the view viewLoadObjects andregisters them under their ids — templates access the finishedinstances over registry.onLoad/onLoadAll (with replay, timingirrelevant) or await the returned instance array. Every disturbanceruns over the JS error channel as overlay instead of as silentsilence.
+    </div>
+    
+
+    
+
+    
+
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params table table-striped">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>className</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The PHP class name of the objects</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <h5>Returns:</h5>
+    
+            
+<div class="param-desc">
+    instances    The registered object instances (undefined on failure)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise</span>
+
+
+
+    </dd>
+</dl>
+
+
+        
+
+    
+        <h5>Example</h5>
+        
+    <pre class="sunlight-highlight-javascript">const demoOnes = await app.loadObjects( &#x27;DemoOne&#x27; );</pre>
 
 
     
@@ -983,7 +1141,7 @@
             
 <hr>
 <dt>
-    <h4 class="name" id="reportError"><span class="type-signature"></span>reportError(error, source)</h4>
+    <h4 class="name" id="reportError"><span class="type-signature"></span>reportError(error, source, boolFlush)</h4>
     
     
 </dt>
@@ -991,7 +1149,7 @@
 
     
     <div class="description">
-        This method reports a JS error over the error channel: thefrontend stays generic (leak shielding analogous to the PHPchannel), full details only into the console. Total method: thecatch never re-throws — console.error triggers no window.onerror,so an exception in the error channel (e.g. from showError) stopsthe recursion. Own id space errorjs{N}: the PHP envelope idserror{N} would otherwise overwrite a JS error silently in theregister phase.
+        This method reports a JS error over the error channel: thefrontend stays generic (leak shielding analogous to the PHPchannel), full details only into the console. Total method: thecatch never re-throws — console.error triggers no window.onerror,so an exception in the error channel (e.g. from showError) stopsthe recursion. Own id space errorjs{N}: the PHP envelope idserror{N} would otherwise overwrite a JS error silently in theregister phase. With boolFlush the registration flushes thedeferred event queue (default true) — a reporter inside a runningbatch fill (e.g. the dangling reference warning of fillObjects)passes false: a flush there would fire the queued batch eventsbefore the fill is complete.
     </div>
     
 
@@ -1015,6 +1173,8 @@
 
         
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -1042,6 +1202,10 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The occurred error (Error object or message text)</td>
         </tr>
@@ -1066,8 +1230,42 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The origin description of the error</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>boolFlush</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    true
+                
+                </td>
+            
+
+            <td class="description last">True flushes the pending event queue after the registration (default), false keeps the events queued</td>
         </tr>
 
     
@@ -1149,9 +1347,11 @@
         
 
     
-        <h5>Example</h5>
+        <h5>Examples</h5>
         
     <pre class="sunlight-highlight-javascript">app.reportError( error, &#x27;newObject: User&#x27; );</pre>
+
+    <pre class="sunlight-highlight-javascript">app.reportError( error, &#x27;fillObjects: DemoOne&#x27;, false );</pre>
 
 
     
@@ -1469,7 +1669,7 @@
 <span class="jsdoc-message">
 	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a>
 	
-		on 2026-11-05T15:17:21+01:00
+		on 2026-11-15T14:46:47+01:00
 	
 	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
 </span>

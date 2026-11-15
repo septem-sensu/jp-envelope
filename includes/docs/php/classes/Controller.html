@@ -364,6 +364,21 @@ empty stdClass when the class has no field file.</dd>
 <dd>The id of the requested business object (GET/POST parameter &#039;id&#039;).</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/BaseObject.html#property_ownerId">$ownerId</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+<dd>The id of the user who created the object — set by the generic save
+route (viewSaveObject) and the user create action on a create. The
+owner is a permission subject like the role ids: the classPermissions
+map of the view accepts the pseudo role &#039;owner&#039; next to real role
+ids. Deliberately not filtered by NOSERIALIZE (travels to the
+frontend for UI visibility decisions) nor NOSAVE (persists). The
+property is not a declared field, so a client can never deliver or
+overwrite it over the save envelope — ownership changes stay a
+server-side task.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
     <a class="" href="classes/Controller.html#property_presentation">$presentation</a>
     <span>
                         &nbsp;: <a href="classes/Presentation.html"><abbr title="\Presentation">Presentation</abbr></a>            </span>
@@ -431,11 +446,11 @@ frontend gets the generic hard error message as an AppError.</dd>
     <span>
                                 &nbsp;: bool    </span>
 </dt>
-<dd>This method collects an array of soft errors:actions report rejected guards
-here, undexecute() throws the collected errors into the frontend
-Collector as AppError envelopes. The severity must be “Error” or
-&#039;Warning&#039;. The view permission check remains intentionally silent –
-Missing authorizations are not an information channel to the outside world.</dd>
+<dd>This method collects an array of soft errors: actions report rejected
+guards here, and execute() throws the collected errors into the frontend
+collector as AppError envelopes. The severity must be &#039;error&#039; or
+&#039;warning&#039;. The view permission check deliberately stays silent —
+missing permissions are not an information channel to the outside.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/Controller.html#method_addRawObject">addRawObject()</a>
@@ -469,6 +484,23 @@ into the header template as window[appAlias].rawObjects.</dd>
 </dt>
 <dd>This method creates a blueprint instance for the frontend (app.newObject /
 viewNewObject route): empty and unsaved, but with the full field definitions.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_createCsrfToken">createCsrfToken()</a>
+    <span>
+                                &nbsp;: string    </span>
+</dt>
+<dd>This method derives the CSRF token from the raw auth cookie token:
+an HMAC-SHA256 over the cookie token value keyed with a hash of
+passphrase2 (same derivation style as the AES initialization
+vector — passphrase1 stays the AES key material). The token is
+stateless: the server recomputes it per request, nothing is
+stored. It rotates automatically with the auth cookie token
+(re-login, password change) and it is unknown to a cross-site
+attacker (the same origin policy keeps the cookie value and the
+delivered token apart). An empty cookie token (guest) produces a
+deterministic meaningless token — the CSRF guard itself skips
+requests without an auth cookie.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_deCrypte">deCrypte()</a>
@@ -515,17 +547,21 @@ of the actions.</dd>
     <span>
                                 &nbsp;: mixed    </span>
 </dt>
-<dd>This method runs the request: it throws the app context as the first
-envelope (formerly the loader unshift: class file loading and
-instantiation run in the loader in collector order — the app carries
-the user and view context right away via currentUserId,
-currentUserRoleId and currentView), executes the actions of the view
-(a crash is caught and routed into the soft error channel as a
-generic AppError, the details only into the log), throws the
-collected soft errors and the current user into the collector and
-finally executes the view itself. A view crash gets no addError
-(the collector foreach has already run, it would be a zombie
-without a display path): json views answer empty with HTTP
+<dd>This method runs the request: it guards POST requests with an auth
+cookie against CSRF (the delivered token must match the recomputed
+HMAC of the cookie token — a violation is answered before any
+action runs: json softly with an AppError envelope, html with a
+303 redirect to the default view), then throws the app context as
+the first envelope (formerly the loader unshift: class file loading
+and instantiation run in the loader in collector order — the app
+carries the user and view context right away via currentUserId,
+currentUserRoleId, currentView and csrfToken), executes the actions
+of the view (a crash is caught and routed into the soft error
+channel as a generic AppError, the details only into the log),
+throws the collected soft errors and the current user into the
+collector and finally executes the view itself. A view crash gets
+no addError (the collector foreach has already run, it would be a
+zombie without a display path): json views answer empty with HTTP
 500, HTML views answer with the emergency page.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
@@ -546,7 +582,7 @@ in the class json file.</dd>
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_fillObject">fillObject()</a>
     <span>
-                                &nbsp;: void    </span>
+                                &nbsp;: bool    </span>
 </dt>
 <dd>This method fills the instance properties from the persisted entry
 of the object in the class json file. It reads the complete stored
@@ -690,6 +726,21 @@ and additional entropy).</dd>
 and domain guards and to prepare cascades before the entry is removed.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_onLoad">onLoad()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>This method is the lifecycle hook of object instantiation. It fires
+only when initObject() actually loaded a persisted entry (fillObject()
+returned true) — blueprints and instantiations with an unknown or
+empty id stay hook-less. Business classes override it to derive state
+from the loaded entry, warm caches or log on load; the instance itself
+($this) carries the full context and there is no return protocol —
+the framework ignores anything a subclass returns. Unlike onSave and
+onDelete the hook also runs outside a request context (e.g. when
+references instantiate their targets during fillObject()).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_onSave">onSave()</a>
     <span>
                                 &nbsp;: string|null    </span>
@@ -701,6 +752,13 @@ string aborts the save — the message travels to the frontend as an
 AppError envelope; returning null allows the save. The controller
 follows the request context of the save (a null value means the
 save runs outside a request, e.g. in tests).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_ownerId">ownerId()</a>
+    <span>
+                                &nbsp;: string|null    </span>
+</dt>
+<dd>This method returns the id of the user who created the object.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/Controller.html#method_presentation">presentation()</a>
@@ -720,7 +778,10 @@ object (&#039;class&#039; typed) and collection property is embedded into the
 own data payload as a descriptor (with its id respectively its
 element id list), replacing the raw instance value from
 serializeObject() — for multiple reference properties all of their
-descriptors are embedded.</dd>
+descriptors are embedded. Properties filtered by NOSERIALIZE are
+skipped before the reference handling: they carry neither value nor
+descriptor, and their referenced objects are not embedded as sub
+envelopes either.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/Controller.html#method_rawObjects">rawObjects()</a>
@@ -822,7 +883,28 @@ on-demand object loading in the frontend. Invalid class values or
 invalid id values or the object dont exists arrive
 from the request layer already filtered as null — the response is then
 deliberately empty instead of an AppError, because json views do not
-carry an AppError channel.</dd>
+carry an AppError channel. The classPermissions whitelist of the view
+guards the read like the save route (isClassAllowed): a class the map
+does not declare and a failed role id / owner check both answer
+deliberately empty — a denied load hides behind the not-found
+convention (no existence leak).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/BaseObject.html#method_viewLoadObjects">viewLoadObjects()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This method serves the json view behind index.php?view=viewLoadObjects&amp;class=...
+and returns the collector envelope array of every object of the class
+for on-demand bulk loading in the frontend. Invalid class values arrive
+from the request layer already filtered as null — the response is then
+deliberately empty instead of an AppError, because json views do not
+carry an AppError channel. The classPermissions whitelist of the view
+guards the read like the load route (isClassAllowed): a class the map
+does not declare answers deliberately empty, objects with a failed role
+id / owner check are filtered out of the list. The reference sub
+envelopes travel per object (rawObject) — shared references are
+deduplicated by class and id, every envelope travels exactly once.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/BaseObject.html#method_viewNewObject">viewNewObject()</a>
@@ -856,12 +938,31 @@ it the client addresses an existing object (merge update). The route
 accepts only CRUD-capable classes: a BaseObject subclass with a field
 definition — every other class name is silently filtered (like
 viewLoadObject, json views carry no information channel for foreign
-classes). The merged values follow the field contract: only declared
+classes). Beyond the class gate the route enforces the classPermissions
+whitelist of the view: a class the map does not declare answers
+silently empty (as one), a declared class must pass the role id /
+owner check (isClassAllowed) — a failed check gets the permission
+AppError envelope; at a create the ownerId of the logged-in user is
+set on the new instance (the pseudo role &#039;owner&#039; can only fire on
+updates, a blueprint has no owner yet). The merged values follow the
+field contract: only declared
 fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
 password fields are never merged, fields with a roleIds attribute only
 for roles the definition allows and the own id is immutable — at a
 create the delivered id is taken over the declared id field contract,
 the blueprint id itself is ignored (the server generates the id).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -protected">
+    <a class="" href="classes/BaseObject.html#method_crudErrorEnvelope">crudErrorEnvelope()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>This protected method builds the rejection envelope(s) of the generic
+json routes and the CSRF guard of the controller: one AppError
+instance per message (id pattern error{N} over a route-local
+counter), returned as its rawObject envelope array — the client
+overlays report the cards themselves (loader error display), the
+same channel the html views use.</dd>
 
             <dt class="phpdocumentor-table-of-contents__entry -method -protected">
     <a class="" href="classes/BaseObject.html#method_initObject">initObject()</a>
@@ -886,6 +987,32 @@ or an unknown view — silently falls back to the role&#039;s default
 view) and sets the request scope to the view. The id/class parameters
 are stored for the getters only — the business object resolution
 happens in View::executeView().</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -private">
+    <a class="" href="classes/Controller.html#method_isCsrfViolation">isCsrfViolation()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>This method decides whether the request is a CSRF violation: only
+POST requests with an auth cookie token are guarded (GET routes
+are read-only, a guest has no session to abuse — the login POST
+stays outside the guard). The delivered csrfToken parameter must
+equal the recomputed stateless HMAC of the raw cookie token
+(createCsrfToken): a missing or wrong token rejects the request.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -private">
+    <a class="" href="classes/Controller.html#method_rejectCsrf">rejectCsrf()</a>
+    <span>
+                                &nbsp;: string    </span>
+</dt>
+<dd>This method answers a rejected CSRF request without running any
+action: json views receive the soft channel (a single AppError
+envelope with a generic renewal hint — the overlay displays it,
+HTTP 200), html views receive a 303 redirect to the default view
+of the user (the same navigation pattern as User::logout) — the
+fresh page render also delivers a fresh token. The rejection is
+deliberately silent besides the generic message: a CSRF attempt
+is no information channel to the outside.</dd>
 
     </dl>
 
@@ -1672,6 +1799,53 @@ empty stdClass when the class has no field file.</p>
             -protected
                                                                     "
 >
+    <h4 class="phpdocumentor-element__name" id="property_ownerId">
+        $ownerId
+        <a href="classes/BaseObject.html#property_ownerId" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">163</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The id of the user who created the object — set by the generic save
+route (viewSaveObject) and the user create action on a create. The
+owner is a permission subject like the role ids: the classPermissions
+map of the view accepts the pseudo role &#039;owner&#039; next to real role
+ids. Deliberately not filtered by NOSERIALIZE (travels to the
+frontend for UI visibility decisions) nor NOSAVE (persists). The
+property is not a declared field, so a client can never deliver or
+overwrite it over the save envelope — ownership changes stay a
+server-side task.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$ownerId</span>
+    </code>
+
+    
+    
+    
+
+    
+
+    
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
     <h4 class="phpdocumentor-element__name" id="property_presentation">
         $presentation
         <a href="classes/Controller.html#property_presentation" class="headerlink"><i class="fas fa-link"></i></a>
@@ -1896,7 +2070,7 @@ empty stdClass when the class has no field file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">313</span>
+    <span class="phpdocumentor-element-found-in__line">377</span>
 
     </aside>
 
@@ -1991,7 +2165,7 @@ missing permissions are not an information channel to the outside.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">391</span>
+    <span class="phpdocumentor-element-found-in__line">455</span>
 
     </aside>
 
@@ -2065,15 +2239,15 @@ frontend gets the generic hard error message as an AppError.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">341</span>
+    <span class="phpdocumentor-element-found-in__line">405</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method collects an array of soft errors:actions report rejected guards
-here, undexecute() throws the collected errors into the frontend
-Collector as AppError envelopes. The severity must be “Error” or
-&#039;Warning&#039;. The view permission check remains intentionally silent –
-Missing authorizations are not an information channel to the outside world.</p>
+        <p class="phpdocumentor-summary">This method collects an array of soft errors: actions report rejected
+guards here, and execute() throws the collected errors into the frontend
+collector as AppError envelopes. The severity must be &#039;error&#039; or
+&#039;warning&#039;. The view permission check deliberately stays silent —
+missing permissions are not an information channel to the outside.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -2090,7 +2264,7 @@ Missing authorizations are not an information channel to the outside world.</p>
                 : <span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;</span>
                             </dt>
             <dd class="phpdocumentor-argument-list__definition">
-                    <section class="phpdocumentor-description"><p>The array with error message for the frontend</p>
+                    <section class="phpdocumentor-description"><p>The error messages for the frontend</p>
 </section>
 
             </dd>
@@ -2136,7 +2310,7 @@ Missing authorizations are not an information channel to the outside world.</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>$hasAdded = $objController-&gt;addErrors( [ 'Ungültige Eingabe.'. 'Bitte Name angeben.' }, 'createUser', 'warning' );</p>
+                                                 <section class="phpdocumentor-description"><p>$hasAdded = $objController-&gt;addErrors( [ 'Ungültige Eingabe.', 'Bitte Name angeben.' ], 'createUser', 'warning' );</p>
 </section>
 
                                     </dd>
@@ -2168,7 +2342,7 @@ Missing authorizations are not an information channel to the outside world.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">250</span>
+    <span class="phpdocumentor-element-found-in__line">314</span>
 
     </aside>
 
@@ -2235,7 +2409,7 @@ into the header template as window[appAlias].rawObjects.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">226</span>
+    <span class="phpdocumentor-element-found-in__line">242</span>
 
     </aside>
 
@@ -2294,7 +2468,7 @@ into the header template as window[appAlias].rawObjects.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1189</span>
+    <span class="phpdocumentor-element-found-in__line">1558</span>
 
     </aside>
 
@@ -2353,7 +2527,7 @@ into the header template as window[appAlias].rawObjects.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">329</span>
+    <span class="phpdocumentor-element-found-in__line">380</span>
 
     </aside>
 
@@ -2422,6 +2596,95 @@ route.</p>
             -public
                                     -static                    "
 >
+    <h4 class="phpdocumentor-element__name" id="method_createCsrfToken">
+        createCsrfToken()
+        <a href="classes/BaseObject.html#method_createCsrfToken" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">1664</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method derives the CSRF token from the raw auth cookie token:
+an HMAC-SHA256 over the cookie token value keyed with a hash of
+passphrase2 (same derivation style as the AES initialization
+vector — passphrase1 stays the AES key material). The token is
+stateless: the server recomputes it per request, nothing is
+stored. It rotates automatically with the auth cookie token
+(re-login, password change) and it is unknown to a cross-site
+attacker (the same origin policy keeps the cookie value and the
+delivered token apart). An empty cookie token (guest) produces a
+deterministic meaningless token — the CSRF guard itself skips
+requests without an auth cookie.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">createCsrfToken</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strCookieToken</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strCookieToken</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The raw token value of the auth cookie</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_createCsrfToken#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$strCsrfToken = BaseObject::createCsrfToken( Presentation::getCookieProperty( 'token' ) ?? '' );</p>
+</section>
+
+                                    </dd>
+                                                <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">see</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                    <span class="phpdocumentor-tag-link"><abbr title="\BaseObject::getCryptKeys">BaseObject::getCryptKeys</abbr></span>
+                                        
+                                             
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The HMAC-SHA256 CSRF token</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                    -static                    "
+>
     <h4 class="phpdocumentor-element__name" id="method_deCrypte">
         deCrypte()
         <a href="classes/BaseObject.html#method_deCrypte" class="headerlink"><i class="fas fa-link"></i></a>
@@ -2430,7 +2693,7 @@ route.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1241</span>
+    <span class="phpdocumentor-element-found-in__line">1610</span>
 
     </aside>
 
@@ -2503,7 +2766,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1019</span>
+    <span class="phpdocumentor-element-found-in__line">1381</span>
 
     </aside>
 
@@ -2519,6 +2782,14 @@ crypt keys.</p>
         <section class="phpdocumentor-description"><p>It returns false when the file or the entry does not exist.
 The whole read-modify-write cycle runs under an exclusive file
 lock on <file>.lock (see withFileLock).</p>
+<p>The delete propagation runs BEFORE the own entry is removed: phase
+A (deleteReferences) cleans every other loaded business class that
+references the own class, phase B cleans self-references of the
+own class inline within this lock (a nested saveObject would hit
+the held lock and time out). If the propagation fails (e.g. lock
+timeout), the own entry stays intact — the framework routes the
+exception over the soft error channel and a retry heals, because
+the scan is idempotent.</p>
 </section>
 
     
@@ -2566,7 +2837,7 @@ lock on <file>.lock (see withFileLock).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1263</span>
+    <span class="phpdocumentor-element-found-in__line">1632</span>
 
     </aside>
 
@@ -2639,7 +2910,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1226</span>
+    <span class="phpdocumentor-element-found-in__line">1595</span>
 
     </aside>
 
@@ -2710,7 +2981,7 @@ crypt keys.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">292</span>
+    <span class="phpdocumentor-element-found-in__line">356</span>
 
     </aside>
 
@@ -2770,21 +3041,25 @@ of the actions.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">202</span>
+    <span class="phpdocumentor-element-found-in__line">264</span>
 
     </aside>
 
-        <p class="phpdocumentor-summary">This method runs the request: it throws the app context as the first
-envelope (formerly the loader unshift: class file loading and
-instantiation run in the loader in collector order — the app carries
-the user and view context right away via currentUserId,
-currentUserRoleId and currentView), executes the actions of the view
-(a crash is caught and routed into the soft error channel as a
-generic AppError, the details only into the log), throws the
-collected soft errors and the current user into the collector and
-finally executes the view itself. A view crash gets no addError
-(the collector foreach has already run, it would be a zombie
-without a display path): json views answer empty with HTTP
+        <p class="phpdocumentor-summary">This method runs the request: it guards POST requests with an auth
+cookie against CSRF (the delivered token must match the recomputed
+HMAC of the cookie token — a violation is answered before any
+action runs: json softly with an AppError envelope, html with a
+303 redirect to the default view), then throws the app context as
+the first envelope (formerly the loader unshift: class file loading
+and instantiation run in the loader in collector order — the app
+carries the user and view context right away via currentUserId,
+currentUserRoleId, currentView and csrfToken), executes the actions
+of the view (a crash is caught and routed into the soft error
+channel as a generic AppError, the details only into the log),
+throws the collected soft errors and the current user into the
+collector and finally executes the view itself. A view crash gets
+no addError (the collector foreach has already run, it would be a
+zombie without a display path): json views answer empty with HTTP
 500, HTML views answer with the emergency page.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
@@ -2840,7 +3115,7 @@ without a display path): json views answer empty with HTTP
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1104</span>
+    <span class="phpdocumentor-element-found-in__line">1473</span>
 
     </aside>
 
@@ -2921,7 +3196,7 @@ in the class json file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">238</span>
+    <span class="phpdocumentor-element-found-in__line">269</span>
 
     </aside>
 
@@ -2980,7 +3255,7 @@ in the class json file.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">367</span>
+    <span class="phpdocumentor-element-found-in__line">420</span>
 
     </aside>
 
@@ -2995,12 +3270,14 @@ untouched, properties that do not exist on the class are skipped.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
-                    <span class="phpdocumentor-signature__name">fillObject</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+                    <span class="phpdocumentor-signature__name">fillObject</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
 
     <div class="phpdocumentor-label-line">
         </div>
     
-        <section class="phpdocumentor-description"><p>It is a no-op when the id, the class name or the file is missing.</p>
+        <section class="phpdocumentor-description"><p>It is a no-op when the id, the class name or the file is missing —
+the boolean result reports whether an entry was actually loaded,
+so callers can react (e.g. initObject() fires the onLoad hook).</p>
 </section>
 
     
@@ -3016,7 +3293,7 @@ untouched, properties that do not exist on the class are skipped.</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>$objBaseObject-&gt;fillObject();</p>
+                                                 <section class="phpdocumentor-description"><p>$boolLoaded = $objBaseObject-&gt;fillObject();</p>
 </section>
 
                                     </dd>
@@ -3024,7 +3301,15 @@ untouched, properties that do not exist on the class are skipped.</p>
 
     
 
-    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True when the persisted entry was loaded, false on no-op</p>
+</section>
+
+            </section>
+
 </article>
                     <article
         class="phpdocumentor-element
@@ -3040,7 +3325,7 @@ untouched, properties that do not exist on the class are skipped.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">199</span>
+    <span class="phpdocumentor-element-found-in__line">215</span>
 
     </aside>
 
@@ -3113,7 +3398,7 @@ untouched, properties that do not exist on the class are skipped.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1203</span>
+    <span class="phpdocumentor-element-found-in__line">1572</span>
 
     </aside>
 
@@ -3175,7 +3460,7 @@ cryptKeys.php (repo placeholder) and memoizes the result statically.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">293</span>
+    <span class="phpdocumentor-element-found-in__line">344</span>
 
     </aside>
 
@@ -3250,7 +3535,7 @@ initObject() fills the fields property through it.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1085</span>
+    <span class="phpdocumentor-element-found-in__line">1454</span>
 
     </aside>
 
@@ -3333,7 +3618,7 @@ empty or missing.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1166</span>
+    <span class="phpdocumentor-element-found-in__line">1535</span>
 
     </aside>
 
@@ -3407,7 +3692,7 @@ has no entries.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1145</span>
+    <span class="phpdocumentor-element-found-in__line">1514</span>
 
     </aside>
 
@@ -3489,7 +3774,7 @@ has no entries.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1125</span>
+    <span class="phpdocumentor-element-found-in__line">1494</span>
 
     </aside>
 
@@ -3561,7 +3846,7 @@ or null when the class name is empty.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">214</span>
+    <span class="phpdocumentor-element-found-in__line">230</span>
 
     </aside>
 
@@ -3620,7 +3905,7 @@ or null when the class name is empty.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1054</span>
+    <span class="phpdocumentor-element-found-in__line">1423</span>
 
     </aside>
 
@@ -3718,7 +4003,7 @@ the other false.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">345</span>
+    <span class="phpdocumentor-element-found-in__line">396</span>
 
     </aside>
 
@@ -3789,7 +4074,7 @@ the other false.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1289</span>
+    <span class="phpdocumentor-element-found-in__line">1685</span>
 
     </aside>
 
@@ -3866,7 +4151,7 @@ safely.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">369</span>
+    <span class="phpdocumentor-element-found-in__line">433</span>
 
     </aside>
 
@@ -3942,7 +4227,7 @@ instance in a boot crash.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">311</span>
+    <span class="phpdocumentor-element-found-in__line">362</span>
 
     </aside>
 
@@ -4014,7 +4299,7 @@ and additional entropy).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">407</span>
+    <span class="phpdocumentor-element-found-in__line">471</span>
 
     </aside>
 
@@ -4074,7 +4359,7 @@ and additional entropy).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">422</span>
+    <span class="phpdocumentor-element-found-in__line">486</span>
 
     </aside>
 
@@ -4134,7 +4419,7 @@ and additional entropy).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">276</span>
+    <span class="phpdocumentor-element-found-in__line">307</span>
 
     </aside>
 
@@ -4180,7 +4465,7 @@ value means the delete runs outside a request, e.g. in tests).</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>protected function onDelete( ?Controller $objController = null ) : ?string { ... }</p>
+                                                 <section class="phpdocumentor-description"><p>public function onDelete( ?Controller $objController = null ) : ?string { ... }</p>
 </section>
 
                                     </dd>
@@ -4204,6 +4489,65 @@ value means the delete runs outside a request, e.g. in tests).</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_onLoad">
+        onLoad()
+        <a href="classes/BaseObject.html#method_onLoad" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">327</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method is the lifecycle hook of object instantiation. It fires
+only when initObject() actually loaded a persisted entry (fillObject()
+returned true) — blueprints and instantiations with an unknown or
+empty id stay hook-less. Business classes override it to derive state
+from the loaded entry, warm caches or log on load; the instance itself
+($this) carries the full context and there is no return protocol —
+the framework ignores anything a subclass returns. Unlike onSave and
+onDelete the hook also runs outside a request context (e.g. when
+references instantiate their targets during fillObject()).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">onLoad</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_onLoad#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>public function onLoad() : void { ... }</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_onSave">
         onSave()
         <a href="classes/BaseObject.html#method_onSave" class="headerlink"><i class="fas fa-link"></i></a>
@@ -4212,7 +4556,7 @@ value means the delete runs outside a request, e.g. in tests).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">257</span>
+    <span class="phpdocumentor-element-found-in__line">288</span>
 
     </aside>
 
@@ -4257,7 +4601,7 @@ save runs outside a request, e.g. in tests).</p>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
-                                                 <section class="phpdocumentor-description"><p>protected function onSave( ?Controller $objController = null ) : ?string { ... }</p>
+                                                 <section class="phpdocumentor-description"><p>public function onSave( ?Controller $objController = null ) : ?string { ... }</p>
 </section>
 
                                     </dd>
@@ -4281,6 +4625,66 @@ save runs outside a request, e.g. in tests).</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_ownerId">
+        ownerId()
+        <a href="classes/BaseObject.html#method_ownerId" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">255</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method returns the id of the user who created the object.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">ownerId</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_ownerId#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$strOwnerId = $objBaseObject-&gt;ownerId();</p>
+</section>
+
+                                    </dd>
+                        </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string|null</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The owner id or null when not set (blueprints
+and entries persisted before the owner concept)</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_presentation">
         presentation()
         <a href="classes/Controller.html#method_presentation" class="headerlink"><i class="fas fa-link"></i></a>
@@ -4289,7 +4693,7 @@ save runs outside a request, e.g. in tests).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">478</span>
+    <span class="phpdocumentor-element-found-in__line">542</span>
 
     </aside>
 
@@ -4348,7 +4752,7 @@ save runs outside a request, e.g. in tests).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">893</span>
+    <span class="phpdocumentor-element-found-in__line">1108</span>
 
     </aside>
 
@@ -4358,7 +4762,10 @@ object (&#039;class&#039; typed) and collection property is embedded into the
 own data payload as a descriptor (with its id respectively its
 element id list), replacing the raw instance value from
 serializeObject() — for multiple reference properties all of their
-descriptors are embedded.</p>
+descriptors are embedded. Properties filtered by NOSERIALIZE are
+skipped before the reference handling: they carry neither value nor
+descriptor, and their referenced objects are not embedded as sub
+envelopes either.</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -4432,7 +4839,7 @@ descriptors are embedded.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">279</span>
+    <span class="phpdocumentor-element-found-in__line">343</span>
 
     </aside>
 
@@ -4492,7 +4899,7 @@ descriptors are embedded.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">464</span>
+    <span class="phpdocumentor-element-found-in__line">528</span>
 
     </aside>
 
@@ -4551,7 +4958,7 @@ descriptors are embedded.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">1313</span>
+    <span class="phpdocumentor-element-found-in__line">1709</span>
 
     </aside>
 
@@ -4624,7 +5031,7 @@ and writes it to the file with an exclusive lock.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">953</span>
+    <span class="phpdocumentor-element-found-in__line">1171</span>
 
     </aside>
 
@@ -4679,7 +5086,7 @@ runs under an exclusive file lock on &lt;file&gt;.lock (see withFileLock).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">864</span>
+    <span class="phpdocumentor-element-found-in__line">1076</span>
 
     </aside>
 
@@ -4741,7 +5148,7 @@ constant are removed (e.g. the password hash of a user).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">981</span>
+    <span class="phpdocumentor-element-found-in__line">1199</span>
 
     </aside>
 
@@ -4806,7 +5213,7 @@ here — a user&#039;s password hash must be persisted after all.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">450</span>
+    <span class="phpdocumentor-element-found-in__line">514</span>
 
     </aside>
 
@@ -4865,7 +5272,7 @@ here — a user&#039;s password hash must be persisted after all.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">493</span>
+    <span class="phpdocumentor-element-found-in__line">552</span>
 
     </aside>
 
@@ -4939,7 +5346,7 @@ template output is returned.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">789</span>
+    <span class="phpdocumentor-element-found-in__line">935</span>
 
     </aside>
 
@@ -4956,10 +5363,16 @@ see viewSaveObject) — every other class name is silently filtered.</p>
     <div class="phpdocumentor-label-line">
         </div>
     
-        <section class="phpdocumentor-description"><p>The onDelete hook runs before the persistence and can abort the delete
-with its message as an AppError envelope. A successful response is
-empty (the envelope no longer exists — the client removes its registry
-instance), a lost delete race reports the AppError envelope.</p>
+        <section class="phpdocumentor-description"><p>The classPermissions whitelist of the view guards the delete like the
+save route: an undeclared class answers silently empty, a failed
+role id / owner check gets the permission AppError envelope — both
+before the onDelete hook. The onDelete hook runs before the
+persistence and can abort the delete
+with its message as an AppError envelope. A successful response
+carries the rawObject envelopes of the deleted object (reference sub
+envelopes in front, own envelope last — the client registers the
+instance before remove fires the delete events), a lost delete race
+or hook rejection reports the AppError envelopes.</p>
 </section>
 
         <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
@@ -4999,7 +5412,7 @@ instance), a lost delete race reports the AppError envelope.</p>
         <h5 class="phpdocumentor-return-value__heading">Return values</h5>
         <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
                     &mdash;
-                <section class="phpdocumentor-description"><p>Empty on success or the rejection AppError envelopes</p>
+                <section class="phpdocumentor-description"><p>The deleted object envelopes on success or the rejection AppError envelopes</p>
 </section>
 
             </section>
@@ -5019,7 +5432,7 @@ instance), a lost delete race reports the AppError envelope.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">510</span>
+    <span class="phpdocumentor-element-found-in__line">569</span>
 
     </aside>
 
@@ -5092,7 +5505,7 @@ instance), a lost delete race reports the AppError envelope.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">554</span>
+    <span class="phpdocumentor-element-found-in__line">617</span>
 
     </aside>
 
@@ -5102,7 +5515,11 @@ on-demand object loading in the frontend. Invalid class values or
 invalid id values or the object dont exists arrive
 from the request layer already filtered as null — the response is then
 deliberately empty instead of an AppError, because json views do not
-carry an AppError channel.</p>
+carry an AppError channel. The classPermissions whitelist of the view
+guards the read like the save route (isClassAllowed): a class the map
+does not declare and a failed role id / owner check both answer
+deliberately empty — a denied load hides behind the not-found
+convention (no existence leak).</p>
 
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility">public</span>
@@ -5161,6 +5578,95 @@ carry an AppError channel.</p>
             -public
                                                         "
 >
+    <h4 class="phpdocumentor-element__name" id="method_viewLoadObjects">
+        viewLoadObjects()
+        <a href="classes/BaseObject.html#method_viewLoadObjects" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">656</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method serves the json view behind index.php?view=viewLoadObjects&amp;class=...
+and returns the collector envelope array of every object of the class
+for on-demand bulk loading in the frontend. Invalid class values arrive
+from the request layer already filtered as null — the response is then
+deliberately empty instead of an AppError, because json views do not
+carry an AppError channel. The classPermissions whitelist of the view
+guards the read like the load route (isClassAllowed): a class the map
+does not declare answers deliberately empty, objects with a failed role
+id / owner check are filtered out of the list. The reference sub
+envelopes travel per object (rawObject) — shared references are
+deduplicated by class and id, every envelope travels exactly once.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">viewLoadObjects</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The controller instance of the request</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_viewLoadObjects#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$arrEnvelopes = $objBaseObject-&gt;viewLoadObjects( $objController );</p>
+</section>
+
+                                    </dd>
+                                                <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">see</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                    <span class="phpdocumentor-tag-link"><abbr title="\BaseObject::viewLoadObject">BaseObject::viewLoadObject</abbr></span>
+                                        
+                                             
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The collector envelope array of the class or an empty array</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
     <h4 class="phpdocumentor-element__name" id="method_viewNewObject">
         viewNewObject()
         <a href="classes/BaseObject.html#method_viewNewObject" class="headerlink"><i class="fas fa-link"></i></a>
@@ -5169,7 +5675,7 @@ carry an AppError channel.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">528</span>
+    <span class="phpdocumentor-element-found-in__line">587</span>
 
     </aside>
 
@@ -5245,7 +5751,7 @@ carry an AppError channel.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">436</span>
+    <span class="phpdocumentor-element-found-in__line">500</span>
 
     </aside>
 
@@ -5304,7 +5810,7 @@ carry an AppError channel.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">597</span>
+    <span class="phpdocumentor-element-found-in__line">724</span>
 
     </aside>
 
@@ -5316,7 +5822,14 @@ it the client addresses an existing object (merge update). The route
 accepts only CRUD-capable classes: a BaseObject subclass with a field
 definition — every other class name is silently filtered (like
 viewLoadObject, json views carry no information channel for foreign
-classes). The merged values follow the field contract: only declared
+classes). Beyond the class gate the route enforces the classPermissions
+whitelist of the view: a class the map does not declare answers
+silently empty (as one), a declared class must pass the role id /
+owner check (isClassAllowed) — a failed check gets the permission
+AppError envelope; at a create the ownerId of the logged-in user is
+set on the new instance (the pseudo role &#039;owner&#039; can only fire on
+updates, a blueprint has no owner yet). The merged values follow the
+field contract: only declared
 fields arrive on the instance, NOSERIALIZE/NOSAVE properties and
 password fields are never merged, fields with a roleIds attribute only
 for roles the definition allows and the own id is immutable — at a
@@ -5388,6 +5901,91 @@ instance.</p>
         class="phpdocumentor-element
             -method
             -protected
+                                    -static                    "
+>
+    <h4 class="phpdocumentor-element__name" id="method_crudErrorEnvelope">
+        crudErrorEnvelope()
+        <a href="classes/BaseObject.html#method_crudErrorEnvelope" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">1057</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This protected method builds the rejection envelope(s) of the generic
+json routes and the CSRF guard of the controller: one AppError
+instance per message (id pattern error{N} over a route-local
+counter), returned as its rawObject envelope array — the client
+overlays report the cards themselves (loader error display), the
+same channel the html views use.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">crudErrorEnvelope</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strMessage</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strSource</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strMessage</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The rejection message for the frontend</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strSource</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The route, hook or guard source (e.g. 'viewSaveObject')</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/BaseObject.html#method_crudErrorEnvelope#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>return self::crudErrorEnvelope( 'Ungültiges Objekt übermittelt.', 'viewSaveObject' );</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The AppError envelope as single-element array</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -protected
                                                         "
 >
     <h4 class="phpdocumentor-element__name" id="method_initObject">
@@ -5398,7 +5996,7 @@ instance.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/baseObject.php"><a href="files/classes-baseobject.html"><abbr title="classes/baseObject.php">baseObject.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">178</span>
+    <span class="phpdocumentor-element-found-in__line">194</span>
 
     </aside>
 
@@ -5507,6 +6105,152 @@ happens in View::executeView().</p>
     
 
     
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -private
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isCsrfViolation">
+        isCsrfViolation()
+        <a href="classes/Controller.html#method_isCsrfViolation" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">198</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method decides whether the request is a CSRF violation: only
+POST requests with an auth cookie token are guarded (GET routes
+are read-only, a guest has no session to abuse — the login POST
+stays outside the guard). The delivered csrfToken parameter must
+equal the recomputed stateless HMAC of the raw cookie token
+(createCsrfToken): a missing or wrong token rejects the request.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">private</span>
+                    <span class="phpdocumentor-signature__name">isCsrfViolation</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/Controller.html#method_isCsrfViolation#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>if( $this-&gt;isCsrfViolation() ) return $this-&gt;rejectCsrf();</p>
+</section>
+
+                                    </dd>
+                                                <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">see</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                    <span class="phpdocumentor-tag-link"><abbr title="\Controller::rejectCsrf">Controller::rejectCsrf</abbr></span>
+                                        
+                                             
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>True when the request must be rejected as a CSRF violation</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -private
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_rejectCsrf">
+        rejectCsrf()
+        <a href="classes/Controller.html#method_rejectCsrf" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/controller.php"><a href="files/classes-controller.html"><abbr title="classes/controller.php">controller.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">229</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method answers a rejected CSRF request without running any
+action: json views receive the soft channel (a single AppError
+envelope with a generic renewal hint — the overlay displays it,
+HTTP 200), html views receive a 303 redirect to the default view
+of the user (the same navigation pattern as User::logout) — the
+fresh page render also delivers a fresh token. The rejection is
+deliberately silent besides the generic message: a CSRF attempt
+is no information channel to the outside.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">private</span>
+                    <span class="phpdocumentor-signature__name">rejectCsrf</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/Controller.html#method_rejectCsrf#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>if( $this-&gt;isCsrfViolation() ) return $this-&gt;rejectCsrf();</p>
+</section>
+
+                                    </dd>
+                                                <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">see</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                    <span class="phpdocumentor-tag-link"><abbr title="\Controller::isCsrfViolation">Controller::isCsrfViolation</abbr></span>
+                                        
+                                             
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The json payload or an empty string (html redirect)</p>
+</section>
+
+            </section>
+
 </article>
             </section>
 
@@ -5650,6 +6394,7 @@ happens in View::executeView().</p>
                                                     <li class=""><a href="classes/BaseObject.html#property_id">$id</a></li>
                                                     <li class=""><a href="classes/Controller.html#property_objectClass">$objectClass</a></li>
                                                     <li class=""><a href="classes/Controller.html#property_objectId">$objectId</a></li>
+                                                    <li class=""><a href="classes/BaseObject.html#property_ownerId">$ownerId</a></li>
                                                     <li class=""><a href="classes/Controller.html#property_presentation">$presentation</a></li>
                                                     <li class=""><a href="classes/Controller.html#property_role">$role</a></li>
                                                     <li class=""><a href="classes/Controller.html#property_user">$user</a></li>
@@ -5668,6 +6413,7 @@ happens in View::executeView().</p>
                                             <li class=""><a href="classes/BaseObject.html#method_className">className()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_config">config()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_createBlueprint">createBlueprint()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_createCsrfToken">createCsrfToken()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_deCrypte">deCrypte()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_deleteObject">deleteObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_enCrypte">enCrypte()</a></li>
@@ -5693,7 +6439,9 @@ happens in View::executeView().</p>
                                             <li class=""><a href="classes/Controller.html#method_objectClass">objectClass()</a></li>
                                             <li class=""><a href="classes/Controller.html#method_objectId">objectId()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_onDelete">onDelete()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_onLoad">onLoad()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_onSave">onSave()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_ownerId">ownerId()</a></li>
                                             <li class=""><a href="classes/Controller.html#method_presentation">presentation()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_rawObject">rawObject()</a></li>
                                             <li class=""><a href="classes/Controller.html#method_rawObjects">rawObjects()</a></li>
@@ -5707,11 +6455,15 @@ happens in View::executeView().</p>
                                             <li class=""><a href="classes/BaseObject.html#method_viewDeleteObject">viewDeleteObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewJson">viewJson()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewLoadObject">viewLoadObject()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_viewLoadObjects">viewLoadObjects()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewNewObject">viewNewObject()</a></li>
                                             <li class=""><a href="classes/Controller.html#method_viewObject">viewObject()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_viewSaveObject">viewSaveObject()</a></li>
+                                            <li class=""><a href="classes/BaseObject.html#method_crudErrorEnvelope">crudErrorEnvelope()</a></li>
                                             <li class=""><a href="classes/BaseObject.html#method_initObject">initObject()</a></li>
                                             <li class=""><a href="classes/Controller.html#method_init">init()</a></li>
+                                            <li class=""><a href="classes/Controller.html#method_isCsrfViolation">isCsrfViolation()</a></li>
+                                            <li class=""><a href="classes/Controller.html#method_rejectCsrf">rejectCsrf()</a></li>
                                     </ul>
             </li>
                     </ul>

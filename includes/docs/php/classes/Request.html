@@ -233,6 +233,18 @@ cleared by setScope() and reset()).</dd>
 </h4>
 <dl class="phpdocumentor-table-of-contents">
             <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/Request.html#method_method">method()</a>
+    <span>
+                                &nbsp;: string    </span>
+</dt>
+<dd>This method returns the HTTP method of the request in upper case
+(e.g. &#039;GET&#039;, &#039;POST&#039;). $_SERVER is read here — the request is the
+single superglobal access point of the framework, and the method
+is request metadata beside the GET/POST parameters. A missing
+method information (e.g. CLI runs of the regression suites)
+resolves as &#039;GET&#039;.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
     <a class="" href="classes/Request.html#method_param">param()</a>
     <span>
                                 &nbsp;: mixed    </span>
@@ -498,6 +510,70 @@ cleared by setScope() and reset()).</p>
             -public
                                     -static                    "
 >
+    <h4 class="phpdocumentor-element__name" id="method_method">
+        method()
+        <a href="classes/Request.html#method_method" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">98</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This method returns the HTTP method of the request in upper case
+(e.g. &#039;GET&#039;, &#039;POST&#039;). $_SERVER is read here — the request is the
+single superglobal access point of the framework, and the method
+is request metadata beside the GET/POST parameters. A missing
+method information (e.g. CLI runs of the regression suites)
+resolves as &#039;GET&#039;.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">method</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+    <h5 class="phpdocumentor-tag-list__heading" id="tags">
+        Tags
+        <a href="classes/Request.html#method_method#tags" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h5>
+    <dl class="phpdocumentor-tag-list">
+                                    <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>if( Request::method() === 'POST' ) { ... }</p>
+</section>
+
+                                    </dd>
+                                            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string</span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The HTTP method in upper case ('GET' default)</p>
+</section>
+
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                    -static                    "
+>
     <h4 class="phpdocumentor-element__name" id="method_param">
         param()
         <a href="classes/Request.html#method_param" class="headerlink"><i class="fas fa-link"></i></a>
@@ -582,7 +658,7 @@ strings and arrays count as absent.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">119</span>
+    <span class="phpdocumentor-element-found-in__line">136</span>
 
     </aside>
 
@@ -635,7 +711,7 @@ strings and arrays count as absent.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">99</span>
+    <span class="phpdocumentor-element-found-in__line">116</span>
 
     </aside>
 
@@ -712,7 +788,7 @@ A missing view branch in params.json throws a RuntimeException (fail-loud).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">185</span>
+    <span class="phpdocumentor-element-found-in__line">202</span>
 
     </aside>
 
@@ -805,7 +881,7 @@ RuntimeException (fail-loud misconfiguration guard).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">212</span>
+    <span class="phpdocumentor-element-found-in__line">229</span>
 
     </aside>
 
@@ -879,7 +955,7 @@ values (e.g. arrays) count as absent and return null.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">163</span>
+    <span class="phpdocumentor-element-found-in__line">180</span>
 
     </aside>
 
@@ -952,7 +1028,7 @@ parameters return null (fail-closed).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">140</span>
+    <span class="phpdocumentor-element-found-in__line">157</span>
 
     </aside>
 
@@ -1017,7 +1093,7 @@ runtime input case).</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">275</span>
+    <span class="phpdocumentor-element-found-in__line">292</span>
 
     </aside>
 
@@ -1108,7 +1184,7 @@ comparison). Otherwise the configured default is returned.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">253</span>
+    <span class="phpdocumentor-element-found-in__line">270</span>
 
     </aside>
 
@@ -1199,7 +1275,7 @@ comparison). Otherwise the configured default is returned.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="classes/request.php"><a href="files/classes-request.html"><abbr title="classes/request.php">request.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">233</span>
+    <span class="phpdocumentor-element-found-in__line">250</span>
 
     </aside>
 
@@ -1409,6 +1485,7 @@ rejecting the request (fail-closed with a well-defined value).</p>
                         <li class="phpdocumentor-on-this-page-section__title">Methods</li>
             <li>
                 <ul class="phpdocumentor-list -clean">
+                                            <li class=""><a href="classes/Request.html#method_method">method()</a></li>
                                             <li class=""><a href="classes/Request.html#method_param">param()</a></li>
                                             <li class=""><a href="classes/Request.html#method_reset">reset()</a></li>
                                             <li class=""><a href="classes/Request.html#method_setScope">setScope()</a></li>

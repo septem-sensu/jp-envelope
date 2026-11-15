@@ -26,6 +26,11 @@ Search.appendIndex(
             "summary": "The\u0020serialized\u0020view\u0020configuration\u0020of\u0020the\u0020request.",
             "url": "classes/App.html#property_currentView"
         },                {
+            "fqsen": "\\App\u003A\u003A\u0024csrfToken",
+            "name": "csrfToken",
+            "summary": "The\u0020CSRF\u0020token\u0020of\u0020the\u0020request\u003A\u0020a\u0020stateless\u0020HMAC\u0020over\u0020the\u0020raw\u0020auth\ncookie\u0020token\u0020\u0028createCsrfToken\u0029,\u0020empty\u0020for\u0020guests.\u0020It\u0020rotates\u0020with\nthe\u0020auth\u0020cookie\u0020token\u0020\u0028re\u002Dlogin,\u0020password\u0020change\u0029.\u0020The\u0020client\nappends\u0020it\u0020to\u0020every\u0020POST\u0020request\u0020\u0028fetch\u0020routes\u0020and\u0020native\u0020form\nsubmissions\u0029\u0020\u2014\u0020the\u0020controller\u0020validates\u0020it\u0020against\u0020the\u0020recomputed\ntoken\u0020\u0028isCsrfViolation\u0029.",
+            "url": "classes/App.html#property_csrfToken"
+        },                {
             "fqsen": "\\AppError",
             "name": "AppError",
             "summary": "This\u0020class\u0020represents\u0020a\u0020soft\u0020error\u0020for\u0020the\u0020storefront.",
@@ -63,12 +68,12 @@ Search.appendIndex(
         },                {
             "fqsen": "\\BaseCollection\u003A\u003Apush\u0028\u0029",
             "name": "push",
-            "summary": "This\u0020method\u0020appends\u0020one\u0020element\u0020or\u0020multiple\u0020elements\u0020at\u0020the\u0020end\u0020of\nthe\u0020collection.\u0020Non\u002Darray\u0020input\u0020is\u0020taken\u0020as\u0020a\u0020single\u0020element,\u0020array\ninput\u0020is\u0020appended\u0020element\u0020by\u0020element\u0020in\u0020the\u0020given\u0020order.\u0020Every\nelement\u0020must\u0020be\u0020an\u0020instance\u0020of\u0020getAllowedType\u0028\u0029,\u0020otherwise\u0020an\nInvalidArgumentException\u0020is\u0020thrown\u003B\u0020elements\u0020appended\u0020before\u0020the\nmismatch\u0020stay\u0020in\u0020place.",
+            "summary": "This\u0020method\u0020appends\u0020one\u0020element\u0020or\u0020multiple\u0020elements\u0020at\u0020the\u0020end\u0020of\nthe\u0020collection.\u0020Non\u002Darray\u0020input\u0020is\u0020taken\u0020as\u0020a\u0020single\u0020element,\u0020array\ninput\u0020is\u0020appended\u0020element\u0020by\u0020element\u0020in\u0020the\u0020given\u0020order.\u0020Every\nelement\u0020must\u0020be\u0020an\u0020instance\u0020of\u0020getAllowedType\u0028\u0029,\u0020otherwise\u0020an\nInvalidArgumentException\u0020is\u0020thrown\u003B\u0020elements\u0020appended\u0020before\u0020the\nmismatch\u0020stay\u0020in\u0020place.\u0020With\u0020onlyUnique\u0020\u0028the\u0020default\u0029\u0020an\u0020element\nwhose\u0020id\u0020is\u0020already\u0020in\u0020the\u0020collection\u0020is\u0020skipped\u0020silently,\u0020both\nfor\u0020the\u0020single\u0020element\u0020and\u0020within\u0020the\u0020given\u0020array\u003B\u0020with\n\u0024boolOnlyUnique\u0020\u003D\u0020false\u0020duplicates\u0020are\u0020appended\u0020as\u0020usual.",
             "url": "classes/BaseCollection.html#method_push"
         },                {
             "fqsen": "\\BaseCollection\u003A\u003Aunshift\u0028\u0029",
             "name": "unshift",
-            "summary": "This\u0020method\u0020prepends\u0020one\u0020element\u0020or\u0020multiple\u0020elements\u0020at\u0020the\nfront\u0020of\u0020the\u0020collection.\u0020Non\u002Darray\u0020input\u0020is\u0020taken\u0020as\u0020a\u0020single\nelement,\u0020array\u0020input\u0020is\u0020prepended\u0020as\u0020a\u0020whole,\u0020preserving\u0020its\norder\u0020\u0028the\u0020iteration\u0020over\u0020the\u0020reversed\u0020array\u0029.\u0020Every\u0020element\nmust\u0020be\u0020an\u0020instance\u0020of\u0020getAllowedType\u0028\u0029,\u0020otherwise\u0020an\nInvalidArgumentException\u0020is\u0020thrown\u003B\u0020elements\u0020prepended\u0020before\nthe\u0020mismatch\u0020stay\u0020in\u0020place.",
+            "summary": "This\u0020method\u0020prepends\u0020one\u0020element\u0020or\u0020multiple\u0020elements\u0020at\u0020the\nfront\u0020of\u0020the\u0020collection.\u0020Non\u002Darray\u0020input\u0020is\u0020taken\u0020as\u0020a\u0020single\nelement,\u0020array\u0020input\u0020is\u0020prepended\u0020as\u0020a\u0020whole,\u0020preserving\u0020its\norder\u0020\u0028the\u0020iteration\u0020over\u0020the\u0020reversed\u0020array\u0029.\u0020Every\u0020element\nmust\u0020be\u0020an\u0020instance\u0020of\u0020getAllowedType\u0028\u0029,\u0020otherwise\u0020an\nInvalidArgumentException\u0020is\u0020thrown\u003B\u0020elements\u0020prepended\u0020before\nthe\u0020mismatch\u0020stay\u0020in\u0020place.\u0020With\u0020onlyUnique\u0020\u0028the\u0020default\u0029\u0020an\nelement\u0020whose\u0020id\u0020is\u0020already\u0020in\u0020the\u0020collection\u0020is\u0020skipped\nsilently,\u0020both\u0020for\u0020the\u0020single\u0020element\u0020and\u0020within\u0020the\u0020given\narray\u003B\u0020with\u0020\u0024boolOnlyUnique\u0020\u003D\u0020false\u0020duplicates\u0020are\u0020prepended\nas\u0020usual.",
             "url": "classes/BaseCollection.html#method_unshift"
         },                {
             "fqsen": "\\BaseCollection\u003A\u003Apop\u0028\u0029",
@@ -146,6 +151,11 @@ Search.appendIndex(
             "summary": "This\u0020method\u0020returns\u0020the\u0020class\u0020name\u0020of\u0020the\u0020instance.",
             "url": "classes/BaseObject.html#method_className"
         },                {
+            "fqsen": "\\BaseObject\u003A\u003A\u0024ownerId",
+            "name": "ownerId",
+            "summary": "The\u0020id\u0020of\u0020the\u0020user\u0020who\u0020created\u0020the\u0020object\u0020\u2014\u0020set\u0020by\u0020the\u0020generic\u0020save\nroute\u0020\u0028viewSaveObject\u0029\u0020and\u0020the\u0020user\u0020create\u0020action\u0020on\u0020a\u0020create.\u0020The\nowner\u0020is\u0020a\u0020permission\u0020subject\u0020like\u0020the\u0020role\u0020ids\u003A\u0020the\u0020classPermissions\nmap\u0020of\u0020the\u0020view\u0020accepts\u0020the\u0020pseudo\u0020role\u0020\u0027owner\u0027\u0020next\u0020to\u0020real\u0020role\nids.\u0020Deliberately\u0020not\u0020filtered\u0020by\u0020NOSERIALIZE\u0020\u0028travels\u0020to\u0020the\nfrontend\u0020for\u0020UI\u0020visibility\u0020decisions\u0029\u0020nor\u0020NOSAVE\u0020\u0028persists\u0029.\u0020The\nproperty\u0020is\u0020not\u0020a\u0020declared\u0020field,\u0020so\u0020a\u0020client\u0020can\u0020never\u0020deliver\u0020or\noverwrite\u0020it\u0020over\u0020the\u0020save\u0020envelope\u0020\u2014\u0020ownership\u0020changes\u0020stay\u0020a\nserver\u002Dside\u0020task.",
+            "url": "classes/BaseObject.html#property_ownerId"
+        },                {
             "fqsen": "\\BaseObject\u003A\u003A\u0024fields",
             "name": "fields",
             "summary": "The\u0020form\u0020field\u0020definitions\u0020loaded\u0020from\u0020FILEPATHFIELDS,\nempty\u0020stdClass\u0020when\u0020the\u0020class\u0020has\u0020no\u0020field\u0020file.",
@@ -160,6 +170,11 @@ Search.appendIndex(
             "name": "onDelete",
             "summary": "This\u0020method\u0020is\u0020the\u0020lifecycle\u0020hook\u0020of\u0020the\u0020generic\u0020delete\u0020route\n\u0028viewDeleteObject\u0029.\u0020Business\u0020classes\u0020override\u0020it\u0020to\u0020enforce\u0020ownership\nand\u0020domain\u0020guards\u0020and\u0020to\u0020prepare\u0020cascades\u0020before\u0020the\u0020entry\u0020is\u0020removed.",
             "url": "classes/BaseObject.html#method_onDelete"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AonLoad\u0028\u0029",
+            "name": "onLoad",
+            "summary": "This\u0020method\u0020is\u0020the\u0020lifecycle\u0020hook\u0020of\u0020object\u0020instantiation.\u0020It\u0020fires\nonly\u0020when\u0020initObject\u0028\u0029\u0020actually\u0020loaded\u0020a\u0020persisted\u0020entry\u0020\u0028fillObject\u0028\u0029\nreturned\u0020true\u0029\u0020\u2014\u0020blueprints\u0020and\u0020instantiations\u0020with\u0020an\u0020unknown\u0020or\nempty\u0020id\u0020stay\u0020hook\u002Dless.\u0020Business\u0020classes\u0020override\u0020it\u0020to\u0020derive\u0020state\nfrom\u0020the\u0020loaded\u0020entry,\u0020warm\u0020caches\u0020or\u0020log\u0020on\u0020load\u003B\u0020the\u0020instance\u0020itself\n\u0028\u0024this\u0029\u0020carries\u0020the\u0020full\u0020context\u0020and\u0020there\u0020is\u0020no\u0020return\u0020protocol\u0020\u2014\nthe\u0020framework\u0020ignores\u0020anything\u0020a\u0020subclass\u0020returns.\u0020Unlike\u0020onSave\u0020and\nonDelete\u0020the\u0020hook\u0020also\u0020runs\u0020outside\u0020a\u0020request\u0020context\u0020\u0028e.g.\u0020when\nreferences\u0020instantiate\u0020their\u0020targets\u0020during\u0020fillObject\u0028\u0029\u0029.",
+            "url": "classes/BaseObject.html#method_onLoad"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AgetFieldsOfClass\u0028\u0029",
             "name": "getFieldsOfClass",
@@ -188,7 +203,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\BaseObject\u003A\u003AgetCollectionAllowedType\u0028\u0029",
             "name": "getCollectionAllowedType",
-            "summary": "This\u0020method\u0020resolves\u0020the\u0020allowed\u0020element\u0020class\u0020of\u0020a\u0020collection\nproperty\u0020via\u0020reflection\u003A\u0020it\u0020instantiates\u0020the\u0020declared\u0020collection\nclass\u0020without\u0020constructor\u0020and\u0020asks\u0020its\u0020getAllowedType\u0028\u0029.\u0020It\u0020is\nused\u0020by\u0020fillObject\u0028\u0029\u0020to\u0020build\u0020the\u0020element\u0020instances\u0020from\u0020the\nstored\u0020id\u0020list\u0020and\u0020by\u0020rawObject\u0028\u0029\u0020to\u0020report\u0020the\u0020element\u0020class\u0020in\nthe\u0020frontend\u0020envelopes.\u0020The\u0020declared\u0020collection\u0020type\u0020must\u0020be\nconcrete\u0020\u2014\u0020an\u0020abstract\u0020collection\u0020type\u0020would\u0020throw\u0020a\nReflectionException\u0020\u0028fail\u0020loud\u0029.",
+            "summary": "This\u0020method\u0020resolves\u0020the\u0020allowed\u0020element\u0020class\u0020of\u0020a\u0020collection\nproperty\u0020via\u0020reflection\u003A\u0020it\u0020instantiates\u0020the\u0020declared\u0020collection\nclass\u0020without\u0020constructor\u0020and\u0020asks\u0020its\u0020getAllowedType\u0028\u0029.\u0020It\u0020is\nused\u0020by\u0020fillObject\u0028\u0029\u0020to\u0020build\u0020the\u0020element\u0020instances\u0020from\u0020the\nstored\u0020id\u0020list,\u0020by\u0020rawObject\u0028\u0029\u0020to\u0020report\u0020the\u0020element\u0020class\u0020in\nthe\u0020frontend\u0020envelopes\u0020and\u0020by\u0020referenceProperties\u0028\u0029\u0020to\u0020find\u0020the\ncollection\u0020properties\u0020that\u0020reference\u0020a\u0020deleted\u0020class.\u0020The\u0020declared\ncollection\u0020type\u0020must\u0020be\u0020concrete\u0020\u2014\u0020an\u0020abstract\u0020collection\u0020type\nwould\u0020throw\u0020a\u0020ReflectionException\u0020\u0028fail\u0020loud\u0029.",
             "url": "classes/BaseObject.html#method_getCollectionAllowedType"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AgetPropertyType\u0028\u0029",
@@ -198,7 +213,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\BaseObject\u003A\u003AgetPropertyClass\u0028\u0029",
             "name": "getPropertyClass",
-            "summary": "This\u0020method\u0020returns\u0020the\u0020declared\u0020class\u0020name\u0020of\u0020a\u0020typed\u0020property\u0020as\u0020a\nstring.\u0020It\u0020is\u0020used\u0020to\u0020instantiate\u0020business\u0020object\u0020references\u0020and\ncollection\u0020properties\u0020from\u0020the\u0020stored\u0020id\u0020during\u0020fillObject\u0028\u0029.\u0020The\ntype\u0020name\u0020is\u0020read\u0020via\u0020getName\u0028\u0029,\u0020so\u0020a\u0020nullable\u0020declaration\u0020returns\nthe\u0020bare\u0020class\u0020name\u0020without\u0020the\u0020\u0027\u003F\u0027\u0020prefix.\u0020Returns\u0020null\u0020when\u0020the\nproperty\u0020carries\u0020no\u0020type\u0020hint.",
+            "summary": "This\u0020method\u0020returns\u0020the\u0020declared\u0020class\u0020name\u0020of\u0020a\u0020typed\u0020property\u0020as\u0020a\nstring.\u0020It\u0020is\u0020used\u0020to\u0020instantiate\u0020business\u0020object\u0020references\u0020and\ncollection\u0020properties\u0020from\u0020the\u0020stored\u0020id\u0020during\u0020fillObject\u0028\u0029\u0020and\u0020to\nvalidate\u0020the\u0020reference\u0020class\u0020in\u0020the\u0020generic\u0020save\u0020route.\u0020The\u0020type\nname\u0020is\u0020read\u0020via\u0020getName\u0028\u0029,\u0020so\u0020a\u0020nullable\u0020declaration\u0020returns\u0020the\nbare\u0020class\u0020name\u0020without\u0020the\u0020\u0027\u003F\u0027\u0020prefix.\u0020Returns\u0020null\u0020when\u0020the\nproperty\u0020carries\u0020no\u0020type\u0020hint.",
             "url": "classes/BaseObject.html#method_getPropertyClass"
         },                {
             "fqsen": "\\BaseObject\u003A\u003Aview\u0028\u0029",
@@ -218,12 +233,17 @@ Search.appendIndex(
         },                {
             "fqsen": "\\BaseObject\u003A\u003AviewLoadObject\u0028\u0029",
             "name": "viewLoadObject",
-            "summary": "This\u0020method\u0020serves\u0020the\u0020json\u0020view\u0020behind\u0020index.php\u003Fview\u003DviewLoadObject\u0026class\u003D...\nand\u0020returns\u0020a\u0020object\u0020instance\u0020in\u0020the\u0020collector\u0020envelope\u0020format\u0020for\non\u002Ddemand\u0020object\u0020loading\u0020in\u0020the\u0020frontend.\u0020Invalid\u0020class\u0020values\u0020or\ninvalid\u0020id\u0020values\u0020or\u0020the\u0020object\u0020dont\u0020exists\u0020arrive\nfrom\u0020the\u0020request\u0020layer\u0020already\u0020filtered\u0020as\u0020null\u0020\u2014\u0020the\u0020response\u0020is\u0020then\ndeliberately\u0020empty\u0020instead\u0020of\u0020an\u0020AppError,\u0020because\u0020json\u0020views\u0020do\u0020not\ncarry\u0020an\u0020AppError\u0020channel.",
+            "summary": "This\u0020method\u0020serves\u0020the\u0020json\u0020view\u0020behind\u0020index.php\u003Fview\u003DviewLoadObject\u0026class\u003D...\nand\u0020returns\u0020a\u0020object\u0020instance\u0020in\u0020the\u0020collector\u0020envelope\u0020format\u0020for\non\u002Ddemand\u0020object\u0020loading\u0020in\u0020the\u0020frontend.\u0020Invalid\u0020class\u0020values\u0020or\ninvalid\u0020id\u0020values\u0020or\u0020the\u0020object\u0020dont\u0020exists\u0020arrive\nfrom\u0020the\u0020request\u0020layer\u0020already\u0020filtered\u0020as\u0020null\u0020\u2014\u0020the\u0020response\u0020is\u0020then\ndeliberately\u0020empty\u0020instead\u0020of\u0020an\u0020AppError,\u0020because\u0020json\u0020views\u0020do\u0020not\ncarry\u0020an\u0020AppError\u0020channel.\u0020The\u0020classPermissions\u0020whitelist\u0020of\u0020the\u0020view\nguards\u0020the\u0020read\u0020like\u0020the\u0020save\u0020route\u0020\u0028isClassAllowed\u0029\u003A\u0020a\u0020class\u0020the\u0020map\ndoes\u0020not\u0020declare\u0020and\u0020a\u0020failed\u0020role\u0020id\u0020\/\u0020owner\u0020check\u0020both\u0020answer\ndeliberately\u0020empty\u0020\u2014\u0020a\u0020denied\u0020load\u0020hides\u0020behind\u0020the\u0020not\u002Dfound\nconvention\u0020\u0028no\u0020existence\u0020leak\u0029.",
             "url": "classes/BaseObject.html#method_viewLoadObject"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AviewLoadObjects\u0028\u0029",
+            "name": "viewLoadObjects",
+            "summary": "This\u0020method\u0020serves\u0020the\u0020json\u0020view\u0020behind\u0020index.php\u003Fview\u003DviewLoadObjects\u0026class\u003D...\nand\u0020returns\u0020the\u0020collector\u0020envelope\u0020array\u0020of\u0020every\u0020object\u0020of\u0020the\u0020class\nfor\u0020on\u002Ddemand\u0020bulk\u0020loading\u0020in\u0020the\u0020frontend.\u0020Invalid\u0020class\u0020values\u0020arrive\nfrom\u0020the\u0020request\u0020layer\u0020already\u0020filtered\u0020as\u0020null\u0020\u2014\u0020the\u0020response\u0020is\u0020then\ndeliberately\u0020empty\u0020instead\u0020of\u0020an\u0020AppError,\u0020because\u0020json\u0020views\u0020do\u0020not\ncarry\u0020an\u0020AppError\u0020channel.\u0020The\u0020classPermissions\u0020whitelist\u0020of\u0020the\u0020view\nguards\u0020the\u0020read\u0020like\u0020the\u0020load\u0020route\u0020\u0028isClassAllowed\u0029\u003A\u0020a\u0020class\u0020the\u0020map\ndoes\u0020not\u0020declare\u0020answers\u0020deliberately\u0020empty,\u0020objects\u0020with\u0020a\u0020failed\u0020role\nid\u0020\/\u0020owner\u0020check\u0020are\u0020filtered\u0020out\u0020of\u0020the\u0020list.\u0020The\u0020reference\u0020sub\nenvelopes\u0020travel\u0020per\u0020object\u0020\u0028rawObject\u0029\u0020\u2014\u0020shared\u0020references\u0020are\ndeduplicated\u0020by\u0020class\u0020and\u0020id,\u0020every\u0020envelope\u0020travels\u0020exactly\u0020once.",
+            "url": "classes/BaseObject.html#method_viewLoadObjects"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AviewSaveObject\u0028\u0029",
             "name": "viewSaveObject",
-            "summary": "This\u0020method\u0020serves\u0020the\u0020generic\u0020json\u0020save\u0020route\u0020behind\nindex.php\u003Fview\u003DviewSaveObject\u0020\u0028POST\u0029\u003A\u0020the\u0020request\u0020parameter\u0020\u0027object\u0027\ncarries\u0020the\u0020envelope\u0020\u007B\u0020class,\u0020id,\u0020data\u0020\u007D\u0020the\u0020client\u0020wants\u0020to\u0020persist\u0020\u2014\nwith\u0020the\u0020blueprint\u0020id\u0020the\u0020route\u0020creates\u0020\u0028server\u0020generated\u0020id\u0029,\u0020without\nit\u0020the\u0020client\u0020addresses\u0020an\u0020existing\u0020object\u0020\u0028merge\u0020update\u0029.\u0020The\u0020route\naccepts\u0020only\u0020CRUD\u002Dcapable\u0020classes\u003A\u0020a\u0020BaseObject\u0020subclass\u0020with\u0020a\u0020field\ndefinition\u0020\u2014\u0020every\u0020other\u0020class\u0020name\u0020is\u0020silently\u0020filtered\u0020\u0028like\nviewLoadObject,\u0020json\u0020views\u0020carry\u0020no\u0020information\u0020channel\u0020for\u0020foreign\nclasses\u0029.\u0020The\u0020merged\u0020values\u0020follow\u0020the\u0020field\u0020contract\u003A\u0020only\u0020declared\nfields\u0020arrive\u0020on\u0020the\u0020instance,\u0020NOSERIALIZE\/NOSAVE\u0020properties\u0020and\npassword\u0020fields\u0020are\u0020never\u0020merged,\u0020fields\u0020with\u0020a\u0020roleIds\u0020attribute\u0020only\nfor\u0020roles\u0020the\u0020definition\u0020allows\u0020and\u0020the\u0020own\u0020id\u0020is\u0020immutable\u0020\u2014\u0020at\u0020a\ncreate\u0020the\u0020delivered\u0020id\u0020is\u0020taken\u0020over\u0020the\u0020declared\u0020id\u0020field\u0020contract,\nthe\u0020blueprint\u0020id\u0020itself\u0020is\u0020ignored\u0020\u0028the\u0020server\u0020generates\u0020the\u0020id\u0029.",
+            "summary": "This\u0020method\u0020serves\u0020the\u0020generic\u0020json\u0020save\u0020route\u0020behind\nindex.php\u003Fview\u003DviewSaveObject\u0020\u0028POST\u0029\u003A\u0020the\u0020request\u0020parameter\u0020\u0027object\u0027\ncarries\u0020the\u0020envelope\u0020\u007B\u0020class,\u0020id,\u0020data\u0020\u007D\u0020the\u0020client\u0020wants\u0020to\u0020persist\u0020\u2014\nwith\u0020the\u0020blueprint\u0020id\u0020the\u0020route\u0020creates\u0020\u0028server\u0020generated\u0020id\u0029,\u0020without\nit\u0020the\u0020client\u0020addresses\u0020an\u0020existing\u0020object\u0020\u0028merge\u0020update\u0029.\u0020The\u0020route\naccepts\u0020only\u0020CRUD\u002Dcapable\u0020classes\u003A\u0020a\u0020BaseObject\u0020subclass\u0020with\u0020a\u0020field\ndefinition\u0020\u2014\u0020every\u0020other\u0020class\u0020name\u0020is\u0020silently\u0020filtered\u0020\u0028like\nviewLoadObject,\u0020json\u0020views\u0020carry\u0020no\u0020information\u0020channel\u0020for\u0020foreign\nclasses\u0029.\u0020Beyond\u0020the\u0020class\u0020gate\u0020the\u0020route\u0020enforces\u0020the\u0020classPermissions\nwhitelist\u0020of\u0020the\u0020view\u003A\u0020a\u0020class\u0020the\u0020map\u0020does\u0020not\u0020declare\u0020answers\nsilently\u0020empty\u0020\u0028as\u0020one\u0029,\u0020a\u0020declared\u0020class\u0020must\u0020pass\u0020the\u0020role\u0020id\u0020\/\nowner\u0020check\u0020\u0028isClassAllowed\u0029\u0020\u2014\u0020a\u0020failed\u0020check\u0020gets\u0020the\u0020permission\nAppError\u0020envelope\u003B\u0020at\u0020a\u0020create\u0020the\u0020ownerId\u0020of\u0020the\u0020logged\u002Din\u0020user\u0020is\nset\u0020on\u0020the\u0020new\u0020instance\u0020\u0028the\u0020pseudo\u0020role\u0020\u0027owner\u0027\u0020can\u0020only\u0020fire\u0020on\nupdates,\u0020a\u0020blueprint\u0020has\u0020no\u0020owner\u0020yet\u0029.\u0020The\u0020merged\u0020values\u0020follow\u0020the\nfield\u0020contract\u003A\u0020only\u0020declared\nfields\u0020arrive\u0020on\u0020the\u0020instance,\u0020NOSERIALIZE\/NOSAVE\u0020properties\u0020and\npassword\u0020fields\u0020are\u0020never\u0020merged,\u0020fields\u0020with\u0020a\u0020roleIds\u0020attribute\u0020only\nfor\u0020roles\u0020the\u0020definition\u0020allows\u0020and\u0020the\u0020own\u0020id\u0020is\u0020immutable\u0020\u2014\u0020at\u0020a\ncreate\u0020the\u0020delivered\u0020id\u0020is\u0020taken\u0020over\u0020the\u0020declared\u0020id\u0020field\u0020contract,\nthe\u0020blueprint\u0020id\u0020itself\u0020is\u0020ignored\u0020\u0028the\u0020server\u0020generates\u0020the\u0020id\u0029.",
             "url": "classes/BaseObject.html#method_viewSaveObject"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AmergeReferenceProperty\u0028\u0029",
@@ -241,9 +261,19 @@ Search.appendIndex(
             "summary": "This\u0020private\u0020method\u0020is\u0020the\u0020class\u0020gate\u0020of\u0020the\u0020generic\u0020json\u0020routes\u003A\nonly\u0020a\u0020BaseObject\u0020subclass\u0020with\u0020a\u0020non\u002Dempty\u0020field\u0020definition\u0020is\nCRUD\u002Dcapable\u0020\u2014\u0020the\u0020field\u0020contract\u0020is\u0020the\u0020single\u0020declaration\u0020that\nopens\u0020class,\u0020id\u0020and\u0020data\u0020of\u0020the\u0020envelope\u0020for\u0020the\u0020route.\u0020Core\u0020classes\n\u0028controller,\u0020views,\u0020roles...\u0029\u0020carry\u0020no\u0020field\u0020definitions\u0020and\u0020stay\nunreachable,\u0020so\u0020the\u0020generic\u0020route\u0020can\u0020never\u0020write\u0020engine\u0020files.",
             "url": "classes/BaseObject.html#method_isCrudClass"
         },                {
+            "fqsen": "\\BaseObject\u003A\u003AgetClassPermissions\u0028\u0029",
+            "name": "getClassPermissions",
+            "summary": "This\u0020method\u0020reads\u0020the\u0020allowed\u0020role\u0020ids\u0020of\u0020the\u0020addressed\u0020class\u0020from\nthe\u0020classPermissions\u0020map\u0020of\u0020the\u0020request\u0020view.\u0020The\u0020map\u0020is\u0020a\nwhitelist\u003A\u0020a\u0020view\u0020without\u0020a\u0020map\u0020and\u0020a\u0020class\u0020that\u0020the\u0020map\u0020does\u0020not\ndeclare\u0020both\u0020return\u0020null\u0020\u2014\u0020the\u0020calling\u0020routes\u0020treat\u0020null\u0020as\u0020the\nsilent\u0020empty\u0020answer\u0020\u0028same\u0020convention\u0020as\u0020the\u0020isCrudClass\u0020gate,\u0020no\ninformation\u0020channel\u0020about\u0020foreign\u0020classes\u0029.\u0020A\u0020declared\u0020class\nreturns\u0020its\u0020role\u0020id\u0020list\u0020which\u0020may\u0020contain\u0020the\u0020pseudo\u0020role\u0020\u0027owner\u0027\nnext\u0020to\u0020real\u0020role\u0020ids.",
+            "url": "classes/BaseObject.html#method_getClassPermissions"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AisClassAllowed\u0028\u0029",
+            "name": "isClassAllowed",
+            "summary": "This\u0020method\u0020decides\u0020the\u0020class\u0020permission\u0020of\u0020the\u0020request\u0020over\u0020the\nallowed\u0020role\u0020id\u0020list\u0020of\u0020the\u0020addressed\u0020object\u0027s\u0020class\u0020\u0028see\ngetClassPermissions\u0029\u003A\u0020the\u0020role\u0020of\u0020the\u0020user\u0020is\u0020allowed\u0020when\u0020listed,\nthe\u0020user\u0020is\u0020allowed\u0020when\u0020the\u0020list\u0020declares\u0020the\u0020pseudo\u0020role\u0020\u0027owner\u0027\nand\u0020the\u0020object\u0020carries\u0020the\u0020user\u0020id\u0020as\u0020its\u0020ownerId\u0020\u0028the\u0020creator\u0029.",
+            "url": "classes/BaseObject.html#method_isClassAllowed"
+        },                {
             "fqsen": "\\BaseObject\u003A\u003AcrudErrorEnvelope\u0028\u0029",
             "name": "crudErrorEnvelope",
-            "summary": "This\u0020private\u0020method\u0020builds\u0020the\u0020rejection\u0020envelope\u0028s\u0029\u0020of\u0020the\u0020generic\njson\u0020routes\u003A\u0020one\u0020AppError\u0020instance\u0020per\u0020message\u0020\u0028id\u0020pattern\nerror\u007BN\u007D\u0020over\u0020a\u0020route\u002Dlocal\u0020counter\u0029,\u0020returned\u0020as\u0020its\u0020rawObject\nenvelope\u0020array\u0020\u2014\u0020the\u0020client\u0020overlays\u0020report\u0020the\u0020cards\u0020themselves\n\u0028loader\u0020error\u0020display\u0029,\u0020the\u0020same\u0020channel\u0020the\u0020html\u0020views\u0020use.",
+            "summary": "This\u0020protected\u0020method\u0020builds\u0020the\u0020rejection\u0020envelope\u0028s\u0029\u0020of\u0020the\u0020generic\njson\u0020routes\u0020and\u0020the\u0020CSRF\u0020guard\u0020of\u0020the\u0020controller\u003A\u0020one\u0020AppError\ninstance\u0020per\u0020message\u0020\u0028id\u0020pattern\u0020error\u007BN\u007D\u0020over\u0020a\u0020route\u002Dlocal\ncounter\u0029,\u0020returned\u0020as\u0020its\u0020rawObject\u0020envelope\u0020array\u0020\u2014\u0020the\u0020client\noverlays\u0020report\u0020the\u0020cards\u0020themselves\u0020\u0028loader\u0020error\u0020display\u0029,\u0020the\nsame\u0020channel\u0020the\u0020html\u0020views\u0020use.",
             "url": "classes/BaseObject.html#method_crudErrorEnvelope"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AserializeObject\u0028\u0029",
@@ -253,7 +283,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\BaseObject\u003A\u003ArawObject\u0028\u0029",
             "name": "rawObject",
-            "summary": "This\u0020method\u0020builds\u0020the\u0020collector\u0020envelope\u0020\u005B\u0020\u007B\u0020class,\u0020id,\u0020data\u0020\u007D\u0020...\u0020\u005D\nof\u0020the\u0020object\u0020array\u0020for\u0020the\u0020frontend.\u0020Every\u0020referenced\u0020business\nobject\u0020\u0028\u0027class\u0027\u0020typed\u0029\u0020and\u0020collection\u0020property\u0020is\u0020embedded\u0020into\u0020the\nown\u0020data\u0020payload\u0020as\u0020a\u0020descriptor\u0020\u0028with\u0020its\u0020id\u0020respectively\u0020its\nelement\u0020id\u0020list\u0029,\u0020replacing\u0020the\u0020raw\u0020instance\u0020value\u0020from\nserializeObject\u0028\u0029\u0020\u2014\u0020for\u0020multiple\u0020reference\u0020properties\u0020all\u0020of\u0020their\ndescriptors\u0020are\u0020embedded.",
+            "summary": "This\u0020method\u0020builds\u0020the\u0020collector\u0020envelope\u0020\u005B\u0020\u007B\u0020class,\u0020id,\u0020data\u0020\u007D\u0020...\u0020\u005D\nof\u0020the\u0020object\u0020array\u0020for\u0020the\u0020frontend.\u0020Every\u0020referenced\u0020business\nobject\u0020\u0028\u0027class\u0027\u0020typed\u0029\u0020and\u0020collection\u0020property\u0020is\u0020embedded\u0020into\u0020the\nown\u0020data\u0020payload\u0020as\u0020a\u0020descriptor\u0020\u0028with\u0020its\u0020id\u0020respectively\u0020its\nelement\u0020id\u0020list\u0029,\u0020replacing\u0020the\u0020raw\u0020instance\u0020value\u0020from\nserializeObject\u0028\u0029\u0020\u2014\u0020for\u0020multiple\u0020reference\u0020properties\u0020all\u0020of\u0020their\ndescriptors\u0020are\u0020embedded.\u0020Properties\u0020filtered\u0020by\u0020NOSERIALIZE\u0020are\nskipped\u0020before\u0020the\u0020reference\u0020handling\u003A\u0020they\u0020carry\u0020neither\u0020value\u0020nor\ndescriptor,\u0020and\u0020their\u0020referenced\u0020objects\u0020are\u0020not\u0020embedded\u0020as\u0020sub\nenvelopes\u0020either.",
             "url": "classes/BaseObject.html#method_rawObject"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AsaveObject\u0028\u0029",
@@ -265,6 +295,21 @@ Search.appendIndex(
             "name": "serializeObjectForSave",
             "summary": "This\u0020method\u0020serializes\u0020the\u0020object\u0020for\u0020persistence.\u0020Unset\u0020properties\nand\u0020properties\u0020filtered\u0020by\u0020the\u0020NOSAVE\u0020constant\u0020are\u0020removed.\u0020Referenced\nbusiness\u0020objects\u0020\u0028\u0027class\u0027\u0020typed\u0020properties\u0029\u0020are\u0020serialized\u0020as\u0020their\u0020id\nand\u0020collection\u0020properties\u0020\u0028\u0027collection\u0027\u0020typed\u0029\u0020as\u0020the\u0020id\u0020list\u0020of\u0020their\nelements\u0020\u2014\u0020fillObject\u0028\u0029\u0020reads\u0020both\u0020forms\u0020back\u0020as\u0020instances.\u0020Builtin\nproperties\u0020keep\u0020their\u0020value.\u0020NOSERIALIZE\u0020deliberately\u0020does\u0020NOT\u0020apply\nhere\u0020\u2014\u0020a\u0020user\u0027s\u0020password\u0020hash\u0020must\u0020be\u0020persisted\u0020after\u0020all.",
             "url": "classes/BaseObject.html#method_serializeObjectForSave"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AdeleteReferences\u0028\u0029",
+            "name": "deleteReferences",
+            "summary": "This\u0020method\u0020is\u0020the\u0020delete\u0020propagation\u0020\u0028phase\u0020A\u0029\u003A\u0020before\u0020the\u0020object\ndeletes\u0020itself\u0020it\u0020cleans\u0020every\u0020other\u0020loaded\u0020business\u0020class\u0020that\ndeclares\u0020the\u0020own\u0020class\u0020as\u0020a\u0020reference\u0020property.\u0020The\u0020scan\u0020works\u0020on\nthe\u0020serialized\u0020entries\u0020\u0028a\u0020class\u0020reference\u0020is\u0020stored\u0020as\u0020the\u0020id\nstring,\u0020a\u0020collection\u0020reference\u0020as\u0020the\u0020id\u0020list\u0029\u0020and\u0020runs\u0020per\u0020class\nunder\u0020its\u0020own\u0020file\u0020lock\u003B\u0020classes\u0020without\u0020a\u0020matching\u0020reference\nproperty\u0020are\u0020skipped\u0020by\u0020reflection\u0020alone,\u0020without\u0020reading\u0020their\ndata\u0020file.\u0020A\u0020changed\u0020file\u0020is\u0020written\u0020back\u0020once,\u0020unchanged\u0020files\nstay\u0020untouched.\u0020There\u0020is\u0020no\u0020reference\u0020index\u0020by\u0020design\u0020\u2014\u0020the\u0020scan\nreads\u0020the\u0020single\u0020source\u0020of\u0020truth,\u0020so\u0020it\u0020cannot\u0020drift.",
+            "url": "classes/BaseObject.html#method_deleteReferences"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AreferenceProperties\u0028\u0029",
+            "name": "referenceProperties",
+            "summary": "This\u0020method\u0020returns\u0020the\u0020reference\u0020properties\u0020of\u0020a\u0020class\u0020that\u0020declare\nthe\u0020given\u0020target\u0020class\u003A\u0020an\u0020array\u0020of\u0020property\u0020names\u0020mapped\u0020to\u0020their\ntype\u0020category\u0020\u0028\u0027class\u0027\u0020or\u0020\u0027collection\u0027\u0029,\u0020empty\u0020when\u0020the\u0020class\u0020does\nnot\u0020reference\u0020the\u0020target.\u0020It\u0020drives\u0020the\u0020reflection\u0020filter\u0020of\u0020the\ndelete\u0020propagation\u0020\u2014\u0020the\u0020cheapest\u0020possible\u0020check,\u0020no\u0020data\u0020file\u0020is\nread\u0020for\u0020a\u0020non\u002Dmatching\u0020class.",
+            "url": "classes/BaseObject.html#method_referenceProperties"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AcleanEntries\u0028\u0029",
+            "name": "cleanEntries",
+            "summary": "This\u0020method\u0020removes\u0020a\u0020target\u0020id\u0020from\u0020the\u0020serialized\u0020reference\nproperties\u0020of\u0020every\u0020entry\u0020in\u0020the\u0020loaded\u0020class\u0020file\u0020content\u003A\u0020a\nclass\u0020property\u0020matching\u0020the\u0020id\u0020is\u0020unset\u0020\u0028the\u0020property\u0020vanishes\nfrom\u0020persistence,\u0020same\u0020convention\u0020as\u0020the\u0020empty\u0020reference\u0020in\nmergeReferenceProperty\u0029,\u0020a\u0020collection\u0020property\u0020containing\u0020the\u0020id\nis\u0020rebuilt\u0020as\u0020the\u0020filtered\u0020id\u0020list\u0020keeping\u0020the\u0020order\u0020of\u0020the\nremaining\u0020ids.\u0020Entries\u0020are\u0020modified\u0020in\u0020place\u0020\u0028objects\u0020are\nhandles\u0029\u003B\u0020the\u0020caller\u0020decides\u0020whether\u0020and\u0020under\u0020which\u0020lock\u0020to\nwrite\u0020the\u0020content\u0020back.\u0020An\u0020optional\u0020skip\u0020id\u0020leaves\u0020one\u0020entry\nuntouched\u0020\u0028the\u0020deleting\u0020object\u0020itself\u0020in\u0020the\u0020own\u0020class\u0020file\u0029.",
+            "url": "classes/BaseObject.html#method_cleanEntries"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AdeleteObject\u0028\u0029",
             "name": "deleteObject",
@@ -325,6 +370,11 @@ Search.appendIndex(
             "name": "enCrypte",
             "summary": "This\u0020method\u0020encrypts\u0020a\u0020string\u0020with\u0020AES\u002D256\u002DCBC.\u0020The\u0020key\u0020is\u0020derived\nfrom\u0020passphrase1\u0020and\u0020the\u0020initialization\u0020vector\u0020from\u0020passphrase2\u0020of\u0020the\ncrypt\u0020keys.",
             "url": "classes/BaseObject.html#method_enCrypte"
+        },                {
+            "fqsen": "\\BaseObject\u003A\u003AcreateCsrfToken\u0028\u0029",
+            "name": "createCsrfToken",
+            "summary": "This\u0020method\u0020derives\u0020the\u0020CSRF\u0020token\u0020from\u0020the\u0020raw\u0020auth\u0020cookie\u0020token\u003A\nan\u0020HMAC\u002DSHA256\u0020over\u0020the\u0020cookie\u0020token\u0020value\u0020keyed\u0020with\u0020a\u0020hash\u0020of\npassphrase2\u0020\u0028same\u0020derivation\u0020style\u0020as\u0020the\u0020AES\u0020initialization\nvector\u0020\u2014\u0020passphrase1\u0020stays\u0020the\u0020AES\u0020key\u0020material\u0029.\u0020The\u0020token\u0020is\nstateless\u003A\u0020the\u0020server\u0020recomputes\u0020it\u0020per\u0020request,\u0020nothing\u0020is\nstored.\u0020It\u0020rotates\u0020automatically\u0020with\u0020the\u0020auth\u0020cookie\u0020token\n\u0028re\u002Dlogin,\u0020password\u0020change\u0029\u0020and\u0020it\u0020is\u0020unknown\u0020to\u0020a\u0020cross\u002Dsite\nattacker\u0020\u0028the\u0020same\u0020origin\u0020policy\u0020keeps\u0020the\u0020cookie\u0020value\u0020and\u0020the\ndelivered\u0020token\u0020apart\u0029.\u0020An\u0020empty\u0020cookie\u0020token\u0020\u0028guest\u0029\u0020produces\u0020a\ndeterministic\u0020meaningless\u0020token\u0020\u2014\u0020the\u0020CSRF\u0020guard\u0020itself\u0020skips\nrequests\u0020without\u0020an\u0020auth\u0020cookie.",
+            "url": "classes/BaseObject.html#method_createCsrfToken"
         },                {
             "fqsen": "\\BaseObject\u003A\u003AloadFileDeCrypted\u0028\u0029",
             "name": "loadFileDeCrypted",
@@ -481,9 +531,19 @@ Search.appendIndex(
             "summary": "This\u0020method\u0020resolves\u0020the\u0020request\u0020context.\u0020It\u0020creates\u0020the\u0020user\u0020\u0028auth\nresolution\u0020order\u0029,\u0020the\u0020presentation\u0020and\u0020the\u0020role,\u0020resolves\u0020the\u0020view\nfrom\u0020the\u0020view\u0020parameter\u0020\u0028a\u0020view\u0020the\u0020role\u0020has\u0020no\u0020permission\u0020for\u0020\u2014\nor\u0020an\u0020unknown\u0020view\u0020\u2014\u0020silently\u0020falls\u0020back\u0020to\u0020the\u0020role\u0027s\u0020default\nview\u0029\u0020and\u0020sets\u0020the\u0020request\u0020scope\u0020to\u0020the\u0020view.\u0020The\u0020id\/class\u0020parameters\nare\u0020stored\u0020for\u0020the\u0020getters\u0020only\u0020\u2014\u0020the\u0020business\u0020object\u0020resolution\nhappens\u0020in\u0020View\u003A\u003AexecuteView\u0028\u0029.",
             "url": "classes/Controller.html#method_init"
         },                {
+            "fqsen": "\\Controller\u003A\u003AisCsrfViolation\u0028\u0029",
+            "name": "isCsrfViolation",
+            "summary": "This\u0020method\u0020decides\u0020whether\u0020the\u0020request\u0020is\u0020a\u0020CSRF\u0020violation\u003A\u0020only\nPOST\u0020requests\u0020with\u0020an\u0020auth\u0020cookie\u0020token\u0020are\u0020guarded\u0020\u0028GET\u0020routes\nare\u0020read\u002Donly,\u0020a\u0020guest\u0020has\u0020no\u0020session\u0020to\u0020abuse\u0020\u2014\u0020the\u0020login\u0020POST\nstays\u0020outside\u0020the\u0020guard\u0029.\u0020The\u0020delivered\u0020csrfToken\u0020parameter\u0020must\nequal\u0020the\u0020recomputed\u0020stateless\u0020HMAC\u0020of\u0020the\u0020raw\u0020cookie\u0020token\n\u0028createCsrfToken\u0029\u003A\u0020a\u0020missing\u0020or\u0020wrong\u0020token\u0020rejects\u0020the\u0020request.",
+            "url": "classes/Controller.html#method_isCsrfViolation"
+        },                {
+            "fqsen": "\\Controller\u003A\u003ArejectCsrf\u0028\u0029",
+            "name": "rejectCsrf",
+            "summary": "This\u0020method\u0020answers\u0020a\u0020rejected\u0020CSRF\u0020request\u0020without\u0020running\u0020any\naction\u003A\u0020json\u0020views\u0020receive\u0020the\u0020soft\u0020channel\u0020\u0028a\u0020single\u0020AppError\nenvelope\u0020with\u0020a\u0020generic\u0020renewal\u0020hint\u0020\u2014\u0020the\u0020overlay\u0020displays\u0020it,\nHTTP\u0020200\u0029,\u0020html\u0020views\u0020receive\u0020a\u0020303\u0020redirect\u0020to\u0020the\u0020default\u0020view\nof\u0020the\u0020user\u0020\u0028the\u0020same\u0020navigation\u0020pattern\u0020as\u0020User\u003A\u003Alogout\u0029\u0020\u2014\u0020the\nfresh\u0020page\u0020render\u0020also\u0020delivers\u0020a\u0020fresh\u0020token.\u0020The\u0020rejection\u0020is\ndeliberately\u0020silent\u0020besides\u0020the\u0020generic\u0020message\u003A\u0020a\u0020CSRF\u0020attempt\nis\u0020no\u0020information\u0020channel\u0020to\u0020the\u0020outside.",
+            "url": "classes/Controller.html#method_rejectCsrf"
+        },                {
             "fqsen": "\\Controller\u003A\u003Aexecute\u0028\u0029",
             "name": "execute",
-            "summary": "This\u0020method\u0020runs\u0020the\u0020request\u003A\u0020it\u0020throws\u0020the\u0020app\u0020context\u0020as\u0020the\u0020first\nenvelope\u0020\u0028formerly\u0020the\u0020loader\u0020unshift\u003A\u0020class\u0020file\u0020loading\u0020and\ninstantiation\u0020run\u0020in\u0020the\u0020loader\u0020in\u0020collector\u0020order\u0020\u2014\u0020the\u0020app\u0020carries\nthe\u0020user\u0020and\u0020view\u0020context\u0020right\u0020away\u0020via\u0020currentUserId,\ncurrentUserRoleId\u0020and\u0020currentView\u0029,\u0020executes\u0020the\u0020actions\u0020of\u0020the\u0020view\n\u0028a\u0020crash\u0020is\u0020caught\u0020and\u0020routed\u0020into\u0020the\u0020soft\u0020error\u0020channel\u0020as\u0020a\ngeneric\u0020AppError,\u0020the\u0020details\u0020only\u0020into\u0020the\u0020log\u0029,\u0020throws\u0020the\ncollected\u0020soft\u0020errors\u0020and\u0020the\u0020current\u0020user\u0020into\u0020the\u0020collector\u0020and\nfinally\u0020executes\u0020the\u0020view\u0020itself.\u0020A\u0020view\u0020crash\u0020gets\u0020no\u0020addError\n\u0028the\u0020collector\u0020foreach\u0020has\u0020already\u0020run,\u0020it\u0020would\u0020be\u0020a\u0020zombie\nwithout\u0020a\u0020display\u0020path\u0029\u003A\u0020json\u0020views\u0020answer\u0020empty\u0020with\u0020HTTP\n500,\u0020HTML\u0020views\u0020answer\u0020with\u0020the\u0020emergency\u0020page.",
+            "summary": "This\u0020method\u0020runs\u0020the\u0020request\u003A\u0020it\u0020guards\u0020POST\u0020requests\u0020with\u0020an\u0020auth\ncookie\u0020against\u0020CSRF\u0020\u0028the\u0020delivered\u0020token\u0020must\u0020match\u0020the\u0020recomputed\nHMAC\u0020of\u0020the\u0020cookie\u0020token\u0020\u2014\u0020a\u0020violation\u0020is\u0020answered\u0020before\u0020any\naction\u0020runs\u003A\u0020json\u0020softly\u0020with\u0020an\u0020AppError\u0020envelope,\u0020html\u0020with\u0020a\n303\u0020redirect\u0020to\u0020the\u0020default\u0020view\u0029,\u0020then\u0020throws\u0020the\u0020app\u0020context\u0020as\nthe\u0020first\u0020envelope\u0020\u0028formerly\u0020the\u0020loader\u0020unshift\u003A\u0020class\u0020file\u0020loading\nand\u0020instantiation\u0020run\u0020in\u0020the\u0020loader\u0020in\u0020collector\u0020order\u0020\u2014\u0020the\u0020app\ncarries\u0020the\u0020user\u0020and\u0020view\u0020context\u0020right\u0020away\u0020via\u0020currentUserId,\ncurrentUserRoleId,\u0020currentView\u0020and\u0020csrfToken\u0029,\u0020executes\u0020the\u0020actions\nof\u0020the\u0020view\u0020\u0028a\u0020crash\u0020is\u0020caught\u0020and\u0020routed\u0020into\u0020the\u0020soft\u0020error\nchannel\u0020as\u0020a\u0020generic\u0020AppError,\u0020the\u0020details\u0020only\u0020into\u0020the\u0020log\u0029,\nthrows\u0020the\u0020collected\u0020soft\u0020errors\u0020and\u0020the\u0020current\u0020user\u0020into\u0020the\ncollector\u0020and\u0020finally\u0020executes\u0020the\u0020view\u0020itself.\u0020A\u0020view\u0020crash\u0020gets\nno\u0020addError\u0020\u0028the\u0020collector\u0020foreach\u0020has\u0020already\u0020run,\u0020it\u0020would\u0020be\u0020a\nzombie\u0020without\u0020a\u0020display\u0020path\u0029\u003A\u0020json\u0020views\u0020answer\u0020empty\u0020with\u0020HTTP\n500,\u0020HTML\u0020views\u0020answer\u0020with\u0020the\u0020emergency\u0020page.",
             "url": "classes/Controller.html#method_execute"
         },                {
             "fqsen": "\\Controller\u003A\u003AaddRawObject\u0028\u0029",
@@ -508,7 +568,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\Controller\u003A\u003AaddErrors\u0028\u0029",
             "name": "addErrors",
-            "summary": "This\u0020method\u0020collects\u0020an\u0020array\u0020of\u0020soft\u0020errors\u003Aactions\u0020report\u0020rejected\u0020guards\nhere,\u0020undexecute\u0028\u0029\u0020throws\u0020the\u0020collected\u0020errors\u0020into\u0020the\u0020frontend\nCollector\u0020as\u0020AppError\u0020envelopes.\u0020The\u0020severity\u0020must\u0020be\u0020\u201CError\u201D\u0020or\n\u0027Warning\u0027.\u0020The\u0020view\u0020permission\u0020check\u0020remains\u0020intentionally\u0020silent\u0020\u2013\nMissing\u0020authorizations\u0020are\u0020not\u0020an\u0020information\u0020channel\u0020to\u0020the\u0020outside\u0020world.",
+            "summary": "This\u0020method\u0020collects\u0020an\u0020array\u0020of\u0020soft\u0020errors\u003A\u0020actions\u0020report\u0020rejected\nguards\u0020here,\u0020and\u0020execute\u0028\u0029\u0020throws\u0020the\u0020collected\u0020errors\u0020into\u0020the\u0020frontend\ncollector\u0020as\u0020AppError\u0020envelopes.\u0020The\u0020severity\u0020must\u0020be\u0020\u0027error\u0027\u0020or\n\u0027warning\u0027.\u0020The\u0020view\u0020permission\u0020check\u0020deliberately\u0020stays\u0020silent\u0020\u2014\nmissing\u0020permissions\u0020are\u0020not\u0020an\u0020information\u0020channel\u0020to\u0020the\u0020outside.",
             "url": "classes/Controller.html#method_addErrors"
         },                {
             "fqsen": "\\Controller\u003A\u003AlogHardError\u0028\u0029",
@@ -580,6 +640,11 @@ Search.appendIndex(
             "name": "DemoOne",
             "summary": "This\u0020class\u0020is\u0020the\u0020base\u0020class\u0020of\u0020all\u0020business\u0020objects\u0020and\u0020provides\u0020their\u0020persistence.",
             "url": "classes/DemoOne.html"
+        },                {
+            "fqsen": "\\DemoOne\u003A\u003A\u0024user",
+            "name": "user",
+            "summary": "",
+            "url": "classes/DemoOne.html#property_user"
         },                {
             "fqsen": "\\DemoOne\u003A\u003A\u0024demoTwo",
             "name": "demoTwo",
@@ -693,7 +758,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\Presentation\u003A\u003AwriteCookie\u0028\u0029",
             "name": "writeCookie",
-            "summary": "This\u0020static\u0020method\u0020writes\u0020the\u0020auth\u0020cookie.\u0020Existing\u0020cookie\u0020values\u0020are\nmerged,\u0020the\u0020cookie\u0020expires\u0020after\u002030\u0020days.\u0020CLI\u0020runs\u0020of\u0020the\u0020regression\nsuites\u0020return\u0020early\u003A\u0020without\u0020HTTP\u0020headers\u0020setcookie\u0020would\u0020only\u0020be\u0020a\nwarning\u0020\u2014\u0020the\u0020login\u0020there\u0020continues\u0020via\u0020getUserFromId\u0020anyway.",
+            "summary": "This\u0020static\u0020method\u0020writes\u0020the\u0020auth\u0020cookie.\u0020Existing\u0020cookie\u0020values\u0020are\nmerged,\u0020the\u0020cookie\u0020expires\u0020after\u002030\u0020days\u0020and\u0020carries\u0020the\u0020SameSite\u003DLax\nflag\u003A\u0020modern\u0020browsers\u0020drop\u0020the\u0020cookie\u0020on\u0020cross\u002Dsite\u0020POST\u0020requests\u0020\u2014\nthe\u0020cookie\u002Dlevel\u0020first\u0020line\u0020of\u0020the\u0020CSRF\u0020defense\u0020\u0028the\u0020token\u0020check\u0020in\nthe\u0020controller\u0020stays\u0020the\u0020line\u0020for\u0020everything\u0020else\u0029.\u0020CLI\u0020runs\u0020of\u0020the\nregression\u0020suites\u0020return\u0020early\u003A\u0020without\u0020HTTP\u0020headers\u0020setcookie\u0020would\nonly\u0020be\u0020a\u0020warning\u0020\u2014\u0020the\u0020login\u0020there\u0020continues\u0020via\u0020getUserFromId\u0020anyway.",
             "url": "classes/Presentation.html#method_writeCookie"
         },                {
             "fqsen": "\\Presentation\u003A\u003AdeleteCookie\u0028\u0029",
@@ -775,6 +840,11 @@ Search.appendIndex(
             "name": "param",
             "summary": "This\u0020method\u0020returns\u0020the\u0020validated\u0020value\u0020of\u0020a\u0020GET\u0020or\u0020POST\u0020parameter.",
             "url": "classes/Request.html#method_param"
+        },                {
+            "fqsen": "\\Request\u003A\u003Amethod\u0028\u0029",
+            "name": "method",
+            "summary": "This\u0020method\u0020returns\u0020the\u0020HTTP\u0020method\u0020of\u0020the\u0020request\u0020in\u0020upper\u0020case\n\u0028e.g.\u0020\u0027GET\u0027,\u0020\u0027POST\u0027\u0029.\u0020\u0024_SERVER\u0020is\u0020read\u0020here\u0020\u2014\u0020the\u0020request\u0020is\u0020the\nsingle\u0020superglobal\u0020access\u0020point\u0020of\u0020the\u0020framework,\u0020and\u0020the\u0020method\nis\u0020request\u0020metadata\u0020beside\u0020the\u0020GET\/POST\u0020parameters.\u0020A\u0020missing\nmethod\u0020information\u0020\u0028e.g.\u0020CLI\u0020runs\u0020of\u0020the\u0020regression\u0020suites\u0029\nresolves\u0020as\u0020\u0027GET\u0027.",
+            "url": "classes/Request.html#method_method"
         },                {
             "fqsen": "\\Request\u003A\u003AsetScope\u0028\u0029",
             "name": "setScope",
@@ -958,7 +1028,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\View",
             "name": "View",
-            "summary": "This\u0020class\u0020represents\u0020a\u0020configured\u0020view\u0020\u0028view.json\u0029\u003A\u0020it\u0020binds\u0020a\u0020view\nmethod\u0020to\u0020a\u0020business\u0020class,\u0020carries\u0020the\u0020result\u0020type\u0020\u0028empty\u0020\u003D\u0020HTML,\n\u0027json\u0027\u0020\u003D\u0020JSON\u0020response\u0029,\u0020the\u0020template\u0020chain\u0020and\u0020the\u0020allowed\u0020role\u0020ids,\nand\u0020executes\u0020the\u0020actions\u0020and\u0020the\u0020view\u0020method\u0020of\u0020the\u0020view.",
+            "summary": "This\u0020class\u0020represents\u0020a\u0020configured\u0020view\u0020\u0028view.json\u0029\u003A\u0020it\u0020binds\u0020a\u0020view\nmethod\u0020to\u0020a\u0020business\u0020class,\u0020carries\u0020the\u0020result\u0020type\u0020\u0028empty\u0020\u003D\u0020HTML,\n\u0027json\u0027\u0020\u003D\u0020JSON\u0020response\u0029,\u0020the\u0020template\u0020chain,\u0020the\u0020allowed\u0020role\u0020ids\u0020and\nthe\u0020classPermissions\u0020map\u0020\u0028per\u002Dclass\u0020role\u0020ids\u0020incl.\u0020the\u0020pseudo\u0020role\n\u0027owner\u0027\u0020for\u0020the\u0020generic\u0020json\u0020routes\u0029,\u0020and\u0020executes\u0020the\u0020actions\u0020and\u0020the\nview\u0020method\u0020of\u0020the\u0020view.",
             "url": "classes/View.html"
         },                {
             "fqsen": "\\View\u003A\u003A\u0024viewName",
@@ -981,6 +1051,11 @@ Search.appendIndex(
             "summary": "The\u0020ids\u0020of\u0020the\u0020roles\u0020that\u0020are\u0020allowed\u0020to\u0020see\u0020the\u0020view.",
             "url": "classes/View.html#property_roleIds"
         },                {
+            "fqsen": "\\View\u003A\u003A\u0024classPermissions",
+            "name": "classPermissions",
+            "summary": "The\u0020classPermissions\u0020map\u0020of\u0020the\u0020view\u003A\u0020business\u0020class\u0020name\u0020mapped\u0020to\nthe\u0020list\u0020of\u0020role\u0020ids\u0020allowed\u0020to\u0020treat\u0020objects\u0020of\u0020that\u0020class\u0020over\u0020the\ngeneric\u0020json\u0020routes\u0020\u0028viewSaveObject,\u0020viewLoadObject,\u0020viewDeleteObject\u0029.",
+            "url": "classes/View.html#property_classPermissions"
+        },                {
             "fqsen": "\\View\u003A\u003A\u0024actionNames",
             "name": "actionNames",
             "summary": "The\u0020action\u0020entries\u0020of\u0020the\u0020view,\u0020executed\u0020in\u0020this\u0020order\u0020before\u0020the\nview\u0020rendering.\u0020Each\u0020entry\u0020is\u0020an\u0020object\u0020with\u0020a\u0020\u0022method\u0022\u0020field\n\u0028\u0022Class\u003A\u003Amethod\u0022\u0029\u0020and\u0020exactly\u0020one\u0020routing\u0020field\u003A\u0020\u0022trigger\u0022\n\u0028string\u0029\u0020for\u0020request\u002Dtriggered\u0020actions\u0020that\u0020run\u0020only\u0020when\u0020the\nrequest\u0027s\u0020\u0027action\u0027\u0020parameter\u0020matches\u0020the\u0020trigger,\u0020or\u0020\u0022always\u0022\n\u0028true\u0029\u0020for\u0020actions\u0020that\u0020run\u0020on\u0020every\u0020request\u0020of\u0020the\u0020view.",
@@ -988,7 +1063,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\View\u003A\u003AexecuteActions\u0028\u0029",
             "name": "executeActions",
-            "summary": "This\u0020method\u0020routes\u0020the\u0020request\u0020action\u0020centrally\u003A\u0020triggered\nactions\u0020run\u0020only\u0020when\u0020the\u0020request\u0027s\u0020\u0027action\u0027\u0020parameter\u0020matches\ntheir\u0020configured\u0020trigger,\u0020always\u0020actions\u0020run\u0020on\u0020every\u0020request\u0020of\nthe\u0020view\u0020\u2014\u0020executed\u0020in\u0020their\u0020configured\u0020order\u0020before\u0020the\u0020view\nrendering.\u0020Both\u0020config\u0020sources\u0020are\u0020validated\u0020fail\u002Dloud\u0020against\nthe\u0020class\u0020code\u0020\u0028config\u0020drift\u0020fails\u0020loudly\u0020here\u0020instead\u0020of\u0020dying\nsilently,\u0020see\u0020validateActions\/validatePermissions\u0029.\u0020Actions\u0020the\nrole\u0020has\u0020no\u0020permission\u0020for\u0020are\u0020skipped\u0020\u2014\u0020but\u0020when\u0020the\u0020request\ntriggers\u0020exactly\u0020such\u0020an\u0020action,\u0020the\u0020user\u0020gets\u0020a\u0020visible\nAppError\u0020instead\u0020of\u0020silent\u0020nothing,\u0020and\u0020an\u0020\u0027action\u0027\u0020parameter\nmatching\u0020no\u0020trigger\u0020of\u0020the\u0020view\u0020gets\u0020a\u0020visible\u0020unknown\u0020action\nerror.\u0020Actions\u0020run\u0020as\u0020static\u0020methods\u0020with\u0020the\u0020controller\u0020as\nparameter.",
+            "summary": "This\u0020method\u0020routes\u0020the\u0020request\u0020action\u0020centrally\u003A\u0020triggered\nactions\u0020run\u0020only\u0020when\u0020the\u0020request\u0027s\u0020\u0027action\u0027\u0020parameter\u0020matches\ntheir\u0020configured\u0020trigger,\u0020always\u0020actions\u0020run\u0020on\u0020every\u0020request\u0020of\nthe\u0020view\u0020\u2014\u0020executed\u0020in\u0020their\u0020configured\u0020order\u0020before\u0020the\u0020view\nrendering.\u0020The\u0020config\u0020sources\u0020are\u0020validated\u0020fail\u002Dloud\u0020against\nthe\u0020class\u0020code\u0020and\u0020the\u0020role\u0020configuration\u0020\u0028config\u0020drift\u0020fails\u0020loudly\nhere\u0020instead\u0020of\u0020dying\u0020silently,\u0020see\u0020validateActions\/validatePermissions\/\nvalidateClassPermissions\u0029.\u0020Actions\u0020the\nrole\u0020has\u0020no\u0020permission\u0020for\u0020are\u0020skipped\u0020\u2014\u0020but\u0020when\u0020the\u0020request\ntriggers\u0020exactly\u0020such\u0020an\u0020action,\u0020the\u0020user\u0020gets\u0020a\u0020visible\nAppError\u0020instead\u0020of\u0020silent\u0020nothing,\u0020and\u0020an\u0020\u0027action\u0027\u0020parameter\nmatching\u0020no\u0020trigger\u0020of\u0020the\u0020view\u0020gets\u0020a\u0020visible\u0020unknown\u0020action\nerror.\u0020Actions\u0020run\u0020as\u0020static\u0020methods\u0020with\u0020the\u0020controller\u0020as\nparameter.",
             "url": "classes/View.html#method_executeActions"
         },                {
             "fqsen": "\\View\u003A\u003AvalidateActions\u0028\u0029",
@@ -1000,6 +1075,11 @@ Search.appendIndex(
             "name": "validatePermissions",
             "summary": "This\u0020method\u0020validates\u0020the\u0020permission\u0020entries\u0020of\u0020the\u0020role\n\u0028\u0022Class\u003A\u003Amethod\u0022\u0029\u0020fail\u002Dloud\u0020against\u0020the\u0020class\u0020code\u003A\u0020the\u0020class\nand\u0020the\u0020method\u0020must\u0020exist,\u0020the\u0020entry\u0020must\u0020consist\u0020of\u0020exactly\ntwo\u0020segments.\u0020Config\u0020drift\u0020\u0028a\u0020renamed\u0020or\u0020removed\u0020method\u0029\u0020would\notherwise\u0020die\u0020silently\u0020\u2014\u0020a\u0020permission\u0020that\u0020no\u0020action\u0020ever\nmatches\u0020again.\u0020The\u0020RuntimeException\u0020lands\u0020via\u0020the\u0020executeActions\ncatch\u0020of\u0020execute\u0028\u0029\u0020in\u0020the\u0020soft\u0020error\u0020channel\u0020\u002B\u0020server\u0020log.",
             "url": "classes/View.html#method_validatePermissions"
+        },                {
+            "fqsen": "\\View\u003A\u003AvalidateClassPermissions\u0028\u0029",
+            "name": "validateClassPermissions",
+            "summary": "This\u0020method\u0020validates\u0020the\u0020classPermissions\u0020map\u0020of\u0020the\u0020view\n\u0028business\u0020class\u0020name\u0020mapped\u0020to\u0020role\u0020ids,\u0020see\u0020the\u0020classPermissions\nproperty\u0029\u0020fail\u002Dloud\u003A\u0020every\u0020key\u0020must\u0020name\u0020an\u0020existing\u0020class\u0020and\u0020every\nentry\u0020of\u0020the\u0020role\u0020id\u0020lists\u0020must\u0020either\u0020be\u0020the\u0020pseudo\u0020role\u0020\u0027owner\u0027\u0020or\nan\u0020existing\u0020role\u0020of\u0020the\u0020role\u0020configuration.\u0020Config\u0020drift\u0020\u0028a\u0020renamed\nor\u0020removed\u0020class,\u0020a\u0020misspelled\u0020role\u0020id\u0029\u0020would\u0020otherwise\u0020deny\u0020every\nrequest\u0020of\u0020the\u0020class\u0020silently.\u0020The\u0020RuntimeException\u0020lands\u0020via\u0020the\nexecuteActions\u0020catch\u0020of\u0020execute\u0028\u0029\u0020in\u0020the\u0020soft\u0020error\u0020channel\u0020\u002B\u0020server\nlog.",
+            "url": "classes/View.html#method_validateClassPermissions"
         },                {
             "fqsen": "\\View\u003A\u003AexecuteView\u0028\u0029",
             "name": "executeView",
@@ -1136,6 +1216,31 @@ Search.appendIndex(
             "summary": "The\u0020runtime\u0020property,\u0020filtered\u0020from\u0020persistence\u0020by\u0020NOSAVE.",
             "url": "classes/PersistTestObject.html#property_strRuntime"
         },                {
+            "fqsen": "\\PersistTestHook",
+            "name": "PersistTestHook",
+            "summary": "Local\u0020hook\u0020test\u0020class\u003A\u0020owns\u0020its\u0020own\u0020class\u0020json\u0020file\u0020so\u0020the\u0020onLoad\nfiring\u0020paths\u0020can\u0020be\u0020checked\u0020against\u0020real\u0020persistence\u0020\u2014\u0020a\u0020static\ncounter\u0020counts\u0020the\u0020onLoad\u0020invocations\u0020\u0028persistTestHook.json,\nremoved\u0020by\u0020the\u0020shutdown\u0020handler\u0029.\u0020The\u0020counter\u0020lives\u0020statically\u0020so\nno\u0020hook\u0020bookkeeping\u0020can\u0020leak\u0020into\u0020the\u0020persisted\u0020entry.",
+            "url": "classes/PersistTestHook.html"
+        },                {
+            "fqsen": "\\PersistTestHook\u003A\u003AonLoad\u0028\u0029",
+            "name": "onLoad",
+            "summary": "This\u0020method\u0020is\u0020the\u0020onLoad\u0020override\u0020of\u0020the\u0020hook\u0020test\u0020class\u003A\u0020it\nincrements\u0020the\u0020static\u0020counter\u0020instead\u0020of\u0020doing\u0020real\u0020work.",
+            "url": "classes/PersistTestHook.html#method_onLoad"
+        },                {
+            "fqsen": "\\PersistTestHook\u003A\u003Apayload\u0028\u0029",
+            "name": "payload",
+            "summary": "This\u0020method\u0020reads\u0020the\u0020builtin\u0020payload\u0020property\u0020of\u0020the\u0020hook\u0020test\nclass.",
+            "url": "classes/PersistTestHook.html#method_payload"
+        },                {
+            "fqsen": "\\PersistTestHook\u003A\u003A\u0024intOnLoadCount",
+            "name": "intOnLoadCount",
+            "summary": "The\u0020static\u0020onLoad\u0020invocation\u0020counter\u0020of\u0020the\u0020hook\u0020test.",
+            "url": "classes/PersistTestHook.html#property_intOnLoadCount"
+        },                {
+            "fqsen": "\\PersistTestHook\u003A\u003A\u0024mixPayload",
+            "name": "mixPayload",
+            "summary": "The\u0020builtin\u0020payload\u0020property\u0020of\u0020the\u0020hook\u0020test\u0020class.",
+            "url": "classes/PersistTestHook.html#property_mixPayload"
+        },                {
             "fqsen": "\\getTemplateVar\u0028\u0029",
             "name": "getTemplateVar",
             "summary": "This\u0020function\u0020reads\u0020a\u0020single\u0020template\u0020variable\u0020from\u0020the\u0020protected\ntemplateVars\u0020property\u0020of\u0020a\u0020presentation\u0020instance\u0020via\u0020reflection\n\u0028e.g.\u0020the\u0020collector\u0020as\u0020\u0027default\u003A\u003ArawObjects\u0027\u0029.",
@@ -1148,7 +1253,7 @@ Search.appendIndex(
         },                {
             "fqsen": "\\mockController\u0028\u0029",
             "name": "mockController",
-            "summary": "This\u0020function\u0020builds\u0020the\u0020mock\u0020controller\u0020of\u0020the\u0020suites\u003A\u0020an\u0020anonymous\nController\u0020subclass\u0020whose\u0020constructor\u0020deliberately\u0020skips\u0020the\u0020parent\nconstructor\u0020\u0028the\u0020real\u0020one\u0020boots\u0020the\u0020whole\u0020app\u0020incl.\u0020auth\u0029.\u0020Without\u0020a\nview\u0020id\u0020only\u0020presentation,\u0020user\u0020and\u0020role\u0020exist\u003B\u0020with\u0020a\u0020view\u0020id\u0020the\u0020view\nobject\u0020is\u0020created\u0020and\u0020the\u0020request\u0020scope\u0020is\u0020set\u0020accordingly.",
+            "summary": "This\u0020function\u0020builds\u0020the\u0020mock\u0020controller\u0020of\u0020the\u0020suites\u003A\u0020an\u0020anonymous\nController\u0020subclass\u0020whose\u0020constructor\u0020deliberately\u0020skips\u0020the\u0020parent\nconstructor\u0020\u0028the\u0020real\u0020one\u0020boots\u0020the\u0020whole\u0020app\u0020incl.\u0020auth\u0029.\u0020Without\u0020a\nview\u0020id\u0020only\u0020presentation,\u0020user\u0020and\u0020role\u0020exist\u003B\u0020with\u0020a\u0020view\u0020id\u0020the\u0020view\nobject\u0020is\u0020created\u0020and\u0020the\u0020request\u0020scope\u0020is\u0020set\u0020accordingly.\u0020An\u0020optional\nuser\u0020id\u0020resolves\u0020the\u0020mock\u0020user\u0020over\u0020the\u0020auth\u0020id\u0020path\u0020\u0028default\u003A\u0020the\nguest\u0020fallback\u0029\u0020\u2014\u0020the\u0020base\u0020of\u0020the\u0020owner\u0020permission\u0020checks.",
             "url": "namespaces/default.html#function_mockController"
         },                {
             "fqsen": "\\TestObject",
@@ -1166,10 +1271,135 @@ Search.appendIndex(
             "summary": "The\u0020payload\u0020property\u0020of\u0020the\u0020test\u0020object.",
             "url": "classes/TestObject.html#property_mixTest"
         },                {
+            "fqsen": "\\RefTestObject",
+            "name": "RefTestObject",
+            "summary": "Local\u0020test\u0020object\u003A\u0020a\u0020BaseObject\u0020subclass\u0020with\u0020two\u0020\u0027class\u0027\u0020reference\nproperties\u0020onto\u0020TestObject\u0020\u2014\u0020one\u0020filtered\u0020by\u0020the\u0020own\u0020NOSERIALIZE\noverride,\u0020one\u0020visible\u0020\u2014\u0020for\u0020the\u0020reference\u0020handling\u0020checks\u0020of\nrawObject\u0028\u0029.",
+            "url": "classes/RefTestObject.html"
+        },                {
+            "fqsen": "\\RefTestObject\u003A\u003AsetHidden\u0028\u0029",
+            "name": "setHidden",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020hidden\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\ntest\u0020object.",
+            "url": "classes/RefTestObject.html#method_setHidden"
+        },                {
+            "fqsen": "\\RefTestObject\u003A\u003AsetVisible\u0028\u0029",
+            "name": "setVisible",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020visible\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\ntest\u0020object.",
+            "url": "classes/RefTestObject.html#method_setVisible"
+        },                {
+            "fqsen": "\\RefTestObject\u003A\u003ANOSERIALIZE",
+            "name": "NOSERIALIZE",
+            "summary": "The\u0020NOSERIALIZE\u0020override\u0020of\u0020the\u0020test\u0020object\u003A\u0020the\u0020hidden\u0020reference\nproperty\u0020is\u0020filtered\u0020beside\u0020the\u0020base\u0020defaults.",
+            "url": "classes/RefTestObject.html#constant_NOSERIALIZE"
+        },                {
+            "fqsen": "\\RefTestObject\u003A\u003A\u0024objHidden",
+            "name": "objHidden",
+            "summary": "The\u0020hidden\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\u0020object.",
+            "url": "classes/RefTestObject.html#property_objHidden"
+        },                {
+            "fqsen": "\\RefTestObject\u003A\u003A\u0024objVisible",
+            "name": "objVisible",
+            "summary": "The\u0020visible\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\u0020object.",
+            "url": "classes/RefTestObject.html#property_objVisible"
+        },                {
+            "fqsen": "\\DeleteTestTarget",
+            "name": "DeleteTestTarget",
+            "summary": "Local\u0020test\u0020target\u003A\u0020a\u0020minimal\u0020BaseObject\u0020subclass\u0020with\u0020one\u0020payload\nproperty\u0020\u2014\u0020the\u0020referenced\u0020class\u0020of\u0020the\u0020delete\u0020test\u0020source.",
+            "url": "classes/DeleteTestTarget.html"
+        },                {
+            "fqsen": "\\DeleteTestTarget\u003A\u003AsetName\u0028\u0029",
+            "name": "setName",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020payload\u0020property\u0020of\u0020the\u0020test\u0020target.",
+            "url": "classes/DeleteTestTarget.html#method_setName"
+        },                {
+            "fqsen": "\\DeleteTestTarget\u003A\u003A\u0024strName",
+            "name": "strName",
+            "summary": "The\u0020payload\u0020property\u0020of\u0020the\u0020test\u0020target.",
+            "url": "classes/DeleteTestTarget.html#property_strName"
+        },                {
+            "fqsen": "\\DeleteTestTargetCollection",
+            "name": "DeleteTestTargetCollection",
+            "summary": "Local\u0020test\u0020collection\u003A\u0020declares\u0020DeleteTestTarget\u0020as\u0020the\u0020allowed\nelement\u0020type.",
+            "url": "classes/DeleteTestTargetCollection.html"
+        },                {
+            "fqsen": "\\DeleteTestTargetCollection\u003A\u003AgetAllowedType\u0028\u0029",
+            "name": "getAllowedType",
+            "summary": "This\u0020method\u0020declares\u0020the\u0020allowed\u0020element\u0020type\u0020of\u0020the\u0020collection.",
+            "url": "classes/DeleteTestTargetCollection.html#method_getAllowedType"
+        },                {
+            "fqsen": "\\DeleteTestSource",
+            "name": "DeleteTestSource",
+            "summary": "Local\u0020test\u0020source\u003A\u0020a\u0020BaseObject\u0020with\u0020a\u0020\u0027class\u0027\u0020reference\u0020and\u0020a\n\u0027collection\u0027\u0020reference\u0020onto\u0020DeleteTestTarget\u0020\u2014\u0020the\u0020object\u0020whose\nentries\u0020the\u0020delete\u0020propagation\u0020has\u0020to\u0020clean.",
+            "url": "classes/DeleteTestSource.html"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003AsetPayload\u0028\u0029",
+            "name": "setPayload",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020builtin\u0020payload\u0020property\u0020of\u0020the\u0020test\u0020source.",
+            "url": "classes/DeleteTestSource.html#method_setPayload"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003AsetTarget\u0028\u0029",
+            "name": "setTarget",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\u0020source.",
+            "url": "classes/DeleteTestSource.html#method_setTarget"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003AsetTargets\u0028\u0029",
+            "name": "setTargets",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020\u0027collection\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\nsource.",
+            "url": "classes/DeleteTestSource.html#method_setTargets"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003A\u0024strPayload",
+            "name": "strPayload",
+            "summary": "The\u0020builtin\u0020payload\u0020property\u0020of\u0020the\u0020test\u0020source.",
+            "url": "classes/DeleteTestSource.html#property_strPayload"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003A\u0024objTarget",
+            "name": "objTarget",
+            "summary": "The\u0020\u0027class\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\u0020source.",
+            "url": "classes/DeleteTestSource.html#property_objTarget"
+        },                {
+            "fqsen": "\\DeleteTestSource\u003A\u003A\u0024objTargets",
+            "name": "objTargets",
+            "summary": "The\u0020\u0027collection\u0027\u0020reference\u0020property\u0020of\u0020the\u0020test\u0020source.",
+            "url": "classes/DeleteTestSource.html#property_objTargets"
+        },                {
+            "fqsen": "\\DeleteTestNode",
+            "name": "DeleteTestNode",
+            "summary": "Local\u0020test\u0020node\u003A\u0020a\u0020self\u002Dreferencing\u0020BaseObject\u0020\u0028collection\u0020onto\u0020the\nown\u0020class\u0029\u0020\u2014\u0020the\u0020phase\u0020B\u0020case\u0020of\u0020the\u0020delete\u0020propagation.",
+            "url": "classes/DeleteTestNode.html"
+        },                {
+            "fqsen": "\\DeleteTestNode\u003A\u003AsetNodes\u0028\u0029",
+            "name": "setNodes",
+            "summary": "This\u0020method\u0020sets\u0020the\u0020self\u002Dreference\u0020collection\u0020property\u0020of\u0020the\ntest\u0020node.",
+            "url": "classes/DeleteTestNode.html#method_setNodes"
+        },                {
+            "fqsen": "\\DeleteTestNode\u003A\u003A\u0024objNodes",
+            "name": "objNodes",
+            "summary": "The\u0020self\u002Dreference\u0020collection\u0020property\u0020of\u0020the\u0020test\u0020node.",
+            "url": "classes/DeleteTestNode.html#property_objNodes"
+        },                {
+            "fqsen": "\\DeleteTestNodeCollection",
+            "name": "DeleteTestNodeCollection",
+            "summary": "Local\u0020test\u0020node\u0020collection\u003A\u0020declares\u0020DeleteTestNode\u0020as\u0020the\u0020allowed\nelement\u0020type.",
+            "url": "classes/DeleteTestNodeCollection.html"
+        },                {
+            "fqsen": "\\DeleteTestNodeCollection\u003A\u003AgetAllowedType\u0028\u0029",
+            "name": "getAllowedType",
+            "summary": "This\u0020method\u0020declares\u0020the\u0020allowed\u0020element\u0020type\u0020of\u0020the\u0020collection.",
+            "url": "classes/DeleteTestNodeCollection.html#method_getAllowedType"
+        },                {
             "fqsen": "\\setParams\u0028\u0029",
             "name": "setParams",
             "summary": "This\u0020helper\u0020resets\u0020the\u0020request\u0020state,\u0020sets\u0020the\u0020viewUserList\u0020scope\n\u0028the\u0020action\u0020view\u0020of\u0020the\u0020user\u0020management\u0029\u0020and\u0020applies\u0020the\u0020given\nparameters\u0020as\u0020POST\u0020values\u0020\u2014\u0020the\u0020common\u0020prelude\u0020of\u0020every\u0020scenario.",
             "url": "namespaces/default.html#function_setParams"
+        },                {
+            "fqsen": "\\setMockClassPermissions\u0028\u0029",
+            "name": "setMockClassPermissions",
+            "summary": "This\u0020function\u0020injects\u0020a\u0020classPermissions\u0020map\u0020into\u0020the\u0020view\u0020object\u0020of\nthe\u0020mock\u0020controller\u0020\u0028protected\u0020property,\u0020test\u002Donly\u0020reflection\u0020access\u0029\n\u2014\u0020the\u0020route\u0020gates\u0020read\u0020the\u0020map\u0020from\u0020the\u0020request\u0020view.",
+            "url": "namespaces/default.html#function_setMockClassPermissions"
+        },                {
+            "fqsen": "\\crudMockController\u0028\u0029",
+            "name": "crudMockController",
+            "summary": "This\u0020function\u0020builds\u0020the\u0020mock\u0020controller\u0020for\u0020the\u0020generic\u0020route\u0020calls\nand\u0020injects\u0020the\u0020suite\u0027s\u0020classPermissions\u0020map\u0020into\u0020the\u0020request\u0020view\u003A\nthe\u0020production\u0020view.json\u0020map\u0020declares\u0020only\u0020the\u0020production\u0020classes,\u0020so\nthe\u0020suite\u0020classes\u0020would\u0020be\u0020denied\u0020as\u0020undeclared\u0020\u2014\u0020the\u0020guest\u0020mock\u0020role\nis\u0020the\u0020listed\u0020permission\u0020of\u0020the\u0020map,\u0020keeping\u0020the\u0020historical\u0020route\nchecks\u0020untouched.",
+            "url": "namespaces/default.html#function_crudMockController"
         },                {
             "fqsen": "\\PersistTestObject\u003A\u003AonSave\u0028\u0029",
             "name": "onSave",

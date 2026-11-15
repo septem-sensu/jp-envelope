@@ -113,7 +113,7 @@ committable and have SKIP paths when local production data is missing.</p>
                     <span class="phpdocumentor-tag__name">version</span>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
-                                            <span class="phpdocumentor-tag-link">0.2.10</span>
+                                            <span class="phpdocumentor-tag-link">0.2.11</span>
                                                                                 
                                              
                                     </dd>
@@ -187,7 +187,9 @@ line and stops the suite with exit code 1.</dd>
 Controller subclass whose constructor deliberately skips the parent
 constructor (the real one boots the whole app incl. auth). Without a
 view id only presentation, user and role exist; with a view id the view
-object is created and the request scope is set accordingly.</dd>
+object is created and the request scope is set accordingly. An optional
+user id resolves the mock user over the auth id path (default: the
+guest fallback) — the base of the owner permission checks.</dd>
 
     </dl>
 
@@ -347,7 +349,7 @@ line and stops the suite with exit code 1.</p>
     <aside class="phpdocumentor-element-found-in">
     <abbr class="phpdocumentor-element-found-in__file" title="tests/bootstrap.php"><a href="files/tests-bootstrap.html"><abbr title="tests/bootstrap.php">bootstrap.php</abbr></a></abbr>
     :
-    <span class="phpdocumentor-element-found-in__line">79</span>
+    <span class="phpdocumentor-element-found-in__line">83</span>
 
     </aside>
 
@@ -355,12 +357,14 @@ line and stops the suite with exit code 1.</p>
 Controller subclass whose constructor deliberately skips the parent
 constructor (the real one boots the whole app incl. auth). Without a
 view id only presentation, user and role exist; with a view id the view
-object is created and the request scope is set accordingly.</p>
+object is created and the request scope is set accordingly. An optional
+user id resolves the mock user over the auth id path (default: the
+guest fallback) — the base of the owner permission checks.</p>
 
     
     <code class="phpdocumentor-code phpdocumentor-signature ">
     <span class="phpdocumentor-signature__visibility"></span>
-                    <span class="phpdocumentor-signature__name">mockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
+                    <span class="phpdocumentor-signature__name">mockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__return-type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strUserId</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
 
     
         <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
@@ -371,6 +375,15 @@ object is created and the request scope is set accordingly.</p>
                  = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
             <dd class="phpdocumentor-argument-list__definition">
                     <section class="phpdocumentor-description"><p>The view id for the scope or null</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strUserId</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string|null</span>
+                 = <span class="phpdocumentor-signature__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The user id of the mock user or null for the guest fallback</p>
 </section>
 
             </dd>
@@ -389,6 +402,15 @@ object is created and the request scope is set accordingly.</p>
                 <dd class="phpdocumentor-tag-list__definition">
                                                                                 
                                                  <section class="phpdocumentor-description"><p>$objController = mockController( 'viewUserList' );</p>
+</section>
+
+                                    </dd>
+                            <dt class="phpdocumentor-tag-list__entry">
+                    <span class="phpdocumentor-tag__name">example</span>
+                </dt>
+                <dd class="phpdocumentor-tag-list__definition">
+                                                                                
+                                                 <section class="phpdocumentor-description"><p>$objController = mockController( 'viewSaveObject', 'max@musterman.de' );</p>
 </section>
 
                                     </dd>

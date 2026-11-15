@@ -91,15 +91,20 @@ read routes (existsObject, getRawObject, getRawObjectsFromClass,
 getObject, getObjectsFromClass), the persistence roundtrip of
 saveObject() and fillObject() (builtin, class reference and
 collection properties, NOSAVE filter, last-wins update), the
-deleteObject cycle and the viewLoadObject envelope route. The write
-locking itself is covered by lockTest. The suite writes only into
-its own class json files derived from the test class names
-(persistTestObject.json, persistTestChild.json) — they are
-removed on every suite end by the shutdown handler, the local
-production data files are never touched. The missing-file guard of
-loadFileDeCrypted() is checked before the first insert creates its
-storage file. The positive viewLoadObject check reads the first local
-user and therefore carries a SKIP path on machines without user.json.</p>
+deleteObject cycle and the viewLoadObject envelope route. The
+onLoad hook is covered against its own test class file: it fires
+on every real load, while blueprints and unknown ids stay
+hook-less. The write locking itself is covered by lockTest. The
+suite writes only into its own class json files derived from the
+test class names (persistTestObject.json, persistTestChild.json,
+persistTestHook.json) — they are removed on every suite end by the
+shutdown handler, the local production data files are never
+touched. The missing-file guard of loadFileDeCrypted() is checked
+before the first insert creates its storage file. The positive
+viewLoadObject check reads the first local user and therefore
+carries a SKIP path on machines without user.json; its guest mock
+receives an injected classPermissions whitelist because the
+production map of viewLoadObject denies the guest role.</p>
 
         
         
@@ -123,7 +128,7 @@ user and therefore carries a SKIP path on machines without user.json.</p>
                     <span class="phpdocumentor-tag__name">version</span>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
-                                            <span class="phpdocumentor-tag-link">0.2.17</span>
+                                            <span class="phpdocumentor-tag-link">0.2.18</span>
                                                                                 
                                              
                                     </dd>
@@ -171,7 +176,11 @@ type of the persistence contract (builtin, class reference,
 collection) and a runtime property filtered by the own NOSAVE
 override. The nullable property declarations deliberately use the
 &#039;?Class&#039; form — getPropertyType()/getPropertyClass() read the bare
-type name via ReflectionNamedType.</dd>    </dl>
+type name via ReflectionNamedType.</dd>            <dt class="phpdocumentor-table-of-contents__entry -class"><a href="classes/PersistTestHook.html"><abbr title="\PersistTestHook">PersistTestHook</abbr></a></dt><dd>Local hook test class: owns its own class json file so the onLoad
+firing paths can be checked against real persistence — a static
+counter counts the onLoad invocations (persistTestHook.json,
+removed by the shutdown handler). The counter lives statically so
+no hook bookkeeping can leak into the persisted entry.</dd>    </dl>
 
 
 

@@ -98,13 +98,27 @@ rejections and the empty-value clearing — persisted as id and id list
 and reloaded through fillObject(). The still-closed guards
 (missing/broken request payload, classes without field definitions)
 answer empty per the json view convention; rejections travel as
-AppError envelopes. The suite writes only into its own class json
+AppError envelopes. The classPermissions whitelist of the views is
+injected into the mock controller per suite helper (the production
+view.json map declares only the production classes): it covers the
+whitelist silence for undeclared classes, the owner pseudo role
+(own object allowed, foreign object denied, create never granted
+via owner, entries without ownerId stay role-only), the ownerId
+stamping on creates (envelope and persisted entry) and the forgery
+protection (a delivered ownerId is no field contract and stays
+without effect). The suite writes only into its own class json
 files (persistTestObject.json, persistTestElement.json) including
 the matching temporary field definitions (fields/persistTestObject.json,
 fields/persistTestReferenceObject.json) — all removed on every suite
 end by the shutdown handler. The User positive cases use a suite-owned
-test account (persisttest@local.test) that the handler also removes;
-the local production accounts are never touched.</p>
+test account (persisttest@local.test), the permission cases an
+additional owner account (persistowner@local.test, owns itself) and a
+foreign victim account (persistvictim@local.test, ownerId = the owner)
+— the handler removes all; the local production accounts are never
+touched. The load, bulk load and delete permission checks run over
+the User class: the params whitelist passes only production classes
+as the GET class parameter, the suite classes are reachable over the
+save route payload only.</p>
 
         
         
@@ -128,7 +142,7 @@ the local production accounts are never touched.</p>
                     <span class="phpdocumentor-tag__name">version</span>
                 </dt>
                 <dd class="phpdocumentor-tag-list__definition">
-                                            <span class="phpdocumentor-tag-link">0.2.19</span>
+                                            <span class="phpdocumentor-tag-link">0.2.20</span>
                                                                                 
                                              
                                     </dd>
@@ -185,11 +199,146 @@ mixPayload field — the subject of the reference descriptor merge.</dd>    </dl
 
 
 
+<h4 id="toc-functions">
+    Functions
+    <a href="files/tests-genericcrudtest.html#toc-functions" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_setMockClassPermissions">setMockClassPermissions()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>This function injects a classPermissions map into the view object of
+the mock controller (protected property, test-only reflection access)
+— the route gates read the map from the request view.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -function -">
+    <a class="" href="namespaces/default.html#function_crudMockController">crudMockController()</a>
+    <span>
+                                &nbsp;: <a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>    </span>
+</dt>
+<dd>This function builds the mock controller for the generic route calls
+and injects the suite&#039;s classPermissions map into the request view:
+the production view.json map declares only the production classes, so
+the suite classes would be denied as undeclared — the guest mock role
+is the listed permission of the map, keeping the historical route
+checks untouched.</dd>
+
+    </dl>
 
 
         
 
-        
+            <section class="phpdocumentor-functions">
+        <h3 class="phpdocumentor-elements__header" id="functions">
+            Functions
+            <a href="files/tests-genericcrudtest.html#functions" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_setMockClassPermissions">
+        setMockClassPermissions()
+        <a href="namespaces/default.html#function_setMockClassPermissions" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">245</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This function injects a classPermissions map into the view object of
+the mock controller (protected property, test-only reflection access)
+— the route gates read the map from the request view.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">setMockClassPermissions</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$objController</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;&nbsp;</span><span class="phpdocumentor-signature__argument__name">$arrMap</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$objController</span>
+                : <span class="phpdocumentor-signature__argument__return-type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The mock controller</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$arrMap</span>
+                : <span class="phpdocumentor-signature__argument__return-type">array&lt;string|int, mixed&gt;</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The classPermissions map (class =&gt; role ids)</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+    
+</article>
+                    <article class="phpdocumentor-element -function - ">
+    <h4 class="phpdocumentor-element__name" id="function_crudMockController">
+        crudMockController()
+        <a href="namespaces/default.html#function_crudMockController" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="tests/genericCrudTest.php"><a href="files/tests-genericcrudtest.html"><abbr title="tests/genericCrudTest.php">genericCrudTest.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">263</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">This function builds the mock controller for the generic route calls
+and injects the suite&#039;s classPermissions map into the request view:
+the production view.json map declares only the production classes, so
+the suite classes would be denied as undeclared — the guest mock role
+is the listed permission of the map, keeping the historical route
+checks untouched.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility"></span>
+                    <span class="phpdocumentor-signature__name">crudMockController</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__return-type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$strViewId</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span></code>
+
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-signature__argument__name">$strViewId</span>
+                : <span class="phpdocumentor-signature__argument__return-type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>The view id for the scope</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><a href="classes/Controller.html"><abbr title="\Controller">Controller</abbr></a></span>
+                    &mdash;
+                <section class="phpdocumentor-description"><p>The mocked controller instance</p>
+</section>
+
+            </section>
+
+</article>
+            </section>
+
         <div class="phpdocumentor-modal" id="source-view">
     <div class="phpdocumentor-modal-bg" data-exit-button></div>
     <div class="phpdocumentor-modal-container">
@@ -296,10 +445,18 @@ mixPayload field — the subject of the reference descriptor merge.</dd>    </dl
             <li>
                 <ul class="phpdocumentor-list -clean">
                                                                                                         <li><a href="files/tests-genericcrudtest.html#toc-classes">Classes</a></li>
-                                                                                                                    </ul>
+                                                                                                                            <li><a href="files/tests-genericcrudtest.html#toc-functions">Functions</a></li>
+                                    </ul>
             </li>
 
             
+                            <li class="phpdocumentor-on-this-page-section__title">Functions</li>
+                <li>
+                    <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="namespaces/default.html#function_crudMockController">crudMockController()</a></li>
+                                                    <li class=""><a href="namespaces/default.html#function_setMockClassPermissions">setMockClassPermissions()</a></li>
+                                            </ul>
+                </li>
                     </ul>
     </section>
 
