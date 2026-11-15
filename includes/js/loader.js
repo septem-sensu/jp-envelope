@@ -286,7 +286,10 @@ class Loader extends EventTarget {
  * This method saves an envelope over the generic json save route
  * (viewSaveObject, POST): the envelope (class, id, data) travels as the
  * urlencoded 'object' parameter — with the blueprint id the server
- * creates the object under a generated id. The response envelopes run
+ * creates the object under a generated id. The CSRF token of the app
+ * instance travels beside it as the 'csrfToken' parameter (stateless
+ * HMAC over the auth cookie token — the controller recomputes and
+ * compares it). The response envelopes run
  * through the standard pipeline (instantiateRawObjects) and register
  * with the 'save' event type (onSave beside ready): object envelopes
  * register/refresh their registry instances, AppError
@@ -309,6 +312,7 @@ class Loader extends EventTarget {
     const body = new URLSearchParams();
 
     body.set( 'object', JSON.stringify( rawObject ) );
+    body.set( 'csrfToken', window[ appAlias ].registry.get( 'app' ).csrfToken ?? '' );
 
     const response = await fetch( url, {
       method:  'POST',
@@ -338,7 +342,10 @@ class Loader extends EventTarget {
 /**
  * This method deletes an addressed object over the generic json delete
  * route (viewDeleteObject, POST): the parameters class and id travel as
- * urlencoded body. The success response carries the deleted envelope
+ * urlencoded body. The CSRF token of the app instance travels beside
+ * them as the 'csrfToken' parameter (stateless HMAC over the auth
+ * cookie token — the controller recomputes and compares it). The
+ * success response carries the deleted envelope
  * (plus reference sub envelopes) — instantiateRawObjects registers it
  * with the 'delete' event type (onDelete beside ready), then remove
  * cleans every replay trace of the id, so the delete events fire on a
@@ -362,6 +369,7 @@ class Loader extends EventTarget {
 
     body.set( 'class', className );
     body.set( 'id', id );
+    body.set( 'csrfToken', window[ appAlias ].registry.get( 'app' ).csrfToken ?? '' );
 
     const response = await fetch( url, {
       method:  'POST',

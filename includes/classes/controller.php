@@ -181,17 +181,79 @@ class Controller extends BaseObject {
   }
 
   /**
-   * This method runs the request: it throws the app context as the first
-   * envelope (formerly the loader unshift: class file loading and
-   * instantiation run in the loader in collector order — the app carries
-   * the user and view context right away via currentUserId,
-   * currentUserRoleId and currentView), executes the actions of the view
-   * (a crash is caught and routed into the soft error channel as a
-   * generic AppError, the details only into the log), throws the
-   * collected soft errors and the current user into the collector and
-   * finally executes the view itself. A view crash gets no addError
-   * (the collector foreach has already run, it would be a zombie
-   * without a display path): json views answer empty with HTTP
+   * This method decides whether the request is a CSRF violation: only
+   * POST requests with an auth cookie token are guarded (GET routes
+   * are read-only, a guest has no session to abuse — the login POST
+   * stays outside the guard). The delivered csrfToken parameter must
+   * equal the recomputed stateless HMAC of the raw cookie token
+   * (createCsrfToken): a missing or wrong token rejects the request.
+   *
+   * @return    boolean   True when the request must be rejected as a CSRF violation
+   *
+   * @example   if( $this->isCsrfViolation() ) return $this->rejectCsrf();
+   *
+   * @see       Controller::rejectCsrf
+   *
+   */
+  private function isCsrfViolation() : bool {
+    if( Request::method() !== 'POST' ) return false;
+
+    $strCookieToken = Presentation::getCookieProperty( 'token' );
+
+    if( ! isset( $strCookieToken ) ) return false;
+
+    $strDeliveredToken = Request::param( 'csrfToken' );
+
+    if( ! isset( $strDeliveredToken ) ) return true;
+
+    return ! hash_equals( BaseObject::createCsrfToken( $strCookieToken ), $strDeliveredToken );
+  }
+
+  /**
+   * This method answers a rejected CSRF request without running any
+   * action: json views receive the soft channel (a single AppError
+   * envelope with a generic renewal hint — the overlay displays it,
+   * HTTP 200), html views receive a 303 redirect to the default view
+   * of the user (the same navigation pattern as User::logout) — the
+   * fresh page render also delivers a fresh token. The rejection is
+   * deliberately silent besides the generic message: a CSRF attempt
+   * is no information channel to the outside.
+   *
+   * @return    string   The json payload or an empty string (html redirect)
+   *
+   * @example   if( $this->isCsrfViolation() ) return $this->rejectCsrf();
+   *
+   * @see       Controller::isCsrfViolation
+   *
+   */
+  private function rejectCsrf() : string {
+    if( strtolower( $this->viewObject->resultType() ) == 'json' ) {
+      $this->presentation()->getJsonHeader();
+
+      return json_encode( self::crudErrorEnvelope( 'Sitzung ungültig. Bitte laden Sie die Seite neu.', 'csrf' ) );
+    }
+
+    header( 'Location: index.php?view=' . $this->role->defaultViewId(), true, 303 );
+
+    return '';
+  }
+
+  /**
+   * This method runs the request: it guards POST requests with an auth
+   * cookie against CSRF (the delivered token must match the recomputed
+   * HMAC of the cookie token — a violation is answered before any
+   * action runs: json softly with an AppError envelope, html with a
+   * 303 redirect to the default view), then throws the app context as
+   * the first envelope (formerly the loader unshift: class file loading
+   * and instantiation run in the loader in collector order — the app
+   * carries the user and view context right away via currentUserId,
+   * currentUserRoleId, currentView and csrfToken), executes the actions
+   * of the view (a crash is caught and routed into the soft error
+   * channel as a generic AppError, the details only into the log),
+   * throws the collected soft errors and the current user into the
+   * collector and finally executes the view itself. A view crash gets
+   * no addError (the collector foreach has already run, it would be a
+   * zombie without a display path): json views answer empty with HTTP
    * 500, HTML views answer with the emergency page.
    *
    * @return    mixed   The rendered HTML (string), the json payload (string) or '' on a json view crash
@@ -200,6 +262,8 @@ class Controller extends BaseObject {
    *
    */
   public function execute() : mixed {
+    if( $this->isCsrfViolation() ) return $this->rejectCsrf();
+
     $this->presentation()->assignTemplateVar( 'default', 'rawObjects', [] );
 
     $this->addRawObject( new App( $this ) );

@@ -4,7 +4,8 @@
     "id":       { "type": "string" },
     "class":    { "type": "string", "values": [ "User", "Role", "View", "Diagnostics", "DemoOne", "DemoTwo" ] },
     "user":     { "type": "string" },
-    "password": { "type": "string" }
+    "password": { "type": "string" },
+    "csrfToken": { "type": "string" }
   },
   "viewNewObject": {
     "newClass": { "type": "string", "values": [ "User", "DemoOne", "DemoTwo" ] }

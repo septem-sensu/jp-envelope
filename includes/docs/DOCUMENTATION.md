@@ -3,7 +3,7 @@
 
 ## Projekt
 
-Dokumentationsstand: Version 0.2.18 / 2026-11-05
+Dokumentationsstand: Version 0.2.19 / 2026-11-15
 
 **JPEnvelope** ist ein datengetriebenes, leichtgewichtiges Full-Stack-Framework, das für die nahtlose und asynchrone Zusammenarbeit zwischen **PHP** im Backend und modernem **Vanilla JavaScript** im Frontend entwickelt wurde.
 
@@ -157,6 +157,40 @@ Die Auflösung, welcher User die App steuert, folgt einer Prioritäten-Kette:
 3. **Login-Formular** (SHA256-Passwort-Vergleich)
 4. **Fallback:** `defaultUserId` aus der `config.json` (Gast-Zugang)
 
+#### CSRF-Schutz für POST-Requests (`csrfToken`)
+
+Der Auth-Cookie wird vom Browser bei jedem Request mitgeschickt — ein fremdes Skript könnte den eingeloggten Browser daher zu state-changing POSTs verleiten (klassisches CSRF). Das Framework wehrt das auf zwei Ebenen ab:
+
+**Ebene 1 — SameSite=Lax (Cookie-Ebene):** Der Auth-Cookie wird mit dem `SameSite=Lax`-Flag gesetzt (`Presentation::writeCookie`). Moderne Browser senden den Cookie bei Cross-Site-POSTs gar nicht erst — der häufigste CSRF-Vektor fällt auf Cookie-Ebene weg.
+
+**Ebene 2 — Stateless HMAC-Token (Controller-Ebene):** Am Anfang von `Controller::execute()` wird jeder POST-Request geprüft, der einen Auth-Cookie mitbringt (`isCsrfViolation`):
+
+1. `Request::method()` ist nicht `POST` → keine Prüfung (GET-Routen sind read-only).
+2. Kein Auth-Cookie-Token vorhanden (Gast/Login) → keine Prüfung (es gibt keine Session, die man missbrauchen könnte).
+3. Der Parameter `csrfToken` fehlt oder weicht ab → **Ablehnung**, bevor irgendeine Action läuft.
+
+Das Token ist eine **zustandslose HMAC-Ableitung**: `hash_hmac( 'sha256', roherCookieToken, hash( 'sha256', passphrase2 ) )` (`BaseObject::createCsrfToken`). Es gibt keinen serverseitigen Storage — der Server rechnet das erwartete Token bei jedem POST aus dem Cookie nach und vergleicht per `hash_equals`. Das Token rotiert damit automatisch mit dem Auth-Cookie-Token (Re-Login, Passwortwechsel).
+
+**Transport zum Client:**
+
+- Die App-Envelope-Instanz trägt das Token als Property `csrfToken` im `data`-Payload — die fetch-Routen (`loader.saveObject`/`loader.deleteObject`) hängen es an ihren POST-Body an (`registry.get('app').csrfToken`).
+- Native Formular-POSTs laufen ausnahmslos durch die JS-Delegation von `baseObject.js` (Submit-Delegation bzw. `crudPostObject`) — `appendCsrfToken( form )` stellt dort den Hidden-Input `csrfToken` sicher. Keine Template-Änderungen nötig.
+
+**Ablehnungsverhalten (`rejectCsrf`):**
+
+|resultType|Verhalten|
+|---|---|
+|`json`|HTTP 200, ein einziger `AppError`-Envelope („Sitzung ungültig. Bitte laden Sie die Seite neu.", Source `csrf`) — das Overlay zeigt die Karte, der State-Change läuft in keinem Fall.|
+|HTML|HTTP 303 Redirect auf die Default-View des Users — die frisch gerenderte Seite liefert zugleich ein frisches Token.|
+
+Die Ablehnung ist bewusst generisch (keine Details, kein Informations-Upgrade für Angreifer).
+
+**Threat-Modell & akzeptierte Lücken:**
+
+- **Login-CSRF:** Ein ausgeloggter Gast (kein Cookie, kein Token) wird bewusst nicht geschützt — ein fremdes Skript könnte einen fremden Login-POST abschicken. Impact gering (der Angreifer loggt sein Opfer in ein Konto ein, dessen Zugangsdaten er kennt — kein Datendiebstahl beim Opfer), OWASP stuft das als niedrig ein.
+- **Logout bleibt GET:** Ein CSRF-Logout ist maximal Ärger-Potenzial (Zwangsausloggen), kein State-Change mit Datenverlust.
+- **Token ist per-Login, nicht per-Request:** Das Token lebt so lange wie der Auth-Cookie. Ein geleaktes Token aus einer Antwort ist bis zum nächsten Re-Login nutzbar — Gegenmaßnahme ist SameSite=Lax plus die Tatsache, dass das Token niemals in URLs, nur in POST-Bodies reist.
+
 ### Workflow: Feature Integration
 
 1. **Parameter deklarieren (`params.json`):**
@@ -190,7 +224,7 @@ Die Validierung erfolgt deklarativ über JSON-Strukturen und teilt sich in zwei 
 
 |Scope-Ebene|Zweck|Typische Parameter|
 |---|---|---|
-|**`global`**|Gilt ab App-Start (z. B. für die Vor-Authentifizierung).|`view`, `id`, `class`, `user`, `password`|
+|**`global`**|Gilt ab App-Start (z. B. für die Vor-Authentifizierung).|`view`, `id`, `class`, `user`, `password`, `csrfToken`|
 |**`[viewId]`**|Nur aktiv, wenn die spezifische View aufgerufen wird.|_View-spezifische Parameter_|
 
 #### Konfigurations-Felder für Parameter
@@ -484,6 +518,7 @@ Die PHP-Klasse `App` serialisiert wichtige Kern-Informationen in den `data`-Payl
 - `currentUserId (String)`: Die ID des aktuell aktiven Benutzers.
 - `currentUserRoleId (String)`: Die Rollen-ID des Benutzers.
 - `currentView (Object)`: Die aktuell gerenderte View.
+- `csrfToken (String)`: Das CSRF-Token für POST-Requests (zustandsloser HMAC über den Auth-Cookie-Token, siehe [Authentifizierung & Autorisierung](#Authentifizierung%20&%20Autorisierung%20(%60Auth%60))). Für Gäste ein leerer String.
 
 > [!info] fillObject()
 > Die Methode `fillObject()` überschreibt keine bereits im JS-Konstruktor gesetzten Properties.

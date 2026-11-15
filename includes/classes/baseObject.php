@@ -1040,20 +1040,21 @@ class BaseObject {
   }
 
   /**
-   * This private method builds the rejection envelope(s) of the generic
-   * json routes: one AppError instance per message (id pattern
-   * error{N} over a route-local counter), returned as its rawObject
-   * envelope array — the client overlays report the cards themselves
-   * (loader error display), the same channel the html views use.
+   * This protected method builds the rejection envelope(s) of the generic
+   * json routes and the CSRF guard of the controller: one AppError
+   * instance per message (id pattern error{N} over a route-local
+   * counter), returned as its rawObject envelope array — the client
+   * overlays report the cards themselves (loader error display), the
+   * same channel the html views use.
    *
    * @param     string    $strMessage   The rejection message for the frontend
-   * @param     string    $strSource    The route or hook source (e.g. 'viewSaveObject')
+   * @param     string    $strSource    The route, hook or guard source (e.g. 'viewSaveObject')
    * @return    array     The AppError envelope as single-element array
    *
    * @example   return self::crudErrorEnvelope( 'Ungültiges Objekt übermittelt.', 'viewSaveObject' );
    *
    */
-  private static function crudErrorEnvelope( string $strMessage, string $strSource ) : array {
+  protected static function crudErrorEnvelope( string $strMessage, string $strSource ) : array {
     self::$intErrorEnvelopeCount++;
 
     $objError = new AppError( 'error' . self::$intErrorEnvelopeCount );
@@ -1637,6 +1638,33 @@ class BaseObject {
     );
 
     return $strContent;
+  }
+
+  /**
+   * This method derives the CSRF token from the raw auth cookie token:
+   * an HMAC-SHA256 over the cookie token value keyed with a hash of
+   * passphrase2 (same derivation style as the AES initialization
+   * vector — passphrase1 stays the AES key material). The token is
+   * stateless: the server recomputes it per request, nothing is
+   * stored. It rotates automatically with the auth cookie token
+   * (re-login, password change) and it is unknown to a cross-site
+   * attacker (the same origin policy keeps the cookie value and the
+   * delivered token apart). An empty cookie token (guest) produces a
+   * deterministic meaningless token — the CSRF guard itself skips
+   * requests without an auth cookie.
+   *
+   * @param     string    $strCookieToken   The raw token value of the auth cookie
+   * @return    string    The HMAC-SHA256 CSRF token
+   *
+   * @example   $strCsrfToken = BaseObject::createCsrfToken( Presentation::getCookieProperty( 'token' ) ?? '' );
+   *
+   * @see       BaseObject::getCryptKeys
+   *
+   */
+  public static function createCsrfToken( string $strCookieToken ) : string {
+    $arrCryptKeys = BaseObject::getCryptKeys();
+
+    return hash_hmac( 'sha256', $strCookieToken, hash( 'sha256', $arrCryptKeys[ 'passphrase2' ] ) );
   }
 
   /**

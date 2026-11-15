@@ -30,7 +30,7 @@ Das Kernkonzept basiert auf dem Prinzip der namensgebenden Envelopes (Datenumsch
 * **Asynchroner JS-Loader & Registry:** Im Client wird nur ein minimaler Core statisch geladen. Business-Klassen, Templates und Bibliotheken werden on demand asynchron nachgeladen.
 * **Single Source Validierung:** Clientseitige Validierung und serverseitige Absicherung nutzen dieselben JSON-Felddefinitionen.
 * **Robustes Fehlermanagement (weich & hart):** Abgelehnte Guards erscheinen als Fehlerkarten im zentralen Frontend-Overlay (weicher Kanal); unbehandelte Crashes fängt ein zweistufiges Try-Catch-Sicherheitsnetz im Backend mit einer generischen Fehlerseite statt einer weißen Seite ab (Härtekanal, Details nur im Log). Die JS-Seite meldet über einen eigenen `window.onerror`-Kanal in dasselbe Overlay.
-* **Rollenbasierte Rechte & Auth:** Views und Actions werden deklarativ über JSON-Konfigurationen gegated, nach dem Login trägt ein AES-verschlüsselter Cookie-Token die Anmeldung.
+* **Rollenbasierte Rechte & Auth:** Views und Actions werden deklarativ über JSON-Konfigurationen gegated, nach dem Login trägt ein AES-verschlüsselter Cookie-Token die Anmeldung. POST-Requests sind CSRF-geschützt (zustandsloser HMAC-Token, `SameSite=Lax` auf dem Cookie).
 
 ---
 
@@ -189,6 +189,12 @@ Das Framework trennt Trigger-Namen im HTML-Formular von den PHP-Methodennamen. D
 ### Klassenbezogene Rechte der CRUD-Routen (`classPermissions` & `ownerId`)
 
 Die generischen JSON-Routen (`viewSaveObject`, `viewLoadObject`, `viewLoadObjects`, `viewDeleteObject`) prüfen zusätzlich zum View-Gate eine klassenbezogene Whitelist am View: die `classPermissions`-Map legt pro Business-Klasse fest, welche Rollen (inkl. der Pseudo-Rolle `"owner"` = der Ersteller) Objekte dieser Klasse behandeln dürfen — undeklarierte Klassen verweigern die Routen still. Beim Erstellen stempelt das Framework die ID des angemeldeten Users als `ownerId` auf das Objekt; der Client kann sie nie liefern oder überschreiben, da sie kein Feldvertrag ist. Save und Delete melden eine Verweigerung als AppError, Load antwortet still-leer bzw. filtert unzulässige Objekte aus der Liste (kein Existenz-Leak). Details in `includes/docs/DOCUMENTATION.md`.
+
+---
+
+### CSRF-Schutz für POST-Requests (`csrfToken`)
+
+Der Auth-Cookie wird vom Browser bei jedem Request mitgeschickt — fremde Skripte könnten den eingeloggten Browser deshalb zu state-changing POSTs verleiten. Das Framework wehrt das auf zwei Ebenen ab: der Cookie trägt das `SameSite=Lax`-Flag (Cross-Site-POSTs verlieren den Cookie), und `Controller::execute()` prüft jeden POST-Request mit Auth-Cookie am Anfang gegen einen **zustandslosen HMAC-Token** (`hash_hmac('sha256', roherCookieToken, passphrase2-Hash)`) — der Server rechnet das erwartete Token bei jedem POST aus dem Cookie nach, es gibt keinen Storage, und das Token rotiert automatisch mit dem Auth-Cookie (Re-Login, Passwortwechsel). Zum Client reist das Token als Property der App-Envelope-Instanz (fetch-Routen) bzw. über den Hidden-Input aus `appendCsrfToken()` (Formular-POSTs). JSON-Routen werden weich abgelehnt (AppError-Karte im Overlay), HTML-Formulare mit einem 303-Redirect auf die Default-View; bewusst offen bleibt der Login-POST (Gast ohne Session, geringes Risiko). Details in `includes/docs/DOCUMENTATION.md`.
 
 ---
 

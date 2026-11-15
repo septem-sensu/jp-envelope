@@ -33,6 +33,7 @@ class Diagnostics extends BaseObject {
     'baseObjectTest'        => 'Base Object',
     'blueprintTest'         => 'Blueprint',
     'collectorTest'         => 'Collector',
+    'csrfTest'              => 'CSRF',
     'deletePropagationTest' => 'Delete Propagation',
     'errorTest'             => 'Errors',
     'hardErrorTest'         => 'Hard Errors',

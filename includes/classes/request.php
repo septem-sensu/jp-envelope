@@ -83,6 +83,23 @@ class Request {
   }
 
   /**
+   * This method returns the HTTP method of the request in upper case
+   * (e.g. 'GET', 'POST'). $_SERVER is read here — the request is the
+   * single superglobal access point of the framework, and the method
+   * is request metadata beside the GET/POST parameters. A missing
+   * method information (e.g. CLI runs of the regression suites)
+   * resolves as 'GET'.
+   *
+   * @return    string   The HTTP method in upper case ('GET' default)
+   *
+   * @example   if( Request::method() === 'POST' ) { ... }
+   *
+   */
+  public static function method() : string {
+    return strtoupper( $_SERVER[ 'REQUEST_METHOD' ] ?? 'GET' );
+  }
+
+  /**
    * This method sets the parameter scope to the branches 'global' and the
    * named view branch — after the call only these two branches resolve.
    * The value cache is cleared because the scope change alters the resolution.

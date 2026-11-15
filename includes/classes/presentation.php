@@ -129,9 +129,12 @@ class Presentation extends BaseObject {
 
   /**
    * This static method writes the auth cookie. Existing cookie values are
-   * merged, the cookie expires after 30 days. CLI runs of the regression
-   * suites return early: without HTTP headers setcookie would only be a
-   * warning — the login there continues via getUserFromId anyway.
+   * merged, the cookie expires after 30 days and carries the SameSite=Lax
+   * flag: modern browsers drop the cookie on cross-site POST requests —
+   * the cookie-level first line of the CSRF defense (the token check in
+   * the controller stays the line for everything else). CLI runs of the
+   * regression suites return early: without HTTP headers setcookie would
+   * only be a warning — the login there continues via getUserFromId anyway.
    *
    * @param     object    $objParams   The cookie values to write (e.g. the auth token)
    * @return    void
@@ -151,7 +154,7 @@ class Presentation extends BaseObject {
       $objCookie->$strParam = $strValue;
     }
 
-    setcookie( $strCookieName, json_encode( $objCookie ), [ 'expires' => time() + 60 * 60 * 24 * 30, 'path' => '/' ] );
+    setcookie( $strCookieName, json_encode( $objCookie ), [ 'expires' => time() + 60 * 60 * 24 * 30, 'path' => '/', 'samesite' => 'Lax' ] );
 
     return;
   }
@@ -171,7 +174,7 @@ class Presentation extends BaseObject {
 
     $strCookieName  = BaseObject::config()->cookieName();
 
-    setcookie( $strCookieName, '', [ 'expires' => time() - 3600, 'path' => '/' ] );
+    setcookie( $strCookieName, '', [ 'expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax' ] );
 
     return;
   }

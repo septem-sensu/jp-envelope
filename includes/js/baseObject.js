@@ -306,6 +306,7 @@ class BaseObject extends EventTarget {
         const form = submitButton.closest( 'form' );
 
         form.setAttribute( 'method', 'POST' );
+        this.appendCsrfToken( form );
         form.submit();
 
         return;
@@ -419,7 +420,44 @@ class BaseObject extends EventTarget {
     form.setAttribute( 'action', href );
     form.querySelector( 'input[name="action"]' ).value = action;
 
+    this.appendCsrfToken( form );
+
     form.submit();
+
+    return;
+  }
+
+/**
+ * This method ensures that the form carries a hidden csrfToken input
+ * with the CSRF token of the app instance (stateless HMAC over the
+ * auth cookie token — the controller recomputes and compares it): an
+ * existing input only receives the fresh value, a missing one is
+ * created and appended. Native form POSTs run exclusively through the
+ * two call sites of this class (submit delegation and crudPostObject)
+ * — the token reaches every html form POST this way without template
+ * changes.
+ *
+ * @public
+ *
+ * @param     {object}   form   The DOM form element of the POST
+ * @return    {void}
+ *
+ * @example   instance.appendCsrfToken( form );
+ *
+ */
+  appendCsrfToken( form ) {
+    let input = form.querySelector( 'input[name="csrfToken"]' );
+
+    if( input == null ) {
+      input = document.createElement( 'input' );
+
+      input.setAttribute( 'type', 'hidden' );
+      input.setAttribute( 'name', 'csrfToken' );
+
+      form.append( input );
+    }
+
+    input.value = window[ appAlias ].registry.get( 'app' ).csrfToken ?? '';
 
     return;
   }
