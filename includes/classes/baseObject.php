@@ -1599,10 +1599,15 @@ class BaseObject {
   /**
    * This method decrypts an AES-256-CBC encrypted string. The key is derived
    * from passphrase1 and the initialization vector from passphrase2 of the
-   * crypt keys.
+   * crypt keys. A decryption failure (corrupt or tampered cipher content,
+   * e.g. a malformed auth cookie) throws a RuntimeException — fail loud
+   * instead of leaking openssl_decrypt's false through the string return
+   * type as a TypeError.
    *
    * @param     string    $strContent   The encrypted string
    * @return    string    The decrypted string
+   *
+   * @throws    RuntimeException   The content is not a valid cipher
    *
    * @example   $strPlain = BaseObject::deCrypte( $strContent );
    *
@@ -1614,6 +1619,10 @@ class BaseObject {
       hash( 'sha256', $arrCryptKeys[ 'passphrase1' ] ), 0,
       substr( hash( 'sha256', $arrCryptKeys[ 'passphrase2' ] ), 0, 16 )
     );
+
+    if( $strContent === false ) {
+      throw new RuntimeException( 'deCrypte: decryption failed (invalid cipher content)' );
+    }
 
     return $strContent;
   }

@@ -40,6 +40,7 @@ class Diagnostics extends BaseObject {
     'fieldValidatorTest'    => 'Field Validator',
     'genericCrudTest'       => 'Generic CRUD',
     'requestTest'           => 'Requests',
+    'userCookieTest'        => 'User Cookie',
     'userListTest'          => 'User List',
     'userLoginTest'         => 'User Login',
     'userSaveDeleteTest'    => 'CRUD',

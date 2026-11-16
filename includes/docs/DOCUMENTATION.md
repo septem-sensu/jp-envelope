@@ -157,6 +157,8 @@ Die Auflösung, welcher User die App steuert, folgt einer Prioritäten-Kette:
 3. **Login-Formular** (SHA256-Passwort-Vergleich)
 4. **Fallback:** `defaultUserId` aus der `config.json` (Gast-Zugang)
 
+Ein **korrupter Cookie** (ungültiges JSON, fehlender oder nicht entschlüsselbarer Token) wird dabei still übersprungen: die Kette fällt in die nächste Stufe, statt den Boot mit einem harten Fehler zu crashen (`deCrypte()` wirft bei Kaputtem eine `RuntimeException`, die der Cookie-Pfad abfängt). Regressionstest: `php includes/tests/userCookieTest.php`.
+
 #### CSRF-Schutz für POST-Requests (`csrfToken`)
 
 Der Auth-Cookie wird vom Browser bei jedem Request mitgeschickt — ein fremdes Skript könnte den eingeloggten Browser daher zu state-changing POSTs verleiten (klassisches CSRF). Das Framework wehrt das auf zwei Ebenen ab:

@@ -445,20 +445,34 @@ class User extends BaseObject {
    * The token is decrypted (AES) and carries the user id and the
    * password hash, separated by '|||'. Both must match an existing
    * user (hash_equals); otherwise the resolution is skipped silently.
+   * A corrupt cookie (invalid json, missing token, undecryptable or
+   * malformed token content) falls back silently to the guest path
+   * as well — it never crashes the boot with a hard error.
    *
    * @return    void
    *
    * @example   $this->getUserFromCookie();
    *
    */
-  private function getUserFromCookie() {
+  private function getUserFromCookie() : void {
     $strCookieName  = BaseObject::config()->cookieName();
 
     if( ! isset( $_COOKIE ) || ! isset( $_COOKIE[ $strCookieName ] ) ) return;
 
-    $objCookie             = json_decode( $_COOKIE[ $strCookieName ] );
-    $strToken              = BaseObject::deCrypte( $objCookie->token );
-    $arrToken              = explode( '|||', html_entity_decode( $strToken ) );
+    $objCookie = json_decode( $_COOKIE[ $strCookieName ] );
+
+    if( ! is_object( $objCookie ) || ! isset( $objCookie->token ) || ! is_string( $objCookie->token ) ) return;
+
+    try {
+      $strToken = BaseObject::deCrypte( $objCookie->token );
+    } catch( RuntimeException ) {
+      return;
+    }
+
+    $arrToken = explode( '|||', html_entity_decode( $strToken ) );
+
+    if( count( $arrToken ) !== 2 ) return;
+
     $strPlayerIdFromCookie = $arrToken[0];
     $strPasswordFromCookie = $arrToken[1];
 
@@ -466,7 +480,7 @@ class User extends BaseObject {
 
     $objUser = new User( $strPlayerIdFromCookie );
 
-    if( ! isset( $strPasswordFromCookie ) || ! hash_equals( $objUser->password(), $strPasswordFromCookie ) ) return;
+    if( ! hash_equals( $objUser->password(), $strPasswordFromCookie ) ) return;
 
     $this->getUserFromId( $strPlayerIdFromCookie );
 
