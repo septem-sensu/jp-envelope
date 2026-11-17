@@ -1706,11 +1706,21 @@ class BaseObject {
 
   /**
    * This method json encodes an object, encrypts the content with AES-256-CBC
-   * and writes it to the file with an exclusive lock.
+   * and writes it atomically: the content lands in a temporary sibling file
+   * (<file>.tmp) that is renamed onto the target — a process death mid-write
+   * leaves the previous file state intact instead of a truncated json.
+   * All callers run inside the withFileLock critical section, so the
+   * deterministic temp name cannot collide across processes and a stale
+   * temp left behind by a dead process (or a failed rename) is overwritten
+   * by the next write. A failing temp write or rename throws a
+   * RuntimeException — fail loud instead of reporting success with the
+   * old file state on disk.
    *
    * @param     string    $strFile      The file path to write
    * @param     object    $objObject    The object to persist
    * @return    void
+   *
+   * @throws    RuntimeException   The temp write or the rename fails
    *
    * @example   BaseObject::saveFileEnCrypted( $strFile, $objObject );
    *
@@ -1724,7 +1734,15 @@ class BaseObject {
       $strContent = BaseObject::enCrypte( $strContent );
     }
 
-    file_put_contents( $strFile, $strContent, LOCK_EX );
+    $strTempFile = $strFile . '.tmp';
+
+    if( @file_put_contents( $strTempFile, $strContent, LOCK_EX ) === false ) {
+      throw new RuntimeException( 'saveFileEnCrypted: temp write failed for ' . $strFile );
+    }
+
+    if( ! @rename( $strTempFile, $strFile ) ) {
+      throw new RuntimeException( 'saveFileEnCrypted: rename failed for ' . $strFile );
+    }
 
     return;
   }

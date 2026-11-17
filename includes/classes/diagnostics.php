@@ -29,6 +29,7 @@ class Diagnostics extends BaseObject {
    */
   const TESTSUITES = [
     'actionsTest'           => 'Actions',
+    'atomicWriteTest'       => 'Atomic Write',
     'baseCollectionTest'    => 'Base Collection',
     'baseObjectTest'        => 'Base Object',
     'blueprintTest'         => 'Blueprint',

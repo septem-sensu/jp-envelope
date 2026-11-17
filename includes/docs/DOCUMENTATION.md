@@ -363,6 +363,7 @@ Das Framework unterscheidet zwei Wege, um neue Datensätze in die JSON-Struktur 
 Die physikalische Speicherung übernimmt `BaseObject::saveFileEnCrypted()` (Verschlüsselung: **AES-256-CBC**) bzw. `loadFileDeCrypted()`.
 
 - **Hybrides Lesen:** `loadFileDeCrypted()` erkennt, ob es sich um unverschlüsselten Klartext oder um verschlüsselte Daten handelt.
+- **Atomares Schreiben:** `saveFileEnCrypted()` landet den Inhalt in einer temporären Nebendatei (`<datei>.tmp`) und benennt sie per `rename()` auf die Zieldatei um — stirbt der Prozess mitten im Write (Stromweg, Timeout), bleibt der vorherige Datei-Stand intakt statt einer trunkierten JSON zurückzulassen. Alle Aufrufer laufen innerhalb der `withFileLock()`-kritischen Sektion, daher ist der deterministische Temp-Name prozessübergreifend kollisionsfrei und ein Stale-Temp eines gestorbenen Prozesses wird vom nächsten Write überschrieben. Ein fehlgeschlagener Temp-Write oder Rename wirft eine `RuntimeException` (fail loud, siehe [Write-Locking](#Write-Locking%20für%20gleichzeitige%20Zugriffe)). Regressionstest: `php includes/tests/atomicWriteTest.php`.
 - **Schlüsselverwaltung:**
     - **`.cryptKeys.php`:** Enthält die echten Passphrasen für das Produktiv-System.
     - **`cryptKeys.php`:** Dient als Fallback-Klasse und enthält Platzhalter (z. B. `{{PASSPHRASE1}}`).
