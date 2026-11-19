@@ -291,6 +291,8 @@ Jede Business-Klasse (z. B. `User`) erbt von `BaseObject`.
 #### CRUD-Operationen auf Instanz-Ebene
 
 - **Speichern & Aktualisieren:** Ein Aufruf von `$instanz->saveObject()` schreibt oder aktualisiert ausschließlich den Eintrag des aktuellen Objekts in der jeweiligen JSON-Datei.
+- **Persistenz-Validierung ("write once, validate everywhere"):** Vor jedem Schreiben validieren `saveObject()` und `insertObject()` den serialisierten Eintrag gegen die Felddefinitionen der Klasse (`FieldValidator::validateEntry()`) — unabhängig vom Eingangsweg (generische Route, Action, Hook, künftiges Api). Die Regel-Kaskade (`mandatory` im Create-Case, `minLength`, select-Optionen, `mail`) und die Referenz-Existenzprüfung (Objekt- und Collection-Referenzen via `existsObject()`) laufen direkt an der Schreibstelle, vor dem Write-Lock. `password`-Felder werden übersprungen (der Eintrag trägt den Hash, die Begleitregeln bleiben bei den spezialisierten Actions); roleIds-Felder sind von der Mandatory-Pflicht ausgenommen (Sichtbarkeitskonzept), ein gelieferter Wert läuft durch die Regeln; Klassen ohne Felddefinitionsdatei bleiben unvalidiert (kein Feld-Contract). Verletzt eine Regel, wirft die Persistenz die `PersistenceValidationException` und schreibt nichts — Fail-loud: Die generische Save-Route (`viewSaveObject`) übersetzt die Feldfehler in AppError-Envelopes, jeder andere Aufrufer landet über den Controller im weichen Fehlerkanal.
+- **Regressionstest:** `php includes/tests/persistenceValidationTest.php` (Create-Pflicht, Regel-Kaskade, Referenz-Checks, Password-Skip, Update-Semantik gegen eigene Test-Klassendateien).
 - **Löschen:** Ein Aufruf von `$instanz->deleteObject()` entfernt den Eintrag des Objekts aus der Datei und räumt vorher die Referenzen anderer Objekte auf die gelöschte ID ab (siehe Löschweitergabe).
 
 #### Lifecycle-Hooks (`onSave`, `onDelete`, `onLoad`)
@@ -355,7 +357,7 @@ Das Framework unterscheidet zwei Wege, um neue Datensätze in die JSON-Struktur 
 
    `BaseObject::insertObject( $klasse, $id, $eintrag )`
 
-   - **Sicherheit:** Die Methode prüft vor dem Schreiben ob die ID bereits vergeben ist, um Überschreibungen zu verhindern.
+   - **Sicherheit:** Die Methode prüft vor dem Schreiben ob die ID bereits vergeben ist, um Überschreibungen zu verhindern. Vor dem Schreiben validiert sie den Eintrag gegen die Felddefinitionen (create case, siehe Persistenz-Validierung).
    - **Dynamik:** Sie leitet den Zieldateipfad per `lcfirst()` aus dem übergebenen Klassennamen ab.
 
 #### Verschlüsselung & Key-Management (`AES-256-CBC`)

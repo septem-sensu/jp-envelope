@@ -14,14 +14,16 @@ require_once ( __DIR__ . '/../classes/request.php' );
  * the class name and an optional fieldset: without a fieldset every
  * declared field is validated with its own mandatory flag (the create
  * case), with a fieldset only the listed fields run — bare entries stay
- * mandatory, boolean entries downgrade the field to optional. The method
+ * mandatory, boolean entries downgrade the field to optional. The
+ * persistence methods (saveObject, insertObject) validate their serialized
+ * entry through validateEntry() at the write spot itself. The method
  * reports instead of aborting: it returns the first error message per
  * field (field name => message), so actions can collect soft errors via
  * addError() and keep their partial save semantics. Domain guards
  * (existence, permissions, ownership) deliberately stay in the actions.
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.17
+ * @version   0.2.18
  * @since     2026-10-25
  *
  * @example   $arrFieldErrors = FieldValidator::validate( 'User' );
@@ -43,6 +45,7 @@ class FieldValidator {
   const MESSAGES = [
     "mandatory"        => "Bitte {field} angeben.",
     "minLength"        => "{field} muss mindestens {minLength} Zeichen haben.",
+    "reference"        => "{field} verweist auf ein nicht existierendes Objekt ({value}).",
     "passwordRepeat"   => "Bitte {field} und {field}-Wiederholung angeben.",
     "passwordMatch"    => "{field} und {field}-Wiederholung stimmen nicht überein.",
     "passwordSecurity" => "Das {field} entspricht nicht den Passwort-Regeln.",
@@ -151,6 +154,81 @@ class FieldValidator {
       }
 
       $strError = self::validateField( $objFieldDefinition, $strFieldName, false, $objData->$strFieldName, null );
+
+      if( isset( $strError ) ) $arrFieldErrors[ $strFieldName ] = $strError;
+    }
+
+    return $arrFieldErrors;
+  }
+
+  /**
+   * This method validates a persistence entry (the serialized form
+   * serializeObjectForSave() writes into the class json file) against the
+   * field definitions — the server side of every save path: saveObject()
+   * and insertObject() call it directly at the write spot, independent of
+   * the entering action ("write once, validate everywhere"). Unlike
+   * validateData() it runs without a controller: roleIds stays a form
+   * visibility concept, fields behind it are validated like any other
+   * field. Password fields are skipped (the entry carries the hash, the
+   * companion rules belong to the specialized actions), properties
+   * without a field definition and non-string scalars pass untouched.
+   * Reference fields (class attribute) check every delivered id against
+   * the referenced class via existsObject() — object references as the
+   * single id, collections (the id list) per element. In the create case
+   * declared mandatory fields must arrive, updates pass absent fields
+   * (the serialized entry only carries the set ones) — fields behind a
+   * roleIds attribute are exempt from the mandatory duty (form visibility
+   * concept: the entry only carries what an authorized action delivered),
+   * a delivered value still runs the rule cascade. It returns the
+   * first error message per failed field (field name => message), an
+   * empty array means the entry is valid.
+   *
+   * @param     string    $strClassName   The business class to validate for
+   * @param     object    $objEntry       The serialized entry to validate
+   * @param     boolean   $boolCreate     True for the create case (mandatory fields must arrive)
+   * @return    array     The error messages keyed by field name
+   *
+   * @example   $arrFieldErrors = FieldValidator::validateEntry( 'User', $objEntry, true );
+   *
+   */
+  public static function validateEntry( string $strClassName, object $objEntry, bool $boolCreate = false ) : array {
+    $objFields      = BaseObject::getFieldsOfClass( $strClassName );
+    $arrFieldErrors = [];
+
+    foreach( $objFields as $strFieldName => $objFieldDefinition ) {
+      if( isset( $objFieldDefinition->type ) && $objFieldDefinition->type == 'password' ) continue;
+
+      $boolPresent = isset( $objEntry->$strFieldName ) && ( ! is_string( $objEntry->$strFieldName ) || $objEntry->$strFieldName != '' );
+
+      if( ! $boolPresent ) {
+        if( ! $boolCreate ) continue;
+        if( ! isset( $objFieldDefinition->mandatory ) || ! $objFieldDefinition->mandatory ) continue;
+        if( isset( $objFieldDefinition->roleIds ) ) continue;
+
+        $arrFieldErrors[ $strFieldName ] = self::message( $objFieldDefinition, $strFieldName, 'mandatory' );
+
+        continue;
+      }
+
+      $mixValue = $objEntry->$strFieldName;
+
+      if( isset( $objFieldDefinition->class ) ) {
+        $arrReferenceIds = is_array( $mixValue ) ? $mixValue : [ $mixValue ];
+
+        foreach( $arrReferenceIds as $strReferenceId ) {
+          if( ! is_string( $strReferenceId ) || ! BaseObject::existsObject( $objFieldDefinition->class, $strReferenceId ) ) {
+            $arrFieldErrors[ $strFieldName ] = self::message( $objFieldDefinition, $strFieldName, 'reference', [ 'value' => $strReferenceId ] );
+
+            break;
+          }
+        }
+
+        continue;
+      }
+
+      if( ! is_string( $mixValue ) ) continue;
+
+      $strError = self::validateField( $objFieldDefinition, $strFieldName, false, $mixValue, null );
 
       if( isset( $strError ) ) $arrFieldErrors[ $strFieldName ] = $strError;
     }

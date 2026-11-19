@@ -28,24 +28,25 @@ class Diagnostics extends BaseObject {
    *
    */
   const TESTSUITES = [
-    'actionsTest'           => 'Actions',
-    'atomicWriteTest'       => 'Atomic Write',
-    'baseCollectionTest'    => 'Base Collection',
-    'baseObjectTest'        => 'Base Object',
-    'blueprintTest'         => 'Blueprint',
-    'collectorTest'         => 'Collector',
-    'csrfTest'              => 'CSRF',
-    'deletePropagationTest' => 'Delete Propagation',
-    'errorTest'             => 'Errors',
-    'hardErrorTest'         => 'Hard Errors',
-    'fieldValidatorTest'    => 'Field Validator',
-    'genericCrudTest'       => 'Generic CRUD',
-    'requestTest'           => 'Requests',
-    'userCookieTest'        => 'User Cookie',
-    'userListTest'          => 'User List',
-    'userLoginTest'         => 'User Login',
-    'userSaveDeleteTest'    => 'CRUD',
-    'lockTest'              => 'Write Lock'
+    'actionsTest'               => 'Actions',
+    'atomicWriteTest'           => 'Atomic Write',
+    'baseCollectionTest'        => 'Base Collection',
+    'baseObjectTest'            => 'Base Object',
+    'blueprintTest'             => 'Blueprint',
+    'collectorTest'             => 'Collector',
+    'csrfTest'                  => 'CSRF',
+    'deletePropagationTest'     => 'Delete Propagation',
+    'errorTest'                 => 'Errors',
+    'hardErrorTest'             => 'Hard Errors',
+    'fieldValidatorTest'        => 'Field Validator',
+    'genericCrudTest'           => 'Generic CRUD',
+    'lockTest'                  => 'Write Lock',
+    'persistenceValidationTest' => 'Persistence Validation',
+    'requestTest'               => 'Requests',
+    'userCookieTest'            => 'User Cookie',
+    'userListTest'              => 'User List',
+    'userLoginTest'             => 'User Login',
+    'userSaveDeleteTest'        => 'CRUD'
   ];
 
   /**

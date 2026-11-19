@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 require_once ( __DIR__ . '/../classes/config.php' );
 require_once ( __DIR__ . '/../classes/appError.php' );
+require_once ( __DIR__ . '/../classes/persistenceValidationException.php' );
 require_once ( __DIR__ . '/../classes/fieldValidator.php' );
 
 /**
@@ -14,7 +15,7 @@ require_once ( __DIR__ . '/../classes/fieldValidator.php' );
  * from the frontend payload, NOSAVE removes properties from persistence (both defined per subclass).
  *
  * @author    Markus Götz <info@septem-sensu.de>
- * @version   0.2.20
+ * @version   0.2.21
  * @since     2026-10-10
  *
  * @example   $objUser = new User( 'someUserId' );
@@ -711,7 +712,8 @@ class BaseObject {
    * property reflection, every delivered id is existence-checked, empty
    * values clear the reference. Rejections travel as AppError envelopes
    * (validation field errors and reference errors one envelope per field,
-   * the onSave hook and the guards one envelope per rejection); on
+   * the onSave hook and the guards one envelope per rejection, persistence
+   * validation rejections one envelope per field error); on
    * success the response is the rawObject (envelope array) of the saved
    * instance.
    *
@@ -808,14 +810,24 @@ class BaseObject {
 
     if( isset( $strHookError ) ) return self::crudErrorEnvelope( $strHookError, 'onSave' );
 
-    if( $boolCreate ) {
-      $objEntry = $objObject->serializeObjectForSave();
+    try {
+      if( $boolCreate ) {
+        $objEntry = $objObject->serializeObjectForSave();
 
-      if( ! BaseObject::insertObject( $strClass, $objObject->id(), $objEntry ) ) {
-        return self::crudErrorEnvelope( 'Die Objekt-ID ist bereits vergeben.', 'viewSaveObject' );
+        if( ! BaseObject::insertObject( $strClass, $objObject->id(), $objEntry ) ) {
+          return self::crudErrorEnvelope( 'Die Objekt-ID ist bereits vergeben.', 'viewSaveObject' );
+        }
+      } else {
+        $objObject->saveObject();
       }
-    } else {
-      $objObject->saveObject();
+    } catch( PersistenceValidationException $objException ) {
+      $arrErrorEnvelopes = [];
+
+      foreach( $objException->fieldErrors() as $strMessage ) {
+        array_push( $arrErrorEnvelopes, ...self::crudErrorEnvelope( $strMessage, 'viewSaveObject' ) );
+      }
+
+      return $arrErrorEnvelopes;
     }
 
     return $objObject->rawObject();
@@ -1160,8 +1172,11 @@ class BaseObject {
    * This method persists the object: it writes only the own entry back into
    * the class json file. The NOSAVE constant filters technical runtime properties
    * from the payload; NOSERIALIZE deliberately does NOT apply here — a user's
-   * password hash must be persisted after all. The whole read-modify-write cycle
-   * runs under an exclusive file lock on <file>.lock (see withFileLock).
+   * password hash must be persisted after all. Before the write the serialized
+   * entry is validated against the field definitions (FieldValidator::validateEntry)
+   * — a failed rule throws the PersistenceValidationException instead of
+   * persisting ("write once, validate everywhere"). The whole read-modify-write
+   * cycle runs under an exclusive file lock on <file>.lock (see withFileLock).
    *
    * @return    void
    *
@@ -1169,12 +1184,18 @@ class BaseObject {
    *
    */
   public function saveObject() : void {
-    BaseObject::withFileLock( $this->dataJsonFile, function() {
+    $objEntry = $this->serializeObjectForSave();
+
+    $arrFieldErrors = FieldValidator::validateEntry( $this->class, $objEntry );
+
+    if( count( $arrFieldErrors ) > 0 ) throw new PersistenceValidationException( $arrFieldErrors, $this->class, $this->id );
+
+    BaseObject::withFileLock( $this->dataJsonFile, function() use ( $objEntry ) {
       $objObjects = BaseObject::loadFileDeCrypted( $this->dataJsonFile );
 
       if( ! isset( $objObjects ) ) $objObjects = new stdClass();
 
-      $objObjects->{ $this->id } = $this->serializeObjectForSave();
+      $objObjects->{ $this->id } = $objEntry;
 
       BaseObject::saveFileEnCrypted( $this->dataJsonFile, $objObjects );
     } );
@@ -1407,6 +1428,9 @@ class BaseObject {
    * internally via lcfirst. It returns false when the id is already taken.
    * The method deliberately bypasses the constructor — this way user instances
    * for example cannot be created "empty-new" (getUser fallback). The whole
+   * Before the write the entry is validated against the field definitions
+   * in the create case (FieldValidator::validateEntry) — a failed rule
+   * throws the PersistenceValidationException instead of inserting. The whole
    * read-modify-write cycle including the already-taken check runs under an
    * exclusive file lock on <file>.lock (see withFileLock): two concurrent
    * inserts of the same id resolve deterministically — one returns true,
@@ -1422,6 +1446,10 @@ class BaseObject {
    */
   public static function insertObject( string $strClassName, string $strId, object $objEntry ) : bool {
     if( $strId == '' ) return false;
+
+    $arrFieldErrors = FieldValidator::validateEntry( $strClassName, $objEntry, true );
+
+    if( count( $arrFieldErrors ) > 0 ) throw new PersistenceValidationException( $arrFieldErrors, $strClassName, $strId );
 
     $strFile = BaseObject::FILEPATHJSON . 'data/' . lcfirst( $strClassName ) . '.json';
 
